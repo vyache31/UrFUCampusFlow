@@ -1,0 +1,46 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment files (секреты)
+*.env
+.env.*
+!example.env
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# MyPy / Ruff
+.mypy_cache/
+.ruff_cache/
+
+# Build / dist artifacts
+build/
+dist/
+*.egg-info/
+
+
+# Docker related
+docker-data/
