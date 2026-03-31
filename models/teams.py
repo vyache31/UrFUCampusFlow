@@ -16,6 +16,8 @@ class Students(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    team_memberships = relationship('TeamMembers', back_populates='student')
+
 
 class TeamMembers(Base):
     __tablename__ = 'team_members'
@@ -27,6 +29,9 @@ class TeamMembers(Base):
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     left_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     is_current: Mapped[bool]
+
+    team = relationship('Teams', back_populates='team_members')
+    student = relationship('Students', back_populates='team_memberships')
 
 
 class Teams(Base):
@@ -41,6 +46,13 @@ class Teams(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    team_members = relationship('TeamMembers', back_populates='team')
+    grades = relationship('Grades', back_populates='team')
+    meetings = relationship('Meetings', back_populates='team')
+    semester = relationship('Semesters', back_populates='teams')
+    university = relationship('Universities', back_populates='teams')
+    case = relationship('Cases', back_populates='teams')
+
 
 class Semesters(Base):
     __tablename__ = 'semesters'
@@ -51,6 +63,10 @@ class Semesters(Base):
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+    grades = relationship('Grades', back_populates='semester')
+    cases = relationship('Cases', back_populates='semester')
+    teams = relationship('Teams', back_populates='semester')
+
 
 class Universities(Base):
     __tablename__ = 'university_info'
@@ -59,6 +75,7 @@ class Universities(Base):
     uni_name: Mapped[str]
     contact_email: Mapped[str]
 
+    teams = relationship('Teams', back_populates='university')
 
 
 

@@ -21,6 +21,8 @@ class MicrosoftOAuth(Base):
     last_refreshed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool]
 
+    user = relationship('Users', back_populates='microsoft_oauth')
+
 
 class Meetings(Base):
     __tablename__ = 'meetings'
@@ -33,3 +35,6 @@ class Meetings(Base):
     outlook_event_id: Mapped[str]
     event_link: Mapped[str]
     notes: Mapped[str]
+
+    team = relationship('Teams', back_populates='meetings')
+    case = relationship('Cases', back_populates='meetings')

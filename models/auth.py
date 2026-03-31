@@ -17,12 +17,21 @@ class Users(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    microsoft_oauth = relationship('MicrosoftOAuth', back_populates='user')
+    role = relationship('Roles', back_populates='users')
+    created_cases = relationship('Cases', back_populates='creator')
+    evaluation_forms = relationship('EvaluationForm', back_populates='creator')
+    evaluation_form_reactions = relationship('EvaluationFormReactions', back_populates='creator')
+    evaluation_form_comments = relationship('EvaluationFormComments', back_populates='creator')
+
 
 class Roles(Base):
     __tablename__ = 'roles'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     role_name: Mapped[str]
+
+    users = relationship('Users', back_populates='role')
 
 
 

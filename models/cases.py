@@ -20,6 +20,14 @@ class Cases(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    evaluation_forms = relationship('EvaluationForm', back_populates='case')
+    grades = relationship('Grades', back_populates='case')
+    meetings = relationship('Meetings', back_populates='case')
+    status = relationship('CaseStatuses', back_populates='cases')
+    creator = relationship('Users', back_populates='created_cases')
+    teams = relationship('Teams', back_populates='cases')
+    semester = relationship('Semesters', back_populates='cases')
+
 
 class CaseStatuses(Base):
     __tablename__ = 'case_statuses'
@@ -27,6 +35,8 @@ class CaseStatuses(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     status_code: Mapped[str]
     status_name: Mapped[str]
+
+    cases = relationship('Cases', back_populates='status')
 
 
 class EvaluationForm(Base):
@@ -36,6 +46,11 @@ class EvaluationForm(Base):
     case_id: Mapped[str] = mapped_column(ForeignKey('cases.id'))
     creator_id: Mapped[str] = mapped_column(ForeignKey('users.id'))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    case = relationship("Cases", back_populates='evaluation_forms')
+    reactions = relationship('EvaluationFormReactions', back_populates='form')
+    comments = relationship('EvaluationFormComments', back_populates='form')
+    creator = relationship('Users', back_populates='evaluation_forms')
 
 
 class EvaluationFormReactions(Base):
@@ -47,6 +62,9 @@ class EvaluationFormReactions(Base):
     reaction: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+    form = relationship('EvaluationForm', back_populates='reactions')
+    creator = relationship('Users', back_populates='evaluation_form_reactions')
+
 
 class EvaluationFormComments(Base):
     __tablename__ = 'evaluation_form_comments'
@@ -57,6 +75,8 @@ class EvaluationFormComments(Base):
     comment_text: Mapped[str] = mapped_column(String())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+    form = relationship('EvaluationForm', back_populates='comments')
+    creator = relationship('Users', back_populates='evaluation_form_comments')
 
 
 
