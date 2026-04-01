@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    String, ForeignKey, DateTime
+    String, ForeignKey, DateTime, Boolean
 )
 from datetime import datetime
 from typing import Optional
@@ -52,6 +52,25 @@ class Teams(Base):
     semester = relationship('Semesters', back_populates='teams')
     university = relationship('Universities', back_populates='teams')
     case = relationship('Cases', back_populates='teams')
+    case_history = relationship('TeamCaseHistory', back_populates='team')
+
+
+class TeamCaseHistory(Base):
+    __tablename__ = 'team_case_history'
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
+    team_id: Mapped[str] = mapped_column(ForeignKey('teams.id'), index=True)
+    case_id: Mapped[str] = mapped_column(ForeignKey('cases.id'), index=True)
+    semester_id: Mapped[int] = mapped_column(ForeignKey('semesters.id'), index=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    team = relationship('Teams', back_populates='case_history')
+    case = relationship('Cases', back_populates='team_history')
+    semester = relationship('Semesters', back_populates='team_case_history')
 
 
 class Semesters(Base):
@@ -66,6 +85,7 @@ class Semesters(Base):
     grades = relationship('Grades', back_populates='semester')
     cases = relationship('Cases', back_populates='semester')
     teams = relationship('Teams', back_populates='semester')
+    team_case_history = relationship('TeamCaseHistory', back_populates='semester')
 
 
 class Universities(Base):
@@ -76,7 +96,6 @@ class Universities(Base):
     contact_email: Mapped[str]
 
     teams = relationship('Teams', back_populates='university')
-
 
 
 

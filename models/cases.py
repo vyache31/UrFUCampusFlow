@@ -25,8 +25,9 @@ class Cases(Base):
     meetings = relationship('Meetings', back_populates='case')
     status = relationship('CaseStatuses', back_populates='cases')
     creator = relationship('Users', back_populates='created_cases')
-    teams = relationship('Teams', back_populates='cases')
+    teams = relationship('Teams', back_populates='case')
     semester = relationship('Semesters', back_populates='cases')
+    team_history = relationship('TeamCaseHistory', back_populates='case')
 
 
 class CaseStatuses(Base):
@@ -77,7 +78,6 @@ class EvaluationFormComments(Base):
 
     form = relationship('EvaluationForm', back_populates='comments')
     creator = relationship('Users', back_populates='evaluation_form_comments')
-
 
 
 
