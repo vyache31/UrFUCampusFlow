@@ -12,7 +12,7 @@ class UserService:
         self.rep = rep
 
     async def create_user(self, schema: UserCreate):
-        is_exist = await self.rep.get_by_id(schema.id)
+        is_exist = await self.rep.get_by_id(schema.email)
 
         if is_exist:
             raise ValueError("User already exist")

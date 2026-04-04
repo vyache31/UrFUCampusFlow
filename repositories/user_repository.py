@@ -13,7 +13,10 @@ class UserRepository:
 
         return result.scalar_one_or_none()
 
-    # Нужен ли поиск по email ??
+    async def get_by_email(self, email: str):
+        result = await self.db.execute(select(Users).where(Users.email == email))
+
+        return result.scalar_one_or_none()
 
     async def get_all(self, limit: int = 10): # ограничил на время, чтоб все записи не тянуть каждый раз
         result = await self.db.execute(select(Users).limit(limit))
