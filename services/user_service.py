@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, UTC
 from repositories.user_repository import UserRepository
 from schemas.user import UserCreate, UserUpdate
 from models.auth import Users
@@ -12,16 +13,20 @@ class UserService:
         self.rep = rep
 
     async def create_user(self, schema: UserCreate):
-        is_exist = await self.rep.get_by_id(schema.email)
+        is_exist = await self.rep.get_by_email(schema.email)
+        role = await self.rep.get_role_by_id(schema.role_id)
 
         if is_exist:
             raise ValueError("User already exist")
+        if not role:
+            raise ValueError("Role not found")
 
         user = Users(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email=schema.email,
             role_id=schema.role_id,
-            password_hash=schema.password  # Прикрутить хэширование пароля
+            password_hash=schema.password,
+            created_at=datetime.now(UTC)
         )
 
         return await self.rep.create(user)
@@ -41,9 +46,13 @@ class UserService:
         if schema.email:
             user.email = schema.email
         if schema.password:
-            user.password = schema.password
+            user.password_hash = schema.password
         if schema.role_id:
+            role = await self.rep.get_role_by_id(schema.role_id)
+            if not role:
+                raise ValueError("Role not found")
             user.role_id = schema.role_id
+        user.updated_at = datetime.now(UTC)
 
         await self.rep.update()
         return user
