@@ -15,6 +15,10 @@ class UserRepository:
 
     # Нужен ли поиск по email ??
 
+    async def get_all(self, limit: int = 10): # ограничил на время, чтоб все записи не тянуть каждый раз
+        result = await self.db.execute(select(Users).limit(limit))
+        return result.scalars().all()
+
     async def create(self, user: Users):
         self.db.add(user)
         await self.db.commit()

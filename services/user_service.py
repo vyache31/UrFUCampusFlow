@@ -29,6 +29,9 @@ class UserService:
     async def get_user(self, user_id: str):
         return await self.rep.get_by_id(user_id)
 
+    async def get_all_users(self, limit: int = 10):
+        return await self.rep.get_all(limit)
+
     async def update_user(self, user_id: str, schema: UserUpdate):
         user = await self.rep.get_by_id(user_id)
 
