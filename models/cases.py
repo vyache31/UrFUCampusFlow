@@ -7,12 +7,28 @@ from sqlalchemy.orm import relationship, mapped_column, Mapped
 from database import Base
 
 
+class DifficultyLevels(Base):
+    __tablename__ = 'case_difficulty_levels'
+
+    id: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    level_code: Mapped[str]
+    level_name: Mapped[str]
+
+    cases = relationship('Cases', back_populates='difficulty_level')
+
+
 class Cases(Base):
     __tablename__ = 'cases'
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     title: Mapped[str]
-    description: Mapped[str]
+    difficulty_level_id: Mapped[int] = mapped_column(ForeignKey('case_difficulty_levels.id'))
+    project_goals: Mapped[Optional[str]] = mapped_column(nullable=True)
+    required_result: Mapped[Optional[str]] = mapped_column(nullable=True)
+    grade_criteria: Mapped[Optional[str]] = mapped_column(nullable=True)
+    study_program: Mapped[Optional[str]] = mapped_column(nullable=True)
+    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     university_id: Mapped[int] = mapped_column(ForeignKey('university_info.id'))
     semester_id: Mapped[int] = mapped_column(ForeignKey('semesters.id'))
     status_id: Mapped[int] = mapped_column(ForeignKey('case_statuses.id'))
@@ -27,7 +43,32 @@ class Cases(Base):
     creator = relationship('Users', back_populates='created_cases')
     teams = relationship('Teams', back_populates='case')
     semester = relationship('Semesters', back_populates='cases')
+    university = relationship('Universities', back_populates='cases')
+    difficulty_level = relationship('DifficultyLevels', back_populates='cases')
     team_history = relationship('TeamCaseHistory', back_populates='case')
+
+    @property
+    def university_name(self) -> Optional[str]:
+        return self.university.uni_name if self.university else None
+
+    @property
+    def difficulty_level_name(self) -> Optional[str]:
+        return self.difficulty_level.level_name if self.difficulty_level else None
+
+    @property
+    def semester_name(self) -> Optional[str]:
+        if not self.semester:
+            return None
+
+        return f'{self.semester.season} {self.semester.year}'
+
+    @property
+    def creator_email(self) -> Optional[str]:
+        return self.creator.email if self.creator else None
+
+    @property
+    def status_name(self) -> Optional[str]:
+        return self.status.status_name if self.status else None
 
 
 class CaseStatuses(Base):
@@ -78,7 +119,6 @@ class EvaluationFormComments(Base):
 
     form = relationship('EvaluationForm', back_populates='comments')
     creator = relationship('Users', back_populates='evaluation_form_comments')
-
 
 
 

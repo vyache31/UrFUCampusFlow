@@ -96,7 +96,7 @@ class Universities(Base):
     contact_email: Mapped[str]
 
     teams = relationship('Teams', back_populates='university')
-
+    cases = relationship('Cases', back_populates='university')
 
 
 
