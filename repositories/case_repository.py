@@ -43,7 +43,7 @@ class CaseRepository:
         return case.scalar_one_or_none()
 
 
-    async def create(self, case: Cases) -> None:
+    async def create(self, case: Cases) -> Cases:
         self.db.add(case)
         await self.db.commit()
         await self.db.refresh(case)

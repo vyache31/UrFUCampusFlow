@@ -12,7 +12,7 @@ class Students(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     name: Mapped[str]
-    group: Mapped[str]
+    group: Mapped[str] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
