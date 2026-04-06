@@ -4,6 +4,10 @@ from schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from dependies.case_depends import get_case_service
 
 
+def _case_not_found(case_id: str) -> HTTPException:
+    return HTTPException(status_code=404, detail=f'Case with id = {case_id} not found')
+
+
 router = APIRouter(
     prefix='/cases',
     tags=["Cases"]
@@ -13,12 +17,12 @@ router = APIRouter(
 @router.get('/', response_model=list[CaseResponse])
 async def get_all_cases(
         service: CaseService = Depends(get_case_service),
-        limit: int = Query(10)
+        limit: int = Query(10, ge=1, le=100)
 ):
     return await service.get_all_cases(limit=limit)
 
 
-@router.post('/', response_model=CaseResponse)
+@router.post('/', response_model=CaseResponse, status_code=201)
 async def create_case(
         schema: CaseCreate,
         service: CaseService = Depends(get_case_service)
@@ -40,7 +44,7 @@ async def get_case(
     case = await service.get_case_by_id(case_id=case_id)
 
     if not case:
-        raise HTTPException(status_code=404, detail=f'Case with id = {case_id} not found')
+        raise _case_not_found(case_id)
 
     return case
 
@@ -56,7 +60,7 @@ async def update_case(
     except ValueError as err:
         raise HTTPException(status_code=404, detail=str(err))
     if not case:
-        raise HTTPException(status_code=404, detail=f'Case with id = {case_id} not found')
+        raise _case_not_found(case_id)
 
     return case
 
@@ -68,6 +72,6 @@ async def delete_case(
 ):
     result = await service.delete_case(case_id=case_id)
     if not result:
-        raise HTTPException(status_code=404, detail=f'Case with id = {case_id} not found')
+        raise _case_not_found(case_id)
 
     return {'status': 'deleted'}
