@@ -21,49 +21,24 @@ class CaseService:
 
 
     async def _apply_fk_updates(self, case: Cases, fk_data: dict[str, Any]) -> None:
+        config = {
+            'status_id': (self.rep.verify_status, 'Status not found.'),
+            'creator_id': (self.rep.verify_creator, 'Creator not found.'),
+            'university_id': (self.rep.verify_university, 'University not found.'),
+            'difficulty_level_id': (self.rep.verify_difficulty_level, 'Difficulty level not found'),
+            'semester_id': (self.rep.verify_semester, 'Semester not found')
+        }
+
         for key, value in fk_data.items():
-            if key == 'creator_id':
-                is_ok = await self.rep.verify_creator(creator_id=value)
+            is_ok = await config[key][0](value)
 
-                if is_ok:
-                    case.creator_id = value
-                else:
-                    raise ValueError('Creator not found')
-
-            elif key == 'status_id':
-                is_ok = await self.rep.verify_status(status_id=value)
-
-                if is_ok:
-                    case.status_id = value
-                else:
-                    raise ValueError('Status not found')
-
-            elif key == 'difficulty_level_id':
-                is_ok = await self.rep.verify_difficulty_level(level_id=value)
-
-                if is_ok:
-                    case.difficulty_level_id = value
-                else:
-                    raise ValueError('Difficulty level not found')
-
-            elif key == 'university_id':
-                is_ok = await self.rep.verify_university(uni_id=value)
-
-                if is_ok:
-                    case.university_id = value
-                else:
-                    raise ValueError('University not found')
-
-            elif key == 'semester_id':
-                is_ok = await self.rep.verify_semester(semester_id=value)
-
-                if is_ok:
-                    case.semester_id = value
-                else:
-                    raise ValueError('Semester not found')
+            if is_ok:
+                setattr(case, key, value)
+            else:
+                raise ValueError(config[key][1])
 
 
-    async def create_case(self, schema: CaseCreate) -> None:
+    async def create_case(self, schema: CaseCreate) -> Cases | None:
         is_exist = await self.rep.get_by_title(schema.title)
 
         if is_exist:
@@ -103,7 +78,7 @@ class CaseService:
         return await self.rep.get_by_id(case_id=case_id)
 
 
-    async def get_all_cases(self, limit: int) -> list[Cases] | None:
+    async def get_all_cases(self, limit: int) -> list[Cases]:
         return await self.rep.get_all(limit=limit)
 
 
