@@ -1,0 +1,66 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+from schemas.student import StudentCreate, StudentUpdate, StudentResponse
+from services.student_service import StudentService
+from dependies.student_depends import get_student_service
+
+
+router = APIRouter(
+    prefix='/students',
+    tags=["Students"]
+)
+
+
+@router.post('/', response_model=StudentResponse)
+async def create_student(
+        schema: StudentCreate,
+        service: StudentService = Depends(get_student_service)
+):
+    return await service.create_student(schema)
+
+
+@router.get('/', response_model=list[StudentResponse])
+async def get_all_students(
+        limit: int = Query(10),
+        service: StudentService = Depends(get_student_service)
+):
+    return await service.get_all_students(limit)
+
+
+@router.get('/{student_id}', response_model=StudentResponse)
+async def get_student(
+        student_id: str,
+        service: StudentService = Depends(get_student_service)
+):
+    student = await service.get_student_by_id(student_id)
+
+    if not student:
+        raise HTTPException(status_code=404, detail='Student not found')
+
+    return student
+
+
+@router.patch('/{student_id}', response_model=StudentResponse)
+async def update_student(
+        student_id: str,
+        schema: StudentUpdate,
+        service: StudentService = Depends(get_student_service)
+):
+    student = await service.update_student(student_id, schema)
+
+    if not student:
+        raise HTTPException(status_code=404, detail='Student not found')
+
+    return student
+
+
+@router.delete('/{student_id}')
+async def delete_student(
+        student_id: str,
+        service: StudentService = Depends(get_student_service)
+):
+    result = await service.delete_student(student_id)
+
+    if not result:
+        raise HTTPException(status_code=404, detail='Student not found')
+
+    return {'status': 'deleted'}
