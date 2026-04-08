@@ -12,10 +12,16 @@ class StudentService:
 
 
     async def create_student(self, schema: StudentCreate) -> Students:
+        is_exist = await self.rep.verify_university(schema.university_id)
+
+        if not is_exist:
+            raise ValueError('University not found')
+
         student = Students(
             id = str(uuid.uuid4()),
             name = schema.name,
             group = schema.group,
+            university_id = schema.university_id,
             created_at = datetime.now(UTC)
         )
 
@@ -29,6 +35,12 @@ class StudentService:
             return None
 
         update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
+
+        if 'university_id' in update_data:
+            is_exist = await self.rep.verify_university(update_data['university_id'])
+
+            if not is_exist:
+                raise ValueError('University not found')
 
         for key, value in update_data.items():
             setattr(student, key, value)

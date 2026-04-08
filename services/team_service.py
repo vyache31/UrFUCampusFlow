@@ -21,8 +21,7 @@ class TeamService:
         """
         self.validators = {
             # "role_id": (self.role_repo.get_by_id, "Role not found"),
-            # "semester_id": (self.semester_repo.get_by_id, "Semester not found"),
-            # "case_id": (self.case_repo.get_by_id, "Case not found"),
+            "university_id": (self.team_repo.verify_university, "University not found"),
         }
 
     async def create_team(self, schema: TeamCreate):
@@ -30,24 +29,12 @@ class TeamService:
         if is_exist:
             raise ValueError("Team already exist")
 
-        # semester = await self.semester_repo.get_by_id(schema.semester_id)
-        # if not semester:
-        #   raise ValueError("Semester not found")
-
-        # university = await self.university_repo.get_by_id(schema.university_id)
-        # if not university:
-        #   raise ValueError("University not found")
-
-        # case = await self.case_repo.get_by_id(schema.case_id)
-        # if not case:
-        #   raise ValueError("Case not found")
+        await self.validate_refs({"university_id": schema.university_id})
 
         team = Teams(
             id=str(uuid.uuid4()),
             name=schema.name,
-            semester_id=schema.semester_id,
             university_id=schema.university_id,
-            case_id=schema.case_id,
             status=schema.status,
             created_at=datetime.now(UTC)
         )

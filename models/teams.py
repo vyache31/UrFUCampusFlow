@@ -12,11 +12,13 @@ class Students(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     name: Mapped[str]
+    university_id: Mapped[int] = mapped_column(ForeignKey('university_info.id'))
     group: Mapped[str] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     team_memberships = relationship('TeamMembers', back_populates='student')
+    university = relationship('Universities', back_populates='students')
 
 
 class TeamMembers(Base):
@@ -39,19 +41,13 @@ class Teams(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     name: Mapped[str]
-    semester_id: Mapped[int] = mapped_column(ForeignKey('semesters.id'))
     university_id: Mapped[int] = mapped_column(ForeignKey('university_info.id'))
-    case_id: Mapped[str] = mapped_column(ForeignKey('cases.id'))
     status: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     team_members = relationship('TeamMembers', back_populates='team')
-    grades = relationship('Grades', back_populates='team')
-    meetings = relationship('Meetings', back_populates='team')
-    semester = relationship('Semesters', back_populates='teams')
     university = relationship('Universities', back_populates='teams')
-    case = relationship('Cases', back_populates='teams')
     case_history = relationship('TeamCaseHistory', back_populates='team')
 
 
@@ -60,8 +56,7 @@ class TeamCaseHistory(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     team_id: Mapped[str] = mapped_column(ForeignKey('teams.id'), index=True)
-    case_id: Mapped[str] = mapped_column(ForeignKey('cases.id'), index=True)
-    semester_id: Mapped[int] = mapped_column(ForeignKey('semesters.id'), index=True)
+    case_semesters_id: Mapped[str] = mapped_column(ForeignKey('case_semesters.id'))
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     is_current: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -69,8 +64,9 @@ class TeamCaseHistory(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     team = relationship('Teams', back_populates='case_history')
-    case = relationship('Cases', back_populates='team_history')
-    semester = relationship('Semesters', back_populates='team_case_history')
+    case_semester = relationship('CaseSemesters', back_populates='team_case_history')
+    grades = relationship('Grades', back_populates='team_case_history')
+    meetings = relationship('Meetings', back_populates='team_case_history')
 
 
 class Semesters(Base):
@@ -82,10 +78,7 @@ class Semesters(Base):
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
-    grades = relationship('Grades', back_populates='semester')
-    cases = relationship('Cases', back_populates='semester')
-    teams = relationship('Teams', back_populates='semester')
-    team_case_history = relationship('TeamCaseHistory', back_populates='semester')
+    case_semesters = relationship('CaseSemesters', back_populates='semester')
 
 
 class Universities(Base):
@@ -97,7 +90,7 @@ class Universities(Base):
 
     teams = relationship('Teams', back_populates='university')
     cases = relationship('Cases', back_populates='university')
-
+    students = relationship('Students', back_populates='university')
 
 
 

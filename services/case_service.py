@@ -9,7 +9,6 @@ from typing import Any
 FK_FIELDS = {
     "difficulty_level_id",
     "university_id",
-    "semester_id",
     "status_id",
     "creator_id"
 }
@@ -26,7 +25,6 @@ class CaseService:
             'creator_id': (self.rep.verify_creator, 'Creator not found.'),
             'university_id': (self.rep.verify_university, 'University not found.'),
             'difficulty_level_id': (self.rep.verify_difficulty_level, 'Difficulty level not found'),
-            'semester_id': (self.rep.verify_semester, 'Semester not found')
         }
 
         for key, value in fk_data.items():
@@ -56,7 +54,6 @@ class CaseService:
             start_date = schema.start_date,
             end_date = schema.end_date,
             university_id = schema.university_id,
-            semester_id = schema.semester_id,
             status_id = schema.status_id,
             created_at = datetime.now(UTC)
         )
@@ -64,7 +61,6 @@ class CaseService:
         fk_data = {
             "difficulty_level_id": schema.difficulty_level_id,
             "university_id": schema.university_id,
-            "semester_id": schema.semester_id,
             "status_id": schema.status_id,
             "creator_id": schema.creator_id,
         }

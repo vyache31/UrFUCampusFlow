@@ -14,8 +14,6 @@ class CaseResponse(BaseModel):
     study_program: Optional[str] = None
     university_id: int
     university_name: str = None
-    semester_id: int
-    semester_name: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     status_id: int
@@ -40,7 +38,6 @@ class CaseCreate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     university_id: Optional[int] = None
-    semester_id: Optional[int] = None
     status_id: Optional[int] = None
 
 

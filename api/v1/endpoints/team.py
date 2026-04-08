@@ -42,7 +42,7 @@ async def get_team(
     return team
 
 
-@router.patch('/{team_id', response_model=TeamResponse)
+@router.patch('/{team_id}', response_model=TeamResponse)
 async def update_team(
         team_id: str,
         schema: TeamUpdate,
@@ -58,7 +58,7 @@ async def update_team(
     return team
 
 
-@router.delete('/{team_id')
+@router.delete('/{team_id}')
 async def delete_team(
         team_id: str,
         service: TeamService = Depends(get_team_service)

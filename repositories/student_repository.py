@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from models import Students
+from models import Students, Universities
 
 
 class StudentRepository:
@@ -25,6 +25,15 @@ class StudentRepository:
         )
 
         return student.scalar_one_or_none()
+
+
+    async def verify_university(self, university_id: int) -> bool:
+        university = await self.db.execute(
+            select(Universities)
+            .where(Universities.id == university_id)
+        )
+
+        return university.scalar_one_or_none() is not None
 
 
     async def create_student(self, student: Students) -> Students:

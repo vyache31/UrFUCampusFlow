@@ -1,13 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from models import Cases, CaseStatuses, DifficultyLevels, Universities, Users, Semesters
+from models import Cases, CaseStatuses, DifficultyLevels, Universities, Users
 
 
 CASE_LOAD_OPTIONS = (
     selectinload(Cases.difficulty_level),
     selectinload(Cases.university),
-    selectinload(Cases.semester),
     selectinload(Cases.status),
     selectinload(Cases.creator),
 )
@@ -138,12 +137,3 @@ class CaseRepository:
         )
 
         return level.scalar_one_or_none() is not None
-
-
-    async def verify_semester(self, semester_id: int) -> bool:
-        semester = await self.db.execute(
-            select(Semesters)
-            .where(Semesters.id == semester_id)
-        )
-
-        return semester.scalar_one_or_none() is not None

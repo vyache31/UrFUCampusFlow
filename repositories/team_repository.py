@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from models.teams import Teams
+from models.teams import Teams, Universities
 
 
 class TeamRepository:
@@ -17,6 +17,13 @@ class TeamRepository:
         result = await self.db.execute(select(Teams).where(Teams.name == team_name))
 
         return result.scalar_one_or_none()
+
+    async def verify_university(self, university_id: int) -> bool:
+        result = await self.db.execute(
+            select(Universities).where(Universities.id == university_id)
+        )
+
+        return result.scalar_one_or_none() is not None
 
     async def get_all(self, limit: int = 10): # ограничил на время, чтоб все записи не тянуть каждый раз
         result = await self.db.execute(select(Teams).limit(limit))

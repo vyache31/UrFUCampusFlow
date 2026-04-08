@@ -28,13 +28,11 @@ class Meetings(Base):
     __tablename__ = 'meetings'
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(ForeignKey('cases.id'))
-    team_id: Mapped[str] = mapped_column(ForeignKey('teams.id'))
+    team_case_history_id: Mapped[str] = mapped_column(ForeignKey('team_case_history.id'))
     title: Mapped[str]
     date_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     outlook_event_id: Mapped[str]
     event_link: Mapped[str]
     notes: Mapped[str]
 
-    team = relationship('Teams', back_populates='meetings')
-    case = relationship('Cases', back_populates='meetings')
+    team_case_history = relationship('TeamCaseHistory', back_populates='meetings')
