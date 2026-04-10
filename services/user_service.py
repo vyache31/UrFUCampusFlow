@@ -48,10 +48,10 @@ class UserService:
         if schema.password:
             user.password_hash = schema.password
         if schema.role_id:
-            role = await self.rep.get_role_by_id(schema.role_id)
-            if not role:
-                raise ValueError("Role not found")
-            user.role_id = schema.role_id
+             role = await self.rep.get_role_by_id(schema.role_id) ## переделать, убрав в role_service
+             if not role:
+                 raise ValueError("Role not found")
+             user.role_id = schema.role_id
         user.updated_at = datetime.now(UTC)
 
         await self.rep.update()
