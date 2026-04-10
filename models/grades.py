@@ -20,7 +20,7 @@ class Grades(Base):
 class Iterations(Base):
     __tablename__ = 'iterations'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     iteration_name: Mapped[str]
 
     grades = relationship('Grades', back_populates='iteration')

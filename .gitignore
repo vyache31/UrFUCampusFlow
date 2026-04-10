@@ -44,3 +44,5 @@ dist/
 
 # Docker related
 docker-data/
+
+uv.lock
