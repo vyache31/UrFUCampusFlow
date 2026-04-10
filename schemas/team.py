@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 class TeamCreate(BaseModel):
     name: str
+    description: Optional[str]
+    notes: Optional[str]
     university_id: int
     status: str
 
