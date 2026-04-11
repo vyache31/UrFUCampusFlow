@@ -13,6 +13,8 @@ class TeamCreate(BaseModel):
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
+    notes: Optional[str] = None
     university_id: Optional[int] = None
     status: Optional[str] = None
 
@@ -20,6 +22,8 @@ class TeamUpdate(BaseModel):
 class TeamResponse(BaseModel):
     id: str
     name: str
+    description: Optional[str]
+    notes: Optional[str]
     university_id: int
     status: str
     created_at: datetime
