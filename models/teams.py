@@ -86,7 +86,7 @@ class Semesters(Base):
 class Universities(Base):
     __tablename__ = 'university_info'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     uni_name: Mapped[str]
     contact_email: Mapped[str]
 
