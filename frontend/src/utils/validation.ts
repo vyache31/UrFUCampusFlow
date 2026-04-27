@@ -10,6 +10,7 @@ export interface FieldValidation {
   [key: string]: ValidationRule;
 }
 
+// Валидация для кейсов
 export const caseValidationRules: FieldValidation = {
   title: {
     required: true,
@@ -65,6 +66,22 @@ export const caseValidationRules: FieldValidation = {
   }
 };
 
+// Валидация для логина
+export const loginValidationRules: FieldValidation = {
+  login: {
+    required: true,
+    minLength: 3,
+    maxLength: 50,
+    errorMessage: 'Логин должен быть от 3 до 50 символов'
+  },
+  password: {
+    required: true,
+    minLength: 4,
+    maxLength: 50,
+    errorMessage: 'Пароль должен быть от 4 до 50 символов'
+  }
+};
+
 export const validateField = (value: string, rules: ValidationRule): string | null => {
   if (rules.required && !value.trim()) {
     return 'Поле обязательно для заполнения';
@@ -87,6 +104,27 @@ export const validateForm = (formData: Record<string, string>): { isValid: boole
 
   for (const [field, value] of Object.entries(formData)) {
     const rules = caseValidationRules[field];
+    if (rules) {
+      const error = validateField(value, rules);
+      if (error) {
+        errors[field] = error;
+        isValid = false;
+      }
+    }
+  }
+
+  return { isValid, errors };
+};
+
+export const validateFormWithRules = (
+  formData: Record<string, string>, 
+  validationRules: FieldValidation
+): { isValid: boolean; errors: Record<string, string> } => {
+  const errors: Record<string, string> = {};
+  let isValid = true;
+
+  for (const [field, value] of Object.entries(formData)) {
+    const rules = validationRules[field];
     if (rules) {
       const error = validateField(value, rules);
       if (error) {
