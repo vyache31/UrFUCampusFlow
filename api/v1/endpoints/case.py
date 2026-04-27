@@ -22,7 +22,7 @@ async def get_all_cases(
     return await service.get_all_cases(limit=limit)
 
 
-@router.post('/', response_model=CaseResponse, status_code=201)
+@router.post('/', response_model=CaseResponse, status_code=200)
 async def create_case(
         schema: CaseCreate,
         service: CaseService = Depends(get_case_service)
