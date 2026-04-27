@@ -15,10 +15,27 @@
   font-weight: 700;
   color: #202024;
   padding: 0;
+  transition: color 0.2s ease;
+}
+
+.status-selector:hover {
+  color: #A5A5B0;
+}
+
+.status-selector:hover svg path {
+  stroke: #A5A5B0;  /* ← ДОБАВИТЬ: меняем цвет стрелки */
+}
+
+.status-selector:active {
+  color: #F9E27D;
+}
+
+.status-selector:active svg path {
+  stroke: #F9E27D;  /* ← ДОБАВИТЬ: меняем цвет стрелки */
 }
 
 .status-selector svg {
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, stroke 0.2s ease;  /* ← ДОБАВИТЬ stroke */
 }
 
 .status-dropdown.open .status-selector svg {
@@ -51,11 +68,16 @@
   font-weight: 700;
   color: #202024;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .status-item:hover {
   background: #F4F4F4;
+  color: #A5A5B0;
+}
+
+.status-item:active {
+  color: #F9E27D;
 }
 
 /* Semester Dropdown */
@@ -77,10 +99,27 @@
   color: #202024;
   border-radius: 40px;
   padding: 0;
+  transition: color 0.2s ease;
+}
+
+.semester-selector:hover {
+  color: #A5A5B0;
+}
+
+.semester-selector:hover svg path {
+  stroke: #A5A5B0;  /* ← ДОБАВИТЬ: меняем цвет стрелки */
+}
+
+.semester-selector:active {
+  color: #F9E27D;
+}
+
+.semester-selector:active svg path {
+  stroke: #F9E27D;  /* ← ДОБАВИТЬ: меняем цвет стрелки */
 }
 
 .semester-selector svg {
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, stroke 0.2s ease;  /* ← ДОБАВИТЬ stroke */
 }
 
 .semester-dropdown.open .semester-selector svg {
@@ -113,12 +152,22 @@
   justify-content: space-between;
   padding: 10px 0;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.semester-item:hover {
+  opacity: 0.7;
+}
+
+.semester-item:active {
+  opacity: 0.5;
 }
 
 .semester-item span {
   font-size: 16px;
   font-weight: 500;
   color: #202024;
+  transition: color 0.2s ease;
 }
 
 .semester-item .custom-checkbox {
@@ -140,6 +189,16 @@
   transition: opacity 0.2s ease;
 }
 
+/* Hover эффект для чекбокса */
+.semester-item:hover .custom-checkbox {
+  border-color: #A5A5B0;
+  background: #F4F4F4;
+}
+
+.semester-item:hover .custom-checkbox svg {
+  opacity: 0.3;
+}
+
 .semester-item.selected .custom-checkbox {
   background: #D0DFB9;
   border: none;
@@ -147,6 +206,11 @@
 
 .semester-item.selected .custom-checkbox svg {
   opacity: 1;
+}
+
+/* Hover для выбранного состояния */
+.semester-item.selected:hover .custom-checkbox {
+  background: #C5D5A8;
 }
 
 .semester-menu-buttons {
@@ -180,12 +244,20 @@
   color: #202024;
 }
 
+.semester-reset:active {
+  color: #F9E27D;
+}
+
 .semester-apply {
   color: #4E85FC;
 }
 
 .semester-apply:hover {
   color: #3563C6;
+}
+
+.semester-apply:active {
+  color: #F9E27D;
 }
 
 @media (max-width: 1200px) {

@@ -37,6 +37,17 @@
   fill: #FFFFFF;
 }
 
+.card-action-btn.delete:active {
+  background: transparent;
+  color: #A5A5B0;
+  outline: 1px solid #A5A5B0;
+  outline-offset: -1px;
+}
+
+.card-action-btn.delete:active svg path {
+  fill: #A5A5B0;
+}
+
 /* Кнопка Отметить активным (синяя) */
 .card-action-btn.mark {
   background: #4E85FC;
@@ -51,6 +62,17 @@
   background: #3563C6;
 }
 
+.card-action-btn.mark:active {
+  background: transparent;
+  color: #3563C6;
+  outline: 1px solid #3563C6;
+  outline-offset: -1px;
+}
+
+.card-action-btn.mark:active svg path {
+  fill: #3563C6;
+}
+
 /* Кнопка Создать кейс (синяя, всегда видна) */
 .card-action-btn.create {
   background: #4E85FC;
@@ -63,4 +85,15 @@
 
 .card-action-btn.create:hover {
   background: #3563C6;
+}
+
+.card-action-btn.create:active {
+  background: transparent;
+  color: #3563C6;
+  outline: 1px solid #3563C6;
+  outline-offset: -1px;
+}
+
+.card-action-btn.create:active svg path {
+  fill: #3563C6;
 }
