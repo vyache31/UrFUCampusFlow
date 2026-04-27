@@ -191,10 +191,27 @@
   font-size: 16px;
   font-weight: 500;
   color: #202024;
+  transition: color 0.2s ease;
+}
+
+.comments-btn svg path {
+  transition: fill 0.2s ease;
 }
 
 .comments-btn:hover {
   color: #A5A5B0;
+}
+
+.comments-btn:hover svg path {
+  fill: #A5A5B0;
+}
+
+.comments-btn:active {
+  color: #F9E27D;
+}
+
+.comments-btn:active svg path {
+  fill: #F9E27D;
 }
 
 /* Реакции */
