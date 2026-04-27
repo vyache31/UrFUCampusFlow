@@ -3,8 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon } from '../../components/common/Icons/Icons';
+import AddMemberModal from '../../components/Modals/AddMemberModal';
+import AddCaseModal from '../../components/Modals/AddCaseModal';
 import { validateFormWithRules, teamValidationRules } from '../../utils/validation';
 import './teamCreatePage.css';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  university: string;
+  group: string;
+}
+
+interface TeamCase {
+  id: string;
+  title: string;
+}
 
 const TeamCreatePage = () => {
   const navigate = useNavigate();
@@ -20,10 +35,14 @@ const TeamCreatePage = () => {
     status: 'Интервью'
   });
 
-  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
-  const [cases, setCases] = useState<string[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [teamCases, setTeamCases] = useState<TeamCase[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
 
+  // Лимиты для полей
   const fieldLimits: Record<string, number> = {
     name: 100,
     description: 2000,
@@ -57,6 +76,7 @@ const TeamCreatePage = () => {
     setTimeout(checkHeight, 100);
   };
 
+  // Настройка скролла
   useEffect(() => {
     setupScrollableEditable(nameRef.current, 53);
     setupScrollableEditable(descriptionRef.current, 250);
@@ -117,16 +137,26 @@ const TeamCreatePage = () => {
     });
   }, []);
 
-  const handleAddMember = () => {
-    const newMember = {
+  const handleAddMember = (member: { name: string; role: string; university: string; group: string }) => {
+    const newMember: TeamMember = {
       id: Date.now().toString(),
-      name: ''
+      ...member
     };
     setMembers([...members, newMember]);
   };
 
-  const handleAddCase = () => {
-    setCases([...cases, '']);
+  const handleAddCase = (caseId: string, caseTitle: string) => {
+    if (!teamCases.some(c => c.id === caseId)) {
+      setTeamCases([...teamCases, { id: caseId, title: caseTitle }]);
+    }
+  };
+
+  const handleRemoveMember = (id: string) => {
+    setMembers(members.filter(m => m.id !== id));
+  };
+
+  const handleRemoveCase = (id: string) => {
+    setTeamCases(teamCases.filter(c => c.id !== id));
   };
 
   const handleSave = () => {
@@ -149,7 +179,7 @@ const TeamCreatePage = () => {
     }
     
     setErrors({});
-    console.log('Создана новая команда:', { ...formData, members, cases });
+    console.log('Создана новая команда:', { ...formData, members, cases: teamCases });
     navigate('/teams');
   };
 
@@ -209,7 +239,7 @@ const TeamCreatePage = () => {
         <div className="form-field">
           <div className="field-header">
             <label className="form-label">Участники</label>
-            <button className="add-btn" onClick={handleAddMember}>
+            <button className="add-btn" onClick={() => setIsMemberModalOpen(true)}>
               <PlusIcon />
               <span>Добавить участника</span>
             </button>
@@ -218,17 +248,17 @@ const TeamCreatePage = () => {
             <div className="members-list">
               {members.map((member) => (
                 <div key={member.id} className="member-item">
-                  <input
-                    type="text"
-                    className="member-input"
-                    value={member.name}
-                    onChange={(e) => {
-                      setMembers(members.map(m => 
-                        m.id === member.id ? { ...m, name: e.target.value } : m
-                      ));
-                    }}
-                    placeholder="ФИО участника"
-                  />
+                  <div className="member-info">
+                    <span className="member-name">{member.name}</span>
+                    <span className="member-role">{member.role}</span>
+                    <span className="member-university">{member.university}, {member.group}</span>
+                  </div>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => handleRemoveMember(member.id)}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -254,20 +284,22 @@ const TeamCreatePage = () => {
         <div className="form-field">
           <div className="field-header">
             <label className="form-label">Кейсы</label>
-            <button className="add-btn" onClick={handleAddCase}>
+            <button className="add-btn" onClick={() => setIsCaseModalOpen(true)}>
               <PlusIcon />
               <span>Добавить кейс</span>
             </button>
           </div>
-          {cases.length > 0 && (
+          {teamCases.length > 0 && (
             <div className="cases-list">
-              {cases.map((_, index) => (
-                <div key={index} className="case-item">
-                  <input
-                    type="text"
-                    className="case-input"
-                    placeholder="Выберите кейс"
-                  />
+              {teamCases.map((teamCase) => (
+                <div key={teamCase.id} className="case-item">
+                  <span className="case-title">{teamCase.title}</span>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => handleRemoveCase(teamCase.id)}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -292,6 +324,19 @@ const TeamCreatePage = () => {
           {errors.status && <div className="error-message">{errors.status}</div>}
         </div>
       </div>
+
+      {/* Модалки */}
+      <AddMemberModal
+        isOpen={isMemberModalOpen}
+        onClose={() => setIsMemberModalOpen(false)}
+        onAdd={handleAddMember}
+      />
+      
+      <AddCaseModal
+        isOpen={isCaseModalOpen}
+        onClose={() => setIsCaseModalOpen(false)}
+        onAdd={handleAddCase}
+      />
     </div>
   );
 };

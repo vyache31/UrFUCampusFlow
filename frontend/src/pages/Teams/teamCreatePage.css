@@ -347,3 +347,59 @@
     align-items: flex-start;
   }
 }
+
+.member-item,
+.case-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  gap: 10px;
+}
+
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.member-name {
+  font-weight: 600;
+  color: #202024;
+  font-size: 14px;
+}
+
+.member-role,
+.member-university {
+  color: #A5A5B0;
+  font-size: 12px;
+}
+
+.case-title {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+}
+
+.remove-btn {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  color: #F63333;
+}
