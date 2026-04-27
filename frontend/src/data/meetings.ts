@@ -1,7 +1,7 @@
 export interface Meeting {
   id: string;
-  project: string;           // Полное название проекта
-  teamName: string;          // Полное название команды
+  project: string;
+  teamName: string;
   teamId: string;
   day: string;
   time: string;
@@ -42,7 +42,7 @@ export const testMeetings: Meeting[] = [
   }
 ];
 
-// Встречи на неделю (для разворачивания)
+// Встречи на неделю 
 export const weeklyMeetings: Meeting[] = [
   {
     id: '4',

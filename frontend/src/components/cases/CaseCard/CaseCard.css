@@ -223,7 +223,20 @@
 .reaction-btn.dislike.active {
   color: #F63333;
 }
+.reaction-btn.like.active {
+  color: #F63333;
+}
 
+.reaction-btn.like.active svg path {
+  fill: #F63333;
+}
+.reaction-btn.dislike.active {
+  color: #F63333;
+}
+
+.reaction-btn.dislike.active svg path {
+  fill: #F63333;
+}
 /* Адаптив */
 @media (max-width: 768px) {
   .accordion-header {

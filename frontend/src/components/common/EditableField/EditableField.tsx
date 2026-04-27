@@ -1,4 +1,3 @@
-// src/components/common/EditableField/EditableField.tsx
 import { useEffect, useRef, useCallback } from 'react';
 import './editableField.css';
 
@@ -21,7 +20,6 @@ const EditableField = ({
 }: EditableFieldProps) => {
   const divRef = useRef<HTMLDivElement>(null);
 
-  // Выносим checkHeight в useCallback, чтобы она не менялась при каждом рендере
   const checkHeight = useCallback(() => {
     if (!divRef.current) return;
     
@@ -39,7 +37,6 @@ const EditableField = ({
     }
   }, [maxHeight]);
 
-  // Устанавливаем начальное содержимое
   useEffect(() => {
     if (divRef.current && divRef.current.innerText !== value) {
       divRef.current.innerText = value;
@@ -47,7 +44,6 @@ const EditableField = ({
     }
   }, [value, checkHeight]);
 
-  // Настройка скролла при изменении содержимого
   useEffect(() => {
     const div = divRef.current;
     if (div) {
@@ -63,7 +59,6 @@ const EditableField = ({
     }
   }, [checkHeight]);
 
-  // Блокировка ввода при достижении лимита
   const handleBeforeInput = (e: React.FormEvent<HTMLDivElement>) => {
     if (!maxLength) return;
     const target = e.currentTarget;

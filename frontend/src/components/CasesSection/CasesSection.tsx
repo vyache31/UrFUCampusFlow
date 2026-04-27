@@ -5,10 +5,8 @@ import './casesSection.css';
 
 const CasesSection = () => {
   const navigate = useNavigate();
-  
-  // Берем первые 2 кейса для отображения на дашборде
   const dashboardCases = testCases.slice(0, 2);
-
+  
   const handleOpenFullCase = (caseId: string) => {
     navigate(`/cases/${caseId}`);
   };

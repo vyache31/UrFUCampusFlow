@@ -1,5 +1,3 @@
-// src/utils/validation.ts
-
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;
@@ -12,7 +10,6 @@ export interface FieldValidation {
   [key: string]: ValidationRule;
 }
 
-// Правила валидации для кейса
 export const caseValidationRules: FieldValidation = {
   title: {
     required: true,
@@ -68,7 +65,6 @@ export const caseValidationRules: FieldValidation = {
   }
 };
 
-// Функция валидации поля
 export const validateField = (value: string, rules: ValidationRule): string | null => {
   if (rules.required && !value.trim()) {
     return 'Поле обязательно для заполнения';
@@ -85,7 +81,6 @@ export const validateField = (value: string, rules: ValidationRule): string | nu
   return null;
 };
 
-// Функция валидации всей формы - ЭКСПОРТИРУЕМ её
 export const validateForm = (formData: Record<string, string>): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
   let isValid = true;

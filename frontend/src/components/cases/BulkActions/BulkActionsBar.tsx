@@ -11,7 +11,6 @@ interface BulkActionsBarProps {
 const BulkActionsBar = ({ selectedCount, onDelete, onMarkActive, onCreate }: BulkActionsBarProps) => {
   return (
     <div className="action-cards-buttons">
-      {/* Кнопки массовых действий появляются ТОЛЬКО когда выбраны кейсы */}
       {selectedCount > 0 && (
         <>
           <button className="card-action-btn delete" onClick={onDelete}>
@@ -25,7 +24,7 @@ const BulkActionsBar = ({ selectedCount, onDelete, onMarkActive, onCreate }: Bul
         </>
       )}
       
-      {/* Кнопка создания кейса - всегда видна (последняя) */}
+      {/* Кнопка создания кейса */}
       <button className="card-action-btn create" onClick={onCreate}>
         <CreateIcon />
         Создать кейс

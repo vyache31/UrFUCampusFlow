@@ -1,4 +1,3 @@
-// src/pages/Cases/CaseCreatePage.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
@@ -10,7 +9,6 @@ import './caseCreatePage.css';
 const CaseCreatePage = () => {
   const navigate = useNavigate();
   
-  // Refs для contentEditable элементов
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const customerOrgRef = useRef<HTMLDivElement>(null);
