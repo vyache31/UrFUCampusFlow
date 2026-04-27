@@ -158,3 +158,149 @@
     min-width: 100%;
   }
 }
+
+/* Контейнер для поиска */
+.search-container {
+  position: relative;
+  width: 546px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 25px;
+  padding: 14px 20px;
+  gap: 10px;
+  width: 100%;
+  height: 54px;
+  position: relative;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  width: 100%;
+  background: transparent;
+}
+
+.search-clear {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #A5A5B0;
+  padding: 5px;
+}
+
+.search-clear:hover {
+  color: #202024;
+}
+
+/* Выпадающий список подсказок */
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-radius: 25px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.search-item:last-child {
+  border-bottom: none;
+}
+
+.search-item:hover {
+  background: #F4F4F4;
+}
+
+.search-item-type {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #F4F4F4;
+  color: #A5A5B0;
+  white-space: nowrap;
+}
+
+.search-item-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Подсветка совпадений */
+.search-highlight {
+  background: #F9E27D;
+  color: #202024;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* Скролл для списка подсказок */
+.search-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-dropdown::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.search-dropdown::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+/* Адаптив */
+@media (max-width: 1200px) {
+  .search-container {
+    width: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    width: 100%;
+    margin-top: 10px;
+  }
+  
+  .search-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .search-item-title {
+    white-space: normal;
+  }
+}
