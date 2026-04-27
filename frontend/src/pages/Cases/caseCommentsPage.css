@@ -206,7 +206,6 @@
   margin-top: 40px;
 }
 
-/* ИСПРАВЛЕННЫЕ МЕДИА-ЗАПРОСЫ */
 @media (max-width: 1200px) {
   .comments-list,
   .new-comment-section {

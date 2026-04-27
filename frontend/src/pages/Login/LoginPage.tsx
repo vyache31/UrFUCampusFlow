@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogoIcon } from '../../components/common/Icons/Icons';
-import { validateFormWithRules, loginValidationRules } from '../../utils/validation';
 import './loginPage.css';
 
 const LoginPage = () => {
@@ -11,12 +10,30 @@ const LoginPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const validateField = (field: string, value: string): string => {
+    if (field === 'login') {
+      if (!value.trim()) {
+        return 'Введите логин';
+      }
+      if (value.trim().length < 3) {
+        return 'Логин должен быть не менее 3 символов';
+      }
+    }
+    if (field === 'password') {
+      if (!value.trim()) {
+        return 'Введите пароль';
+      }
+      if (value.trim().length < 4) {
+        return 'Пароль должен быть не менее 4 символов';
+      }
+    }
+    return '';
+  };
+
   const handleBlur = (field: string) => {
     setTouched(prev => ({ ...prev, [field]: true }));
-    
-    const formData = { login, password };
-    const { errors: validationErrors } = validateFormWithRules(formData, loginValidationRules);
-    setErrors(validationErrors);
+    const error = validateField(field, field === 'login' ? login : password);
+    setErrors(prev => ({ ...prev, [field]: error }));
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -24,12 +41,17 @@ const LoginPage = () => {
     
     setTouched({ login: true, password: true });
     
-    const formData = { login, password };
-    const { isValid, errors: validationErrors } = validateFormWithRules(formData, loginValidationRules);
+    const loginError = validateField('login', login);
+    const passwordError = validateField('password', password);
     
-    setErrors(validationErrors);
+    const newErrors = {
+      login: loginError,
+      password: passwordError
+    };
     
-    if (isValid) {
+    setErrors(newErrors);
+    
+    if (!loginError && !passwordError) {
       console.log('Login:', login);
       navigate('/');
     }

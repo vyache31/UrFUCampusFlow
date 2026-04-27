@@ -1,5 +1,4 @@
-// src/pages/Teams/TeamCreatePage.tsx
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
@@ -7,14 +6,12 @@ import { SaveIcon, PlusIcon } from '../../components/common/Icons/Icons';
 import { validateFormWithRules, teamValidationRules } from '../../utils/validation';
 import './teamCreatePage.css';
 
-interface TeamMember {
-  id: string;
-  name: string;
-  email?: string;
-}
-
 const TeamCreatePage = () => {
   const navigate = useNavigate();
+  
+  const nameRef = useRef<HTMLDivElement>(null);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const notesRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -22,20 +19,17 @@ const TeamCreatePage = () => {
     notes: '',
     status: 'Интервью'
   });
-  
-  const [members, setMembers] = useState<TeamMember[]>([]);
+
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([]);
   const [cases, setCases] = useState<string[]>([]);
-  
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-  
-  const nameRef = useRef<HTMLDivElement>(null);
-  const descriptionRef = useRef<HTMLDivElement>(null);
-  const notesRef = useRef<HTMLDivElement>(null);
 
-  const statusOptions = ['Интервью', 'Отказ', 'Работает над кейсом', 'Архив'];
+  const fieldLimits: Record<string, number> = {
+    name: 100,
+    description: 2000,
+    notes: 500
+  };
 
-  // Функция для ограничения высоты contenteditable элементов
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
     
@@ -64,59 +58,67 @@ const TeamCreatePage = () => {
   };
 
   useEffect(() => {
-    setupScrollableEditable(nameRef.current, 53.4);
+    setupScrollableEditable(nameRef.current, 53);
     setupScrollableEditable(descriptionRef.current, 250);
     setupScrollableEditable(notesRef.current, 250);
   }, []);
 
-  const validateField = (field: string, value: string): string => {
-    const rules = teamValidationRules[field];
-    if (!rules) return '';
+  const handleBeforeInput = (e: React.FormEvent<HTMLDivElement>, field: string) => {
+    const target = e.currentTarget;
+    const maxLength = fieldLimits[field];
+    if (!maxLength) return;
     
-    if (rules.required && !value.trim()) {
-      return 'Поле обязательно для заполнения';
+    const currentLength = target.innerText.length;
+    const inputEvent = e.nativeEvent as InputEvent;
+    const insertedText = inputEvent.data || '';
+    
+    if (currentLength + insertedText.length > maxLength) {
+      e.preventDefault();
+      setErrors(prev => ({ ...prev, [field]: `Максимум ${maxLength} символов` }));
+    } else if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    if (rules.minLength && value.trim().length > 0 && value.trim().length < rules.minLength) {
-      return rules.errorMessage;
-    }
-    if (rules.maxLength && value.trim().length > rules.maxLength) {
-      return rules.errorMessage;
-    }
-    return '';
   };
 
-  const handleBlur = (field: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
-    const error = validateField(field, formData[field as keyof typeof formData]);
-    setErrors(prev => ({ ...prev, [field]: error }));
-  };
-
-  const handleContentChange = (field: string, value: string) => {
+  const handleContentChange = (field: string, element: HTMLDivElement | null) => {
+    if (!element) return;
+    const value = element.innerText;
     setFormData(prev => ({ ...prev, [field]: value }));
-    const element = document.querySelector(`[data-field="${field}"]`);
-    if (element && value.trim() !== '') {
-      element.classList.remove('empty');
-    } else if (element && value.trim() === '') {
-      element.classList.add('empty');
-    }
-    
-    // Валидация при изменении
-    if (touched[field]) {
-      const error = validateField(field, value);
-      setErrors(prev => ({ ...prev, [field]: error }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
   const handleStatusChange = (status: string) => {
     setFormData(prev => ({ ...prev, status }));
-    if (touched.status) {
-      const error = validateField('status', status);
-      setErrors(prev => ({ ...prev, status: error }));
+    if (errors.status) {
+      setErrors(prev => ({ ...prev, status: '' }));
     }
   };
 
+  const updateEmptyClass = (element: HTMLDivElement | null) => {
+    if (!element) return;
+    const isEmpty = element.innerText.trim() === '';
+    if (isEmpty) {
+      element.classList.add('empty');
+    } else {
+      element.classList.remove('empty');
+    }
+  };
+
+  useEffect(() => {
+    const elements = [nameRef, descriptionRef, notesRef];
+    elements.forEach(ref => {
+      const el = ref.current;
+      if (el) {
+        el.addEventListener('input', () => updateEmptyClass(el));
+        updateEmptyClass(el);
+      }
+    });
+  }, []);
+
   const handleAddMember = () => {
-    const newMember: TeamMember = {
+    const newMember = {
       id: Date.now().toString(),
       name: ''
     };
@@ -128,9 +130,6 @@ const TeamCreatePage = () => {
   };
 
   const handleSave = () => {
-    // Отмечаем все поля как touched
-    setTouched({ name: true, description: true, status: true });
-    
     const formDataToValidate = {
       name: formData.name,
       description: formData.description,
@@ -138,12 +137,20 @@ const TeamCreatePage = () => {
     };
     
     const { isValid, errors: validationErrors } = validateFormWithRules(formDataToValidate, teamValidationRules);
-    setErrors(validationErrors);
     
-    if (isValid) {
-      console.log('Создана новая команда:', { ...formData, members, cases });
-      navigate('/teams');
+    if (!isValid) {
+      setErrors(validationErrors);
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
     }
+    
+    setErrors({});
+    console.log('Создана новая команда:', { ...formData, members, cases });
+    navigate('/teams');
   };
 
   const breadcrumbItems = [
@@ -151,6 +158,8 @@ const TeamCreatePage = () => {
     { label: 'Все команды', path: '/teams' },
     { label: 'Создание команды' },
   ];
+
+  const statusOptions = ['Интервью', 'Отказ', 'Работает над кейсом', 'Архив'];
 
   return (
     <div className="page-wrapper team-create-page">
@@ -167,41 +176,33 @@ const TeamCreatePage = () => {
 
       <div className="create-form">
         {/* Название команды */}
-        <div className="form-field">
+        <div className="form-field" data-field="name">
           <label className="form-label">Название команды</label>
           <div
             ref={nameRef}
-            className={`editable-box empty ${touched.name && errors.name ? 'error' : ''}`}
+            className="editable-box empty"
             contentEditable
             suppressContentEditableWarning
-            onInput={(e) => handleContentChange('name', e.currentTarget.innerText)}
-            onBlur={() => handleBlur('name')}
+            onBeforeInput={(e) => handleBeforeInput(e, 'name')}
+            onInput={() => handleContentChange('name', nameRef.current)}
             data-placeholder="Введите название команды"
-            data-field="name"
-          >
-          </div>
-          {touched.name && errors.name && (
-            <span className="error-message">{errors.name}</span>
-          )}
+          />
+          {errors.name && <div className="error-message">{errors.name}</div>}
         </div>
 
         {/* Описание команды */}
-        <div className="form-field">
+        <div className="form-field" data-field="description">
           <label className="form-label">Описание команды</label>
           <div
             ref={descriptionRef}
-            className={`editable-box description-box empty ${touched.description && errors.description ? 'error' : ''}`}
+            className="editable-box description-box empty"
             contentEditable
             suppressContentEditableWarning
-            onInput={(e) => handleContentChange('description', e.currentTarget.innerText)}
-            onBlur={() => handleBlur('description')}
+            onBeforeInput={(e) => handleBeforeInput(e, 'description')}
+            onInput={() => handleContentChange('description', descriptionRef.current)}
             data-placeholder="Введите описание команды"
-            data-field="description"
-          >
-          </div>
-          {touched.description && errors.description && (
-            <span className="error-message">{errors.description}</span>
-          )}
+          />
+          {errors.description && <div className="error-message">{errors.description}</div>}
         </div>
 
         {/* Участники */}
@@ -235,18 +236,18 @@ const TeamCreatePage = () => {
         </div>
 
         {/* Заметки */}
-        <div className="form-field">
+        <div className="form-field" data-field="notes">
           <label className="form-label">Заметки</label>
           <div
             ref={notesRef}
             className="editable-box notes-box empty"
             contentEditable
             suppressContentEditableWarning
-            onInput={(e) => handleContentChange('notes', e.currentTarget.innerText)}
+            onBeforeInput={(e) => handleBeforeInput(e, 'notes')}
+            onInput={() => handleContentChange('notes', notesRef.current)}
             data-placeholder="Введите заметки"
-            data-field="notes"
-          >
-          </div>
+          />
+          {errors.notes && <div className="error-message">{errors.notes}</div>}
         </div>
 
         {/* Кейсы */}
@@ -274,7 +275,7 @@ const TeamCreatePage = () => {
         </div>
 
         {/* Состояние команды */}
-        <div className="form-field">
+        <div className="form-field" data-field="status">
           <label className="form-label">Состояние команды</label>
           <div className="status-options">
             {statusOptions.map((option) => (
@@ -288,9 +289,7 @@ const TeamCreatePage = () => {
               </button>
             ))}
           </div>
-          {touched.status && errors.status && (
-            <span className="error-message">{errors.status}</span>
-          )}
+          {errors.status && <div className="error-message">{errors.status}</div>}
         </div>
       </div>
     </div>

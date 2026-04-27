@@ -5,7 +5,6 @@
   padding-bottom: 60px;
 }
 
-/* Header with title and buttons on one line */
 .edit-header {
   display: flex;
   align-items: center;
@@ -39,7 +38,7 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'Montserrat', sans-serif;  /* ← ДОБАВИТЬ */
+  font-family: 'Montserrat', sans-serif;
 }
 
 .save-btn {
@@ -115,18 +114,17 @@
 }
 
 /* Edit Form */
-/* Edit Form */
 .edit-form {
   width: 886px;
   margin: 60px auto 60px auto;
   background: white;
   border-radius: 40px;
-  padding: 30px 40px;  /* сверху 30, справа 40, снизу 60, слева 40 */
+  padding: 30px 40px; 
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
-/* Картинка на месте серого фона */
+
 .case-edit-page {
   min-height: 100vh;
   display: flex;
@@ -134,7 +132,7 @@
   padding-bottom: 60px;
   background-image: url('/images/case-bg.png');
   background-size: auto;
-  background-position: top 262px center;  /* Отступ от верха 150px (заголовок ~120px + 30px) */
+  background-position: top 262px center; 
   background-repeat: no-repeat;
   background-color: #FFFFFF;
 }
@@ -245,12 +243,10 @@
   border-radius: 25px;
 }
 
-/* Критерии оценки - больше высоты */
 .criteria-box {
   min-height: 150px;
 }
 
-/* Not found */
 .not-found {
   background: #fff;
   border-radius: 40px;
