@@ -18,13 +18,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0px;  /* ИЗМЕНЕНО: было 20px, стало 0 */
+  margin-bottom: 0px;
   flex-wrap: wrap;
   gap: 20px;
 }
 
 .case-title-section {
-  margin-bottom: 90px;  /* ИЗМЕНЕНО: было 30px, стало 90px */
+  margin-bottom: 90px;
 }
 
 .case-title {
@@ -84,6 +84,7 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+  padding-bottom: 60px;
 }
 
 .new-comment-label {
@@ -205,6 +206,7 @@
   margin-top: 40px;
 }
 
+/* ИСПРАВЛЕННЫЕ МЕДИА-ЗАПРОСЫ */
 @media (max-width: 1200px) {
   .comments-list,
   .new-comment-section {

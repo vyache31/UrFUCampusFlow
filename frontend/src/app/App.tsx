@@ -6,6 +6,7 @@ import CaseEditPage from '../pages/Cases/CaseEditPage';
 import CaseCreatePage from '../pages/Cases/CaseCreatePage';
 import CaseCommentsPage from '../pages/Cases/CaseCommentsPage';
 import ReportPage from '../pages/Report/ReportPage';
+import TeamsPage from '../pages/Teams/TeamsPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/cases/create" element={<CaseCreatePage />} />
         <Route path="/cases/:id/comments" element={<CaseCommentsPage />} />
         <Route path="/report" element={<ReportPage />} /> 
+        <Route path="/teams" element={<TeamsPage />} />
       </Routes>
     </BrowserRouter>
   );
