@@ -1,3 +1,4 @@
+// src/utils/validation.ts
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;
@@ -10,7 +11,7 @@ export interface FieldValidation {
   [key: string]: ValidationRule;
 }
 
-// Валидация для кейсов
+// Валидация для кейсов (существующая)
 export const caseValidationRules: FieldValidation = {
   title: {
     required: true,
@@ -66,6 +67,26 @@ export const caseValidationRules: FieldValidation = {
   }
 };
 
+// Новая валидация для команды
+export const teamValidationRules: FieldValidation = {
+  name: {
+    required: true,
+    minLength: 3,
+    maxLength: 100,
+    errorMessage: 'Название команды должно быть от 3 до 100 символов'
+  },
+  description: {
+    required: true,
+    minLength: 10,
+    maxLength: 2000,
+    errorMessage: 'Описание команды должно быть от 10 до 2000 символов'
+  },
+  status: {
+    required: true,
+    errorMessage: 'Выберите статус команды'
+  }
+};
+
 // Валидация для логина
 export const loginValidationRules: FieldValidation = {
   login: {
@@ -82,6 +103,7 @@ export const loginValidationRules: FieldValidation = {
   }
 };
 
+// Существующая функция validateField (не меняем)
 export const validateField = (value: string, rules: ValidationRule): string | null => {
   if (rules.required && !value.trim()) {
     return 'Поле обязательно для заполнения';
@@ -98,6 +120,7 @@ export const validateField = (value: string, rules: ValidationRule): string | nu
   return null;
 };
 
+// Существующая validateForm (для кейсов) - не трогаем
 export const validateForm = (formData: Record<string, string>): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {};
   let isValid = true;
@@ -116,6 +139,7 @@ export const validateForm = (formData: Record<string, string>): { isValid: boole
   return { isValid, errors };
 };
 
+// Функция для валидации с произвольными правилами
 export const validateFormWithRules = (
   formData: Record<string, string>, 
   validationRules: FieldValidation

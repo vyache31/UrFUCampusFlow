@@ -8,6 +8,7 @@ import CaseCommentsPage from '../pages/Cases/CaseCommentsPage';
 import ReportPage from '../pages/Report/ReportPage';
 import TeamsPage from '../pages/Teams/TeamsPage';
 import LoginPage from '../pages/Login/LoginPage';
+import TeamCreatePage from '../pages/Teams/TeamCreatePage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/cases/:id/comments" element={<CaseCommentsPage />} />
         <Route path="/report" element={<ReportPage />} /> 
         <Route path="/teams" element={<TeamsPage />} />
+        <Route path="/teams/create" element={<TeamCreatePage />} />
       </Routes>
     </BrowserRouter>
   );
