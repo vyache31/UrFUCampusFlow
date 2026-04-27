@@ -1,12 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LogoIcon, SearchIcon } from '../Icons/Icons';
 import './header.css';
 
 const Header = () => {
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  const handleLogout = () => {
+    setIsDropdownOpen(false);
+    navigate('/login');
+  };
+
+  const handleConnectOutlook = () => {
+    setIsDropdownOpen(false);
+    console.log('Связать с Outlook');
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -22,7 +34,7 @@ const Header = () => {
   return (
     <header className="header">
       <div className="header-left">
-        <div className="logo">
+        <div className="logo" onClick={() => navigate('/')}>
           <LogoIcon />
         </div>
         <div className="search-bar">
@@ -35,8 +47,12 @@ const Header = () => {
           Данил Колбасенко
         </div>
         <div className={`user-dropdown ${isDropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
-          <button className="dropdown-item">Связать с Outlook</button>
-          <button className="dropdown-item">Выйти</button>
+          <button className="dropdown-item" onClick={handleConnectOutlook}>
+            Связать с Outlook
+          </button>
+          <button className="dropdown-item" onClick={handleLogout}>
+            Выйти
+          </button>
         </div>
       </div>
     </header>

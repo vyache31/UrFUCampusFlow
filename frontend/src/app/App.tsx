@@ -7,12 +7,14 @@ import CaseCreatePage from '../pages/Cases/CaseCreatePage';
 import CaseCommentsPage from '../pages/Cases/CaseCommentsPage';
 import ReportPage from '../pages/Report/ReportPage';
 import TeamsPage from '../pages/Teams/TeamsPage';
+import LoginPage from '../pages/Login/LoginPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/cases" element={<CasesPage />} />
         <Route path="/cases/:id" element={<CaseViewPage />} />
         <Route path="/cases/:id/edit" element={<CaseEditPage />} />
