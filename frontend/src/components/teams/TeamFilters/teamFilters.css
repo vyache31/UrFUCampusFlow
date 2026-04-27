@@ -8,17 +8,34 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  background: #fff;
+  background: transparent;
   border: none;
   font-family: 'Montserrat', sans-serif;
   font-size: 40px;
   font-weight: 700;
   color: #202024;
   padding: 0;
+  transition: color 0.2s ease;
+}
+
+.team-status-selector:hover {
+  color: #A5A5B0;
+}
+
+.team-status-selector:hover svg path {
+  stroke: #A5A5B0;
+}
+
+.team-status-selector:active {
+  color: #F9E27D;  
+}
+
+.team-status-selector:active svg path {
+  stroke: #F9E27D;
 }
 
 .team-status-selector svg {
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, stroke 0.2s ease;
 }
 
 .team-status-dropdown.open .team-status-selector svg {
@@ -32,6 +49,7 @@
   width: 550px;
   background: #fff;
   border-radius: 25px;
+  padding: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   opacity: 0;
   visibility: hidden;
@@ -50,11 +68,16 @@
   font-weight: 700;
   color: #202024;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .team-status-item:hover {
   background: #F4F4F4;
+  color: #A5A5B0;
+}
+
+.team-status-item:active {
+  color: #F9E27D;
 }
 
 @media (max-width: 1200px) {
