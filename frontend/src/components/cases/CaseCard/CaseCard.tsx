@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ReactionIcon, 
   ArrowDownIcon, 
@@ -11,6 +12,7 @@ import './caseCard.css';
 
 interface CaseCardProps {
   type: 'case' | 'team';
+  id?: string;
   title: string;
   description: string;
   status?: string;
@@ -28,6 +30,7 @@ interface CaseCardProps {
 
 const CaseCard = ({
   type,
+  id,
   title,
   description,
   status = "На оценке",
@@ -42,6 +45,7 @@ const CaseCard = ({
   isSelected = false,
   onSelect
 }: CaseCardProps) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [likes, setLikes] = useState(initialLikes);
   const [dislikes, setDislikes] = useState(initialDislikes);
@@ -52,6 +56,14 @@ const CaseCard = ({
   
   const { displayText: displayTitle, fullText: fullTitle } = truncateCardTitle(title);
   const displayDescription = isOpen ? description : truncateCardDescription(description);
+
+  const handleOpenFull = () => {
+    if (onOpenFull) {
+      onOpenFull();
+    } else if (id) {
+      navigate(`/cases/${id}`);
+    }
+  };
 
   const handleLike = () => {
     if (liked) {
@@ -113,22 +125,59 @@ const CaseCard = ({
               {displayTitle}
             </span>
           </div>
-          {type === 'case' && (
-            <div className="accordion-header-center">
-              <div className="status-dot"></div>
-              <span className="status-text">{status}</span>
-            </div>
-          )}
-          <div 
+          <button 
             className="accordion-open-btn" 
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              onOpenFull?.(); 
+            onClick={handleOpenFull}
+            style={{
+              padding: '10px 20px',
+              background: '#F9E27D',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '16px',
+              fontWeight: '400',
+              whiteSpace: 'nowrap',
+              fontFamily: 'Montserrat, sans-serif',
+              border: 'none',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#F6CF22';
+              e.currentTarget.style.outline = '1px solid #F6CF22';
+              e.currentTarget.style.outlineOffset = '-1px';
+              
+              const svg = e.currentTarget.querySelector('svg');
+              if (svg) {
+                svg.style.filter = 'invert(85%) sepia(51%) saturate(846%) hue-rotate(1deg) brightness(100%) contrast(98%)';
+              }
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.background = '#F9E27D';
+              e.currentTarget.style.color = '#202024';
+              e.currentTarget.style.outline = '';
+              
+              const svg = e.currentTarget.querySelector('svg');
+              if (svg) {
+                svg.style.filter = '';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#F9E27D';
+              e.currentTarget.style.color = '#202024';
+              e.currentTarget.style.outline = '';
+              
+              const svg = e.currentTarget.querySelector('svg');
+              if (svg) {
+                svg.style.filter = '';
+              }
             }}
           >
             Открыть полностью
             <OpenFullIcon />
-          </div>
+          </button>
         </div>
         {isOpen && (
           <div className="accordion-body">

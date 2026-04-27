@@ -33,10 +33,21 @@ const TeamCard = ({
 
   const getStatusColor = () => {
     return '#C5B4E2';
-    };
+  };
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onSelect?.(!isSelected);
+  };
+
+  const handleIconColorChange = (e: React.MouseEvent<HTMLDivElement>, isActive: boolean) => {
+    const svg = e.currentTarget.querySelector('svg');
+    if (svg) {
+      if (isActive) {
+        svg.style.filter = 'invert(85%) sepia(51%) saturate(846%) hue-rotate(1deg) brightness(100%) contrast(98%)';
+      } else {
+        svg.style.filter = '';
+      }
+    }
   };
 
   return (
@@ -70,6 +81,43 @@ const TeamCard = ({
             onClick={(e) => { 
               e.stopPropagation(); 
               onOpenFull?.(id); 
+            }}
+            onMouseDown={(e) => {
+              const target = e.currentTarget;
+              target.style.background = 'transparent';
+              target.style.color = '#F6CF22';
+              target.style.outline = '1px solid #F6CF22';
+              target.style.outlineOffset = '-1px';
+              handleIconColorChange(e, true);
+            }}
+            onMouseUp={(e) => {
+              const target = e.currentTarget;
+              target.style.background = '#F9E27D';
+              target.style.color = '#202024';
+              target.style.outline = '';
+              handleIconColorChange(e, false);
+            }}
+            onMouseLeave={(e) => {
+              const target = e.currentTarget;
+              target.style.background = '#F9E27D';
+              target.style.color = '#202024';
+              target.style.outline = '';
+              handleIconColorChange(e, false);
+            }}
+            style={{
+              padding: '10px 20px',
+              background: '#F9E27D',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '16px',
+              fontWeight: '400',
+              whiteSpace: 'nowrap',
+              fontFamily: 'Montserrat, sans-serif',
+              border: 'none',
+              transition: 'all 0.2s ease'
             }}
           >
             Открыть полностью
