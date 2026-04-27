@@ -1,0 +1,66 @@
+.action-cards-buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.card-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+/* Кнопка Удалить (серая) */
+.card-action-btn.delete {
+  background: #F4F4F4;
+  color: #202024;
+}
+
+.card-action-btn.delete svg path {
+  fill: #202024;
+}
+
+.card-action-btn.delete:hover {
+  background: #A5A5B0;
+  color: #FFFFFF;
+}
+
+.card-action-btn.delete:hover svg path {
+  fill: #FFFFFF;
+}
+
+/* Кнопка Отметить активным (синяя) */
+.card-action-btn.mark {
+  background: #4E85FC;
+  color: #FFFFFF;
+}
+
+.card-action-btn.mark svg path {
+  fill: #FFFFFF;
+}
+
+.card-action-btn.mark:hover {
+  background: #3563C6;
+}
+
+/* Кнопка Создать кейс (синяя, всегда видна) */
+.card-action-btn.create {
+  background: #4E85FC;
+  color: #FFFFFF;
+}
+
+.card-action-btn.create svg path {
+  fill: #FFFFFF;
+}
+
+.card-action-btn.create:hover {
+  background: #3563C6;
+}

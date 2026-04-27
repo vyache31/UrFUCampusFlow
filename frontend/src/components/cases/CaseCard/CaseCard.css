@@ -1,0 +1,242 @@
+/* Наследуем шрифт от body */
+.accordion-header,
+.accordion-title,
+.status-text,
+.accordion-open-btn,
+.accordion-description,
+.comments-btn,
+.reaction-btn {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Карточка целиком */
+.accordion-item {
+  margin-bottom: 10px;
+}
+
+.accordion-card {
+  background: #fff;
+  border-radius: 40px;
+  overflow: hidden;
+}
+
+/* Шапка карточки */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30px 43px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  gap: 20px;
+}
+
+.accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== ЧЕКБОКС ===== */
+.case-checkbox {
+  width: 40px;
+  height: 40px;
+  padding: 9px 6px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.case-checkbox svg {
+  width: 24px;
+  height: 24px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* ПРИ НАВЕДЕНИИ - ПОКАЗЫВАЕМ ГАЛОЧКУ */
+.case-checkbox:hover svg {
+  opacity: 0.5;
+}
+
+/* ВЫБРАННОЕ СОСТОЯНИЕ */
+.case-checkbox.selected {
+  background: #D0DFB9;
+  border: none;
+}
+
+.case-checkbox.selected svg {
+  opacity: 1;
+}
+
+.case-checkbox.selected:hover svg {
+  opacity: 1;
+}
+
+/* Стрелка аккордеона */
+.accordion-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.accordion-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.accordion-item.open .accordion-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* Заголовок */
+.accordion-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #202024;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Статус */
+.accordion-header-center {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #C5B4E2;
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+}
+
+/* Желтая кнопка */
+.accordion-open-btn {
+  padding: 10px 20px;
+  background: #F9E27D;
+  border-radius: 25px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.accordion-open-btn:hover {
+  background: #F6CF22;
+}
+
+/* Тело карточки */
+.accordion-body {
+  display: none;
+  padding: 10px 43px 30px;
+}
+
+.accordion-item.open .accordion-body {
+  display: block;
+}
+
+.accordion-description {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Футер с комментариями */
+.accordion-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 60px;
+}
+
+.comments-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.comments-btn:hover {
+  color: #A5A5B0;
+}
+
+/* Реакции */
+.reactions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.reaction-btn.like.active {
+  color: #F63333;
+}
+
+.reaction-btn.dislike.active {
+  color: #F63333;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .accordion-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .accordion-body {
+    padding: 10px 20px 20px;
+  }
+  .accordion-footer {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
+  }
+}

@@ -1,0 +1,292 @@
+/* src/pages/Cases/caseEditPage.css */
+.case-edit-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+/* Header with title and buttons on one line */
+.edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.page-title {
+  color: #202024;
+  font-size: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 60px;
+  margin: 0;
+}
+
+/* Action Buttons */
+.edit-actions {
+  display: flex;
+  gap: 20px;
+}
+
+.save-btn, .delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn {
+  background: #4E85FC;
+}
+
+.save-btn span {
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.save-btn svg path {
+  fill: white;
+}
+
+.save-btn:hover {
+  background: #3563C6;
+}
+
+.save-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.save-btn:active span {
+  color: #4E85FC;
+}
+
+.save-btn:active svg path {
+  fill: #4E85FC;
+}
+
+.delete-btn {
+  background: #F4F4F4;
+}
+
+.delete-btn span {
+  color: #202024;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.delete-btn svg path {
+  fill: #202024;
+}
+
+.delete-btn:hover {
+  background: #A5A5B0;
+}
+
+.delete-btn:hover span {
+  color: white;
+}
+
+.delete-btn:hover svg path {
+  fill: white;
+}
+
+.delete-btn:active {
+  background: transparent;
+  outline: 1px solid #A5A5B0;
+  outline-offset: -1px;
+}
+
+.delete-btn:active span {
+  color: #A5A5B0;
+}
+
+.delete-btn:active svg path {
+  fill: #A5A5B0;
+}
+
+/* Edit Form */
+.edit-form {
+  width: 886px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 40px;
+  padding: 60px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.form-field-row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-label {
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.editable-box {
+  width: 100%;
+  padding: 15px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+  cursor: text;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-y: visible;
+}
+
+.editable-box:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.editable-box:hover {
+  background: #EBEBEB;
+}
+
+/* Скролл для полей */
+.editable-box.with-scroll {
+  overflow-y: auto !important;
+}
+
+.editable-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.editable-box::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.editable-box::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.editable-box::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+/* Семестр переключатель */
+.semester-toggle {
+  display: flex;
+  background: #F4F4F4;
+  border-radius: 25px;
+  gap: 0;
+  overflow: hidden;
+}
+
+.semester-option {
+  padding: 10px 15px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  color: #202024;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-align: center;
+  border-radius: 25px;
+  border: none;
+  background: transparent;
+}
+
+.semester-option.active {
+  background: #F9E27D;
+  border-radius: 25px;
+}
+
+.semester-option:not(.active):hover {
+  background: #E0E0E0;
+  border-radius: 25px;
+}
+
+/* Критерии оценки - больше высоты */
+.criteria-box {
+  min-height: 150px;
+}
+
+/* Not found */
+.not-found {
+  background: #fff;
+  border-radius: 40px;
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+  color: #A5A5B0;
+  margin-top: 40px;
+}
+
+.error-message {
+  color: #F63333;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  margin-top: 5px;
+  margin-left: 15px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .edit-form {
+    margin: 0;
+    padding: 20px;
+  }
+  
+  .page-title {
+    font-size: 32px;
+    line-height: 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .edit-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .form-field-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .page-title {
+    font-size: 28px;
+    line-height: 42px;
+  }
+  
+  .edit-form {
+    padding: 15px;
+  }
+}

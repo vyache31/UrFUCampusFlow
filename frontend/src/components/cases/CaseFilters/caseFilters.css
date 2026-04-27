@@ -1,0 +1,195 @@
+/* Status Dropdown */
+.status-dropdown {
+  position: relative;
+}
+
+.status-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  color: #202024;
+  padding: 0;
+}
+
+.status-selector svg {
+  transition: transform 0.2s ease;
+}
+
+.status-dropdown.open .status-selector svg {
+  transform: rotate(180deg);
+}
+
+.status-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 550px;
+  background: #fff;
+  border-radius: 25px;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 200;
+}
+
+.status-dropdown.open .status-menu {
+  opacity: 1;
+  visibility: visible;
+}
+
+.status-item {
+  padding: 12px 20px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #202024;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.status-item:hover {
+  background: #F4F4F4;
+}
+
+/* Semester Dropdown */
+.semester-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.semester-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  border-radius: 40px;
+  padding: 0;
+}
+
+.semester-selector svg {
+  transition: transform 0.2s ease;
+}
+
+.semester-dropdown.open .semester-selector svg {
+  transform: rotate(180deg);
+}
+
+.semester-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 260px;
+  background: #fff;
+  border-radius: 25px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 200;
+}
+
+.semester-dropdown.open .semester-menu {
+  opacity: 1;
+  visibility: visible;
+}
+
+.semester-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.semester-item span {
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.semester-item .custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.semester-item .custom-checkbox svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.semester-item.selected .custom-checkbox {
+  background: #D0DFB9;
+  border: none;
+}
+
+.semester-item.selected .custom-checkbox svg {
+  opacity: 1;
+}
+
+.semester-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.semester-reset, .semester-apply {
+  width: 100%;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: color 0.2s ease;
+  padding: 8px 0;
+}
+
+.semester-reset {
+  color: #A5A5B0;
+}
+
+.semester-reset:hover {
+  color: #202024;
+}
+
+.semester-apply {
+  color: #4E85FC;
+}
+
+.semester-apply:hover {
+  color: #3563C6;
+}
+
+@media (max-width: 1200px) {
+  .status-selector {
+    font-size: 32px;
+  }
+}
