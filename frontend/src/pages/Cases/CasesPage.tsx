@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import StatusFilter from '../../components/cases/CaseFilters/StatusFilter';
 import SemesterFilter from '../../components/cases/CaseFilters/SemesterFilter';
 import BulkActionsBar from '../../components/cases/BulkActions/BulkActionsBar';
+import ActionsDropdown from '../../components/sent-cases/ActionsDropdown';
 import CaseCard from '../../components/cases/CaseCard/CaseCard';
 import { testCases } from '../../data/cases';
 import './casesPage.css';
@@ -34,6 +35,12 @@ const CasesPage = () => {
     return true;
   });
 
+  const selectedCases = testCases.filter(c => selectedCaseIds.includes(c.id));
+  const allSelectedAreSent = useMemo(() => {
+    if (selectedCaseIds.length === 0) return false;
+    return selectedCases.every(c => c.status === 'Отправлено');
+  }, [selectedCaseIds, selectedCases]);
+
   const handleCaseSelect = (caseId: string, isSelected: boolean) => {
     if (isSelected) {
       setSelectedCaseIds(prev => [...prev, caseId]);
@@ -47,6 +54,14 @@ const CasesPage = () => {
   };
 
   const handleMarkActive = () => {
+    alert(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
+  };
+
+  const handleSendToRevision = () => {
+    alert(`Отправить на доработку: ${selectedCaseIds.join(', ')}`);
+  };
+
+  const handleActivate = () => {
     alert(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
   };
 
@@ -65,6 +80,8 @@ const CasesPage = () => {
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
   ];
+
+  const hasSelectedCases = selectedCaseIds.length > 0;
 
   return (
     <div className="page-wrapper cases-page">
@@ -89,6 +106,12 @@ const CasesPage = () => {
             onSemesterChange={setSelectedSemesters}
             availableSemesters={availableSemesters}
           />
+          {hasSelectedCases && allSelectedAreSent && (
+            <ActionsDropdown
+              onSendToRevision={handleSendToRevision}
+              onActivate={handleActivate}
+            />
+          )}
         </div>
       </div>
 
