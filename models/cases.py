@@ -10,7 +10,7 @@ from database import Base
 class DifficultyLevels(Base):
     __tablename__ = 'case_difficulty_levels'
 
-    id: Mapped[int] = mapped_column(primary_key=True, unique=True)
+    id: Mapped[int] = mapped_column(primary_key=True, unique=True, autoincrement=True)
     level_code: Mapped[str]
     level_name: Mapped[str]
 
@@ -74,7 +74,7 @@ class CaseSemesters(Base):
 class CaseStatuses(Base):
     __tablename__ = 'case_statuses'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     status_code: Mapped[str]
     status_name: Mapped[str]
 

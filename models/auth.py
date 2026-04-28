@@ -28,7 +28,7 @@ class Users(Base):
 class Roles(Base):
     __tablename__ = 'roles'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     role_name: Mapped[str]
 
     users = relationship('Users', back_populates='role')
