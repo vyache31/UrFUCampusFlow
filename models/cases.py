@@ -42,21 +42,6 @@ class Cases(Base):
     difficulty_level = relationship('DifficultyLevels', back_populates='cases')
     case_semesters = relationship('CaseSemesters', back_populates='case')
 
-    @property
-    def university_name(self) -> Optional[str]:
-        return self.university.uni_name if self.university else None
-
-    @property
-    def difficulty_level_name(self) -> Optional[str]:
-        return self.difficulty_level.level_name if self.difficulty_level else None
-
-    @property
-    def creator_email(self) -> Optional[str]:
-        return self.creator.email if self.creator else None
-
-    @property
-    def status_name(self) -> Optional[str]:
-        return self.status.status_name if self.status else None
 
 
 class CaseSemesters(Base):

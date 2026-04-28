@@ -40,8 +40,8 @@ class Teams(Base):
     __tablename__ = 'teams'
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
-    description: Mapped[str]
-    notes: Mapped[str]
+    description: Mapped[str] = mapped_column(String(100), nullable=True)
+    notes: Mapped[str] = mapped_column(String(100), nullable=True)
     name: Mapped[str]
     university_id: Mapped[int] = mapped_column(ForeignKey('university_info.id'))
     status: Mapped[str]

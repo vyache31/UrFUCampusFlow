@@ -33,6 +33,8 @@ class TeamService:
         team = Teams(
             id=str(uuid.uuid4()),
             name=schema.name,
+            description=schema.description,
+            notes=schema.notes,
             university_id=schema.university_id,
             status=schema.status,
             created_at=datetime.now(UTC)
