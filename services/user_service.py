@@ -24,9 +24,15 @@ class UserService:
 
         # TODO: заменить на HTTPException's
         if is_exist:
-            raise ValueError("User already exist")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already exist"
+            )
         if not role:
-            raise ValueError("Role not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Role not found"
+            )
 
         user = Users(
             id=str(uuid.uuid4()),
@@ -39,7 +45,7 @@ class UserService:
         user = await self.rep.create(user)
         user = await self.rep.get_with_relations(user.id)
 
-        return await self._to_response(user)
+        return self._to_response(user)
 
     async def get_user(self, user_id: str):
         return await self.rep.get_by_id(user_id)
@@ -89,58 +95,59 @@ class UserService:
         return True
 
 
-    async def register_user(
-            self,
-            schema: UserCreate
-    ) -> UserTokenInfo and UserResponse:
-        is_exist = await self.rep.get_by_email(schema.email)
-        role = await self.rep.get_role_by_id(schema.role_id)
+    # async def register_user(
+    #         self,
+    #         schema: UserCreate
+    # ) -> tuple[UserTokenInfo, UserResponse]:
+    #     is_exist = await self.rep.get_by_email(schema.email)
+    #     role = await self.rep.get_role_by_id(schema.role_id)
+    #
+    #     # TODO: заменить на HTTPException's
+    #     if is_exist:
+    #         raise ValueError("User already exist")
+    #     if not role:
+    #         raise ValueError("Role not found")
+    #
+    #     user = Users(
+    #         id=str(uuid.uuid4()),
+    #         email=schema.email,
+    #         role_id=schema.role_id,
+    #         password_hash=auth_utils_jwt.hash_password(schema.password).decode('utf-8'),
+    #         created_at=datetime.now(UTC)
+    #     )
+    #
+    #     return await self.rep.create(user)
 
-        # TODO: заменить на HTTPException's
-        if is_exist:
-            raise ValueError("User already exist")
-        if not role:
-            raise ValueError("Role not found")
-
-        user = Users(
-            id=str(uuid.uuid4()),
-            email=schema.email,
-            role_id=schema.role_id,
-            password_hash=auth_utils_jwt.hash_password(schema.password).decode('utf-8'),
-            created_at=datetime.now(UTC)
-        )
-
-        return await self.rep.create(user)
-
-    async def login_user(self, schema: UserLoginRequest) -> UserTokenInfo:
-        user = await self.validate_auth_user(schema.email, schema.password)
-
-        jwt_payload = {
-            "sub": user.email,
-            "email": user.email,
-        }
-
-        token = auth_utils_jwt.encode_jwt(jwt_payload)
-        return UserTokenInfo(
-            acess_token=token,
-            token_type="Bearer"
-        )
+    # async def login_user(self, schema: UserLoginRequest) -> UserTokenInfo:
+    #     user = await self.validate_auth_user(schema.email, schema.password)
+    #
+    #     jwt_payload = {
+    #         "sub": user.email,
+    #         "email": user.email,
+    #     }
+    #
+    #     token = auth_utils_jwt.encode_jwt(jwt_payload)
+    #     return UserTokenInfo(
+    #         acess_token=token,
+    #         token_type="Bearer"
+    #     )
 
     async def validate_auth_user(
             self,
             email: str,
             password: str,
-    ):
+    ) -> Users:
         unauthed_exc = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalid username or password",
         )
-        if not (user := self.rep.get_by_email(email)):
+        user = await self.rep.get_by_email(email)
+        if not user:
             raise unauthed_exc
 
         if not auth_utils_jwt.validate_password(
                 password=password,
-                hashed_password=user.password,
+                hashed_password=auth_utils_jwt.hash_password(password),
         ):
             raise unauthed_exc
 

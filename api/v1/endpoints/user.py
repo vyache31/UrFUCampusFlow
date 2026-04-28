@@ -1,7 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Form, status
 from services.user_service import UserService
-from schemas.user import UserCreate, UserResponse, UserUpdate
+from services.auth_service import AuthService
+from schemas.user import (
+    UserCreate, UserResponse,
+    UserUpdate, UserLoginRequest,
+    UserTokenInfo
+)
 from dependies.user_depends import get_user_service
+from dependies.auth_depends import get_auth_service
 from typing import List
 
 router = APIRouter(
@@ -15,12 +21,31 @@ async def create_user(
         schema: UserCreate,
         service: UserService = Depends(get_user_service)
 ):
+    # TODO: Переписать валидацию в user_service
     try:
         return await service.create_user(schema)
     except ValueError as err:
         detail = str(err)
         status_code = 409 if detail == 'User already exist' else 404
         raise HTTPException(status_code=status_code, detail=detail)
+
+
+@router.post('/register', response_model=UserTokenInfo)
+async def register_user(
+        schema: UserCreate,
+        service: AuthService = Depends(get_auth_service)
+) -> UserTokenInfo:
+    return await service.register_user(schema)
+
+
+
+@router.post('/login', response_model=UserTokenInfo)
+async def login_user(
+    schema: UserLoginRequest,
+    service: AuthService = Depends(get_auth_service)
+) -> UserTokenInfo:
+    return await service.login_user(schema)
+
 
 @router.get('/', response_model=List[UserResponse])
 async def get_all_users(
