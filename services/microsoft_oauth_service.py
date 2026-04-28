@@ -3,7 +3,7 @@ from integrations.microsoft_graph_client import GraphClient
 from repositories.microsoft_oauth_repository import MicrosoftOAuthRepository
 from schemas.microsoft_oauth import ConnectResponse, OAuthCallbackResponse, OAuthStatusResponse
 from models import MicrosoftOAuth
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import uuid
 
 
@@ -20,7 +20,7 @@ class MicrosoftOAuthService:
         self.graph_client = graph_client
 
 
-    async def start_connection(self):
+    async def start_connection(self) -> ConnectResponse:
         uri = self.oauth_client.generate_microsoft_oauth_redirect_uri()
 
         return ConnectResponse(authorize_url=uri)
@@ -32,9 +32,9 @@ class MicrosoftOAuthService:
             token_payload: dict,
             user_info: dict,
             time: datetime | None = None
-    ):
+    ) -> None:
         if time is None:
-            time = datetime.now()
+            time = datetime.now(UTC)
 
         oauth.encrypted_access_token = token_payload['access_token']
         oauth.encrypted_refresh_token = token_payload['refresh_token']
@@ -58,10 +58,13 @@ class MicrosoftOAuthService:
         }
 
         user_info = await self.graph_client.get_provider_user_info(headers=headers)
+        provider_oauth = await self.rep.get_oauth_by_provider_user_id(user_info['id'])
 
         if oauth := await self.rep.get_oauth_by_user_id(user_id):
             if oauth.is_active:
                 raise ValueError('This user already has an active connection')
+            if provider_oauth and provider_oauth.user_id != user_id:
+                raise ValueError('This connection already exists')
             await self.update_oauth(
                 oauth=oauth,
                 token_payload=token_payload,
@@ -78,10 +81,10 @@ class MicrosoftOAuthService:
                 is_active=oauth.is_active
             )
 
-        if await self.rep.get_oauth_by_provider_user_id(user_info['id']):
+        if provider_oauth:
             raise ValueError('This connection already exists')
 
-        creating_time = datetime.now()
+        creating_time = datetime.now(UTC)
 
         oauth_object = MicrosoftOAuth(
             id=str(uuid.uuid4()),
@@ -127,7 +130,7 @@ class MicrosoftOAuthService:
             raise ValueError('This user has not existing connections')
 
         oauth.is_active = False
-        oauth.updated_at = datetime.now()
+        oauth.updated_at = datetime.now(UTC)
 
         await self.rep.update_oauth(oauth)
 
@@ -136,15 +139,10 @@ class MicrosoftOAuthService:
         )
 
 
-    async def refresh_tokens(self, user_id: str, time: datetime | None = None) -> OAuthCallbackResponse:
+    async def refresh_tokens(self, oauth: MicrosoftOAuth, time: datetime | None = None) -> MicrosoftOAuth:
 
         if time is None:
-            time = datetime.now()
-
-        oauth = await self.rep.get_oauth_by_user_id(user_id)
-
-        if not oauth:
-            raise ValueError('This user has not existing connections')
+            time = datetime.now(UTC)
 
         token_payload = await self.oauth_client.refresh_tokens(oauth.encrypted_refresh_token)
 
@@ -156,14 +154,18 @@ class MicrosoftOAuthService:
 
         await self.rep.update_oauth(oauth)
 
-        return OAuthCallbackResponse(
-            id=oauth.id,
-            user_id=oauth.user_id,
-            microsoft_email=oauth.microsoft_email,
-            scope=oauth.scope,
-            connected_at=oauth.connected_at,
-            last_refreshed_at=oauth.last_refreshed_at,
-            is_active=oauth.is_active
-        )
+        return oauth
+
+
+    async def ensure_actual_tokens(self, oauth: MicrosoftOAuth) -> MicrosoftOAuth:
+
+        if oauth.access_token_expires_at <= datetime.now(UTC) + timedelta(minutes=3):
+            await self.refresh_tokens(oauth)
+
+        return oauth
+
+
+
+
 
 

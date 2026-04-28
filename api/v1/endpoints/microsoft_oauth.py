@@ -1,12 +1,65 @@
-from fastapi import APIRouter
-from integrations.microsoft_oauth_client import OAuthClient
+from fastapi import APIRouter, Depends, Query, HTTPException
+from services.microsoft_oauth_service import MicrosoftOAuthService
+from schemas.microsoft_oauth import ConnectResponse, OAuthCallbackResponse, OAuthStatusResponse
+from dependies.oauth_depends import get_oauth_service
 
 
-router = APIRouter(prefix='/auth/microsoft')
+router = APIRouter(
+    prefix='/auth/microsoft',
+    tags=['Microsoft OAuth']
+)
 
 
-@router.get('/outlook')
-def get_microsoft_oauth_redirect_uri():
-    uri = OAuthClient.generate_microsoft_oauth_redirect_uri()
+@router.get('/outlook', response_model=ConnectResponse)
+async def get_microsoft_oauth_redirect_uri(
+        service: MicrosoftOAuthService = Depends(get_oauth_service)
+):
 
-    return uri
+    return await service.start_connection()
+
+
+@router.get('/outlook/callback', response_model=OAuthCallbackResponse)
+async def outlook_callback(
+        user_id: str,
+        service: MicrosoftOAuthService = Depends(get_oauth_service),
+        code: str | None = Query(default=None),
+        error: str | None = Query(default=None)
+):
+    if error:
+        raise HTTPException(status_code=400, detail=f'Microsoft OAuth error: {error}')
+
+    if code is None:
+        raise HTTPException(status_code=400, detail='Authorization code is missing')
+
+    try:
+        oauth_object_shema = await service.handle_callback(
+            user_id=user_id,
+            code=code
+        )
+
+        return oauth_object_shema
+
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.delete('/outlook/disconnect', response_model=OAuthStatusResponse)
+async def disconnect_outlook(
+        user_id: str,
+        service: MicrosoftOAuthService = Depends(get_oauth_service),
+):
+    try:
+        return await service.disconnect_oauth(user_id)
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+
+
+@router.get('/outlook/integration-status', response_model=OAuthStatusResponse)
+async def get_integration_status(
+        user_id: str,
+        service: MicrosoftOAuthService = Depends(get_oauth_service),
+):
+    try:
+        return await service.get_status(user_id)
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))

@@ -13,8 +13,8 @@ class MicrosoftOAuth(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey('users.id'))
     provider_user_id: Mapped[str] = mapped_column(String(36))
     microsoft_email: Mapped[str] = mapped_column(nullable=True)
-    encrypted_refresh_token: Mapped[str]
-    encrypted_access_token: Mapped[str]
+    encrypted_refresh_token: Mapped[str] = mapped_column(String)
+    encrypted_access_token: Mapped[str] = mapped_column(String)
     access_token_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     scope: Mapped[str]
     connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
