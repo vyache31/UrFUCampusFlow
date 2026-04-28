@@ -4,6 +4,7 @@ from repositories.microsoft_oauth_repository import MicrosoftOAuthRepository
 from schemas.microsoft_oauth import ConnectResponse, OAuthCallbackResponse, OAuthStatusResponse
 from models import MicrosoftOAuth
 from datetime import datetime, timedelta, UTC
+from utils import encryption
 import uuid
 
 
@@ -36,8 +37,8 @@ class MicrosoftOAuthService:
         if time is None:
             time = datetime.now(UTC)
 
-        oauth.encrypted_access_token = token_payload['access_token']
-        oauth.encrypted_refresh_token = token_payload['refresh_token']
+        oauth.encrypted_access_token = encryption.encrypt_token(token_payload['access_token'])
+        oauth.encrypted_refresh_token = encryption.encrypt_token(token_payload['refresh_token'])
         oauth.scope = token_payload['scope']
         oauth.microsoft_email = user_info['mail'] if user_info['mail'] else None
         oauth.connected_at = time
@@ -91,8 +92,8 @@ class MicrosoftOAuthService:
             user_id=user_id,
             provider_user_id=user_info['id'],
             microsoft_email=user_info['mail'] if user_info['mail'] else None,
-            encrypted_refresh_token=token_payload['refresh_token'],
-            encrypted_access_token=token_payload['access_token'],
+            encrypted_refresh_token=encryption.encrypt_token(token_payload['refresh_token']),
+            encrypted_access_token=encryption.encrypt_token(token_payload['access_token']),
             access_token_expires_at=creating_time + timedelta(seconds=token_payload['expires_in']),
             scope=token_payload['scope'],
             connected_at=creating_time,
@@ -144,10 +145,12 @@ class MicrosoftOAuthService:
         if time is None:
             time = datetime.now(UTC)
 
-        token_payload = await self.oauth_client.refresh_tokens(oauth.encrypted_refresh_token)
+        token_payload = await self.oauth_client.refresh_tokens(
+            refresh_token= encryption.decrypt_token(oauth.encrypted_refresh_token)
+        )
 
-        oauth.encrypted_refresh_token = token_payload['refresh_token']
-        oauth.encrypted_access_token = token_payload['access_token']
+        oauth.encrypted_refresh_token = encryption.encrypt_token(token_payload['refresh_token'])
+        oauth.encrypted_access_token = encryption.encrypt_token(token_payload['access_token'])
         oauth.last_refreshed_at = time
         oauth.access_token_expires_at = time + timedelta(seconds=token_payload['expires_in'])
         oauth.updated_at = time
