@@ -125,6 +125,12 @@ const CaseCard = ({
               {displayTitle}
             </span>
           </div>
+          {type === 'case' && (
+            <div className="accordion-header-center">
+              <div className="status-dot"></div>
+              <span className="status-text">{status}</span>
+            </div>
+          )}
           <button 
             className="accordion-open-btn" 
             onClick={handleOpenFull}
