@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from schemas.student import StudentCreate, StudentUpdate, StudentResponse
 from services.student_service import StudentService
 from dependies.student_depends import get_student_service
+from dependies.auth_depends import check_auth, require_admin_role
 
 
 router = APIRouter(
@@ -13,6 +14,7 @@ router = APIRouter(
 @router.post('/', response_model=StudentResponse)
 async def create_student(
         schema: StudentCreate,
+        user=Depends(check_auth),
         service: StudentService = Depends(get_student_service)
 ):
     try:
@@ -24,6 +26,7 @@ async def create_student(
 @router.get('/', response_model=list[StudentResponse])
 async def get_all_students(
         limit: int = Query(10),
+        user=Depends(check_auth),
         service: StudentService = Depends(get_student_service)
 ):
     return await service.get_all_students(limit)
@@ -32,6 +35,7 @@ async def get_all_students(
 @router.get('/{student_id}', response_model=StudentResponse)
 async def get_student(
         student_id: str,
+        user=Depends(check_auth),
         service: StudentService = Depends(get_student_service)
 ):
     student = await service.get_student_by_id(student_id)
@@ -46,6 +50,7 @@ async def get_student(
 async def update_student(
         student_id: str,
         schema: StudentUpdate,
+        user=Depends(check_auth),
         service: StudentService = Depends(get_student_service)
 ):
     try:
@@ -62,6 +67,7 @@ async def update_student(
 @router.delete('/{student_id}')
 async def delete_student(
         student_id: str,
+        user=Depends(check_auth),
         service: StudentService = Depends(get_student_service)
 ):
     result = await service.delete_student(student_id)

@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.iteration_depends import get_iteration_service
+from dependies.auth_depends import check_auth, require_admin_role
 from schemas.iteration import IterationResponse
 from services.iteration_service import IterationService
 
@@ -15,6 +16,7 @@ router = APIRouter(
 @router.get('/', response_model=List[IterationResponse])
 async def get_all_iterations(
         limit: int = Query(10),
+        user=Depends(check_auth),
         service: IterationService = Depends(get_iteration_service)
 ):
     return await service.get_all_iterations(limit)
@@ -23,6 +25,7 @@ async def get_all_iterations(
 @router.get('/{iteration_id}', response_model=IterationResponse)
 async def get_iteration(
         iteration_id: int,
+        user=Depends(check_auth),
         service: IterationService = Depends(get_iteration_service)
 ):
     iteration = await service.get_iteration_by_id(iteration_id)

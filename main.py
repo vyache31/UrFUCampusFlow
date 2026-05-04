@@ -10,6 +10,7 @@ from api.v1.endpoints import (
     case_status,
     difficulty_level,
     iteration,
+    auth,
     microsoft_oauth
 )
 import httpx
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(team.router)
 app.include_router(case.router)
