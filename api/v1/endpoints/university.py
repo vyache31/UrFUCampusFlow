@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.university_depends import get_university_service
+from dependies.auth_depends import check_auth, require_admin_role
 from schemas.university import UniversityCreate, UniversityResponse, UniversityUpdate
 from services.university_info_service import UniversityInfoService
 
@@ -15,6 +16,7 @@ router = APIRouter(
 @router.post('/', response_model=UniversityResponse)
 async def create_university(
         schema: UniversityCreate,
+        user=Depends(check_auth),
         service: UniversityInfoService = Depends(get_university_service)
 ):
     return await service.create_university(schema)
@@ -23,6 +25,7 @@ async def create_university(
 @router.get('/', response_model=List[UniversityResponse])
 async def get_all_universities(
         limit: int = Query(10),
+        user=Depends(check_auth),
         service: UniversityInfoService = Depends(get_university_service)
 ):
     return await service.get_all_universities(limit)
@@ -31,6 +34,7 @@ async def get_all_universities(
 @router.get('/{uni_id}', response_model=UniversityResponse)
 async def get_university(
         uni_id: int,
+        user=Depends(check_auth),
         service: UniversityInfoService = Depends(get_university_service)
 ):
     university = await service.get_university_by_id(uni_id)
@@ -45,6 +49,7 @@ async def get_university(
 async def update_university(
         uni_id: int,
         schema: UniversityUpdate,
+        user=Depends(check_auth),
         service: UniversityInfoService = Depends(get_university_service)
 ):
     university = await service.update_university(uni_id, schema)
@@ -58,6 +63,7 @@ async def update_university(
 @router.delete('/{uni_id}')
 async def delete_university(
         uni_id: int,
+        user=Depends(check_auth),
         service: UniversityInfoService = Depends(get_university_service)
 ):
     result = await service.delete_university(uni_id)

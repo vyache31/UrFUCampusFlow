@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from services.team_service import TeamService
 from schemas.team import TeamCreate, TeamUpdate, TeamResponse
 from dependies.team_depends import get_team_service
+from dependies.auth_depends import check_auth, require_admin_role
 from typing import List
 
 router = APIRouter(
@@ -12,6 +13,7 @@ router = APIRouter(
 @router.post('/', response_model=TeamResponse)
 async def create_team(
         schema: TeamCreate,
+        user=Depends(check_auth),
         service: TeamService = Depends(get_team_service)
 ):
     try:
@@ -24,6 +26,7 @@ async def create_team(
 @router.get('/', response_model=List[TeamResponse])
 async def get_all_teams(
         limit: int = Query(10),
+        user=Depends(check_auth),
         service: TeamService = Depends(get_team_service)
 ):
     return await service.get_all_teams(limit)
@@ -32,6 +35,7 @@ async def get_all_teams(
 @router.get('/{team_id}', response_model=TeamResponse)
 async def get_team(
         team_id: str,
+        user=Depends(check_auth),
         service: TeamService = Depends(get_team_service)
 ):
     team = await service.get_team(team_id)
@@ -46,6 +50,7 @@ async def get_team(
 async def update_team(
         team_id: str,
         schema: TeamUpdate,
+        user=Depends(check_auth),
         service: TeamService = Depends(get_team_service)
 ):
     try:
@@ -61,6 +66,7 @@ async def update_team(
 @router.delete('/{team_id}')
 async def delete_team(
         team_id: str,
+        user=Depends(check_auth),
         service: TeamService = Depends(get_team_service)
 ):
     result = await service.delete_team(team_id)

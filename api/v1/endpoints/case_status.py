@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.case_status_depends import get_case_status_service
+from dependies.auth_depends import check_auth, require_admin_role
 from schemas.case_status import CaseStatusResponse
 from services.case_status_service import CaseStatusService
 
@@ -15,6 +16,7 @@ router = APIRouter(
 @router.get('/', response_model=List[CaseStatusResponse])
 async def get_all_case_statuses(
         limit: int = Query(10),
+        user=Depends(check_auth),
         service: CaseStatusService = Depends(get_case_status_service)
 ):
     return await service.get_all_case_statuses(limit)
@@ -23,6 +25,7 @@ async def get_all_case_statuses(
 @router.get('/{status_id}', response_model=CaseStatusResponse)
 async def get_case_status(
         status_id: int,
+        user=Depends(check_auth),
         service: CaseStatusService = Depends(get_case_status_service)
 ):
     status = await service.get_case_status_by_id(status_id)
