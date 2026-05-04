@@ -22,5 +22,6 @@ class Iterations(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     iteration_name: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
 
     grades = relationship('Grades', back_populates='iteration')

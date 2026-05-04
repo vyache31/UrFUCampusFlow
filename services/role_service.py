@@ -10,6 +10,7 @@ class RoleService:
 
     async def create_role(self, schema: RoleCreate) -> Roles:
         role = Roles(
+            code=schema.code,
             role_name=schema.role_name
         )
 

@@ -11,7 +11,7 @@ class DifficultyLevels(Base):
     __tablename__ = 'case_difficulty_levels'
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True, autoincrement=True)
-    level_code: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
     level_name: Mapped[str]
 
     cases = relationship('Cases', back_populates='difficulty_level')
@@ -75,7 +75,7 @@ class CaseStatuses(Base):
     __tablename__ = 'case_statuses'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    status_code: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
     status_name: Mapped[str]
 
     cases = relationship('Cases', back_populates='status')
@@ -119,6 +119,3 @@ class EvaluationFormComments(Base):
 
     form = relationship('EvaluationForm', back_populates='comments')
     creator = relationship('Users', back_populates='evaluation_form_comments')
-
-
-
