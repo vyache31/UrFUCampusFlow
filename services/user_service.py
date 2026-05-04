@@ -10,6 +10,11 @@ from models.auth import Users
 import auth.utils_jwt as auth_utils_jwt
 from fastapi import HTTPException, Form, status
 
+
+class InvalidCredentialsError(Exception):
+    pass
+
+
 class UserService:
 
     def __init__(self, rep: UserRepository):
@@ -22,7 +27,7 @@ class UserService:
         is_exist = await self.rep.get_by_email(schema.email)
         role = await self.rep.get_role_by_id(schema.role_id)
 
-        # TODO: заменить на HTTPException's
+        # TODO: заменить на HTTPException's, убрать HTTP из сервисного слоя!!!!
         if is_exist:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -47,8 +52,15 @@ class UserService:
 
         return self._to_response(user)
 
-    async def get_user(self, user_id: str):
-        return await self.rep.get_by_id(user_id)
+    async def get_user_by_id(self, user_id: str):
+        user = await self.rep.get_by_id(user_id)
+
+        return user
+
+    async def get_user_by_email(self, user_email: str):
+        user = await self.rep.get_by_email(user_email)
+
+        return user
 
     async def get_all_users(self, limit: int) -> list[UserResponse]:
         users = await self.rep.get_all(limit)
@@ -73,9 +85,9 @@ class UserService:
         if schema.email:
             user.email = schema.email
         if schema.password:
-            user.password_hash = schema.password
+            user.password_hash = auth_utils_jwt.hash_password(schema.password).decode('utf-8')
         if schema.role_id:
-            role = await self.rep.get_role_by_id(schema.role_id)  ## переделать, убрав в role_service
+            role = await self.rep.get_role_by_id(schema.role_id)  # TODO: переделать, убрав в role_service
             if not role:
                 raise ValueError("Role not found")
             user.role_id = schema.role_id
@@ -94,62 +106,20 @@ class UserService:
         await self.rep.delete(user)
         return True
 
-
-    # async def register_user(
-    #         self,
-    #         schema: UserCreate
-    # ) -> tuple[UserTokenInfo, UserResponse]:
-    #     is_exist = await self.rep.get_by_email(schema.email)
-    #     role = await self.rep.get_role_by_id(schema.role_id)
-    #
-    #     # TODO: заменить на HTTPException's
-    #     if is_exist:
-    #         raise ValueError("User already exist")
-    #     if not role:
-    #         raise ValueError("Role not found")
-    #
-    #     user = Users(
-    #         id=str(uuid.uuid4()),
-    #         email=schema.email,
-    #         role_id=schema.role_id,
-    #         password_hash=auth_utils_jwt.hash_password(schema.password).decode('utf-8'),
-    #         created_at=datetime.now(UTC)
-    #     )
-    #
-    #     return await self.rep.create(user)
-
-    # async def login_user(self, schema: UserLoginRequest) -> UserTokenInfo:
-    #     user = await self.validate_auth_user(schema.email, schema.password)
-    #
-    #     jwt_payload = {
-    #         "sub": user.email,
-    #         "email": user.email,
-    #     }
-    #
-    #     token = auth_utils_jwt.encode_jwt(jwt_payload)
-    #     return UserTokenInfo(
-    #         acess_token=token,
-    #         token_type="Bearer"
-    #     )
-
-    async def validate_auth_user(
+    async def authenticate_user(
             self,
             email: str,
             password: str,
     ) -> Users:
-        unauthed_exc = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalid username or password",
-        )
         user = await self.rep.get_by_email(email)
         if not user:
-            raise unauthed_exc
+            raise InvalidCredentialsError()
 
         if not auth_utils_jwt.validate_password(
                 password=password,
-                hashed_password=auth_utils_jwt.hash_password(password),
+                hashed_password=user.password_hash,
         ):
-            raise unauthed_exc
+            raise InvalidCredentialsError()
 
         return user
 
@@ -159,6 +129,6 @@ class UserService:
             id=user.id,
             email=user.email,
             role_id=user.role_id,
-            role_name=user.role.role_name  if user.role else None,
+            role_name=user.role.role_name if user.role else None,
             created_at=user.created_at
         )

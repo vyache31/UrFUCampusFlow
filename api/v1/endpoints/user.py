@@ -1,13 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Form, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from services.user_service import UserService
-from services.auth_service import AuthService
 from schemas.user import (
     UserCreate, UserResponse,
-    UserUpdate, UserLoginRequest,
-    UserTokenInfo
+    UserUpdate
 )
 from dependies.user_depends import get_user_service
-from dependies.auth_depends import get_auth_service
+from dependies.auth_depends import check_auth, require_admin_role
 from typing import List
 
 router = APIRouter(
@@ -19,6 +17,7 @@ router = APIRouter(
 @router.post('/', response_model=UserResponse)
 async def create_user(
         schema: UserCreate,
+        user=Depends(require_admin_role),
         service: UserService = Depends(get_user_service)
 ):
     # TODO: Переписать валидацию в user_service
@@ -30,26 +29,10 @@ async def create_user(
         raise HTTPException(status_code=status_code, detail=detail)
 
 
-@router.post('/register', response_model=UserTokenInfo)
-async def register_user(
-        schema: UserCreate,
-        service: AuthService = Depends(get_auth_service)
-) -> UserTokenInfo:
-    return await service.register_user(schema)
-
-
-
-@router.post('/login', response_model=UserTokenInfo)
-async def login_user(
-    schema: UserLoginRequest,
-    service: AuthService = Depends(get_auth_service)
-) -> UserTokenInfo:
-    return await service.login_user(schema)
-
-
 @router.get('/', response_model=List[UserResponse])
 async def get_all_users(
         limit: int = Query(10),
+        user=Depends(require_admin_role),
         service: UserService = Depends(get_user_service)
 ):
     return await service.get_all_users(limit)
@@ -58,6 +41,7 @@ async def get_all_users(
 @router.get('/{user_id}', response_model=UserResponse)
 async def get_user(
         user_id: str,
+        user=Depends(check_auth),
         service: UserService = Depends(get_user_service)
 ):
     user = await service.get_user(user_id)
@@ -71,6 +55,7 @@ async def get_user(
 async def update_user(
         user_id: str,
         schema: UserUpdate,
+        user=Depends(check_auth),
         service: UserService = Depends(get_user_service)
 ):
     try:
@@ -86,6 +71,7 @@ async def update_user(
 @router.delete('/{user_id}')
 async def delete_user(
         user_id: str,
+        user=Depends(require_admin_role),
         service: UserService = Depends(get_user_service)
 ):
     result = await service.delete_user(user_id)

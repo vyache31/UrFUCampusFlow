@@ -1,10 +1,11 @@
-from services.user_service import UserService
+from services.user_service import UserService, InvalidCredentialsError
 from schemas.user import (
     UserCreate, UserTokenInfo,
     UserLoginRequest
 )
 import auth.utils_jwt as auth_utils
 from fastapi import HTTPException, status
+
 
 class AuthService:
     def __init__(self, user_service: UserService):
@@ -31,15 +32,17 @@ class AuthService:
             self,
             schema: UserLoginRequest
     ) -> UserTokenInfo:
-        unauthed_exc = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalid username or password",
-        )
 
-        await self.user_service.validate_auth_user(
-            email=schema.email,
-            password=schema.password
-        )
+        try:
+            await self.user_service.authenticate_user(
+                email=schema.email,
+                password=schema.password
+            )
+        except InvalidCredentialsError:
+            raise HTTPException(
+                status_code=401,
+                detail="invalid username or password"
+            )
 
         jwt_payload = {
             "sub": schema.email,
@@ -50,4 +53,3 @@ class AuthService:
             access_token=access_token,
             token_type="Bearer"
         )
-
