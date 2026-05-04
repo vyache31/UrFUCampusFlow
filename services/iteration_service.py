@@ -10,6 +10,7 @@ class IterationService:
 
     async def create_iteration(self, schema: IterationCreate) -> Iterations:
         iteration = Iterations(
+            code=schema.code,
             iteration_name=schema.iteration_name
         )
 

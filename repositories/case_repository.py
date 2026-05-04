@@ -57,7 +57,7 @@ class CaseRepository:
         self.db.add(case)
         await self.db.commit()
 
-        return case
+        return await self.get_by_id(case_id=str(case.id))
 
     async def delete(self, case: Cases) -> None:
         await self.db.delete(case)
