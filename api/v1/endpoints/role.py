@@ -1,10 +1,9 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, Query
-
 from dependies.role_depends import get_role_service
 from schemas.role import RoleResponse
 from services.role_service import RoleService
+
 
 router = APIRouter(
     prefix="/roles",

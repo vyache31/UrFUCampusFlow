@@ -10,7 +10,7 @@ class CaseStatusService:
 
     async def create_case_status(self, schema: CaseStatusCreate) -> CaseStatuses:
         status = CaseStatuses(
-            status_code=schema.status_code,
+            code=schema.code,
             status_name=schema.status_name
         )
 
