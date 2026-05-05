@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_BASE_URL = 'http://localhost:8000';
+
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,7 +14,7 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('Запрос:', config.method, config.url, config.headers);
+  console.log('Запрос:', config.method, config.url);
   return config;
 });
 

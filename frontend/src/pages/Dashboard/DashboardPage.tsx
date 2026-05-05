@@ -1,6 +1,6 @@
 import Header from '../../components/common/Header/Header';
 import ActionButtons from '../../components/ActionButtons/ActionButtons';
-import Meetings from '../../components/Meetings/Meetings';
+// import Meetings from '../../components/Meetings/Meetings';
 import CasesSection from '../../components/CasesSection/CasesSection';
 import TeamsSection from '../../components/TeamsSection/TeamsSection';
 import './dashboard.css';
@@ -11,7 +11,7 @@ const DashboardPage = () => {
       <Header />
       <ActionButtons />
       <main className="main-content">
-        <Meetings />
+        {/* <Meetings /> */}  {/* временно отключено так как API нет ещё*/}
         <CasesSection />
         <TeamsSection />
       </main>

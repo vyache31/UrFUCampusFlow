@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogoIcon } from '../../components/common/Icons/Icons';
+import api from '../../services/api';
 import './loginPage.css';
 
 const LoginPage = () => {
@@ -36,24 +37,24 @@ const LoginPage = () => {
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const response = await fetch('http://localhost:8000/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: login, password, role_id: 1 }),
-    });
-    const data = await response.json();
-    
-    if (data.access_token) {
-      localStorage.setItem('access_token', data.access_token);
-      navigate('/');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await api.post('/login', { 
+        email: login, 
+        password: password 
+      });
+      const { access_token } = response.data;
+      if (access_token) {
+        localStorage.setItem('access_token', access_token);
+        console.log('Токен сохранён');
+        navigate('/');
+      }
+    } catch (err) {
+      console.error('Ошибка входа:', err);
+      alert('Неверный логин или пароль');
     }
-  } catch (err) {
-    console.error('Ошибка:', err);
-  }
-};
+  };
 
   return (
     <div className="login-page">
