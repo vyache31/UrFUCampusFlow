@@ -36,26 +36,24 @@ const LoginPage = () => {
     setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    const response = await fetch('http://localhost:8000/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: login, password, role_id: 1 }),
+    });
+    const data = await response.json();
     
-    setTouched({ login: true, password: true });
-    
-    const loginError = validateField('login', login);
-    const passwordError = validateField('password', password);
-    
-    const newErrors = {
-      login: loginError,
-      password: passwordError
-    };
-    
-    setErrors(newErrors);
-    
-    if (!loginError && !passwordError) {
-      console.log('Login:', login);
+    if (data.access_token) {
+      localStorage.setItem('access_token', data.access_token);
       navigate('/');
     }
-  };
+  } catch (err) {
+    console.error('Ошибка:', err);
+  }
+};
 
   return (
     <div className="login-page">

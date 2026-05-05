@@ -19,7 +19,18 @@ class UserResponse(BaseModel):
     id: str
     email: EmailStr
     role_id: int
+    role_name: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UserLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserTokenInfo(BaseModel):
+    access_token: str
+    refresh_token: str | None = None
+    token_type: str = "Bearer"

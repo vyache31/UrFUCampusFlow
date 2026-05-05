@@ -11,7 +11,7 @@ class DifficultyLevels(Base):
     __tablename__ = 'case_difficulty_levels'
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True, autoincrement=True)
-    level_code: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
     level_name: Mapped[str]
 
     cases = relationship('Cases', back_populates='difficulty_level')
@@ -42,21 +42,6 @@ class Cases(Base):
     difficulty_level = relationship('DifficultyLevels', back_populates='cases')
     case_semesters = relationship('CaseSemesters', back_populates='case')
 
-    @property
-    def university_name(self) -> Optional[str]:
-        return self.university.uni_name if self.university else None
-
-    @property
-    def difficulty_level_name(self) -> Optional[str]:
-        return self.difficulty_level.level_name if self.difficulty_level else None
-
-    @property
-    def creator_email(self) -> Optional[str]:
-        return self.creator.email if self.creator else None
-
-    @property
-    def status_name(self) -> Optional[str]:
-        return self.status.status_name if self.status else None
 
 
 class CaseSemesters(Base):
@@ -75,7 +60,7 @@ class CaseStatuses(Base):
     __tablename__ = 'case_statuses'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    status_code: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
     status_name: Mapped[str]
 
     cases = relationship('Cases', back_populates='status')
@@ -119,6 +104,3 @@ class EvaluationFormComments(Base):
 
     form = relationship('EvaluationForm', back_populates='comments')
     creator = relationship('Users', back_populates='evaluation_form_comments')
-
-
-

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
@@ -7,16 +7,38 @@ import SemesterFilter from '../../components/cases/CaseFilters/SemesterFilter';
 import BulkActionsBar from '../../components/cases/BulkActions/BulkActionsBar';
 import ActionsDropdown from '../../components/sent-cases/ActionsDropdown';
 import CaseCard from '../../components/cases/CaseCard/CaseCard';
-import { testCases } from '../../data/cases';
+import { getCases, type Case } from '../../services/cases';
 import './casesPage.css';
 
 const CasesPage = () => {
   const navigate = useNavigate();
+  const [cases, setCases] = useState<Case[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Все кейсы');
   const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
   const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
 
-  const availableSemesters = [...new Set(testCases.map(c => c.semester).filter(Boolean))] as string[];
+  // Загрузка кейсов из API
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setLoading(true);
+        const data = await getCases();
+        setCases(data);
+      } catch (error) {
+        console.error('Ошибка загрузки кейсов:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCases();
+  }, []);
+
+  // Доступные семестры из реальных данных
+  const availableSemesters = useMemo(() => {
+    const semesters = [...new Set(cases.map(c => c.semester).filter(Boolean))] as string[];
+    return semesters;
+  }, [cases]);
 
   const getStatusForFilter = (status: string) => {
     if (status === 'Активные кейсы') return 'Активный';
@@ -24,7 +46,7 @@ const CasesPage = () => {
     return status;
   };
 
-  const filteredCases = testCases.filter(caseItem => {
+  const filteredCases = cases.filter(caseItem => {
     if (statusFilter !== 'Все кейсы') {
       const filterStatus = getStatusForFilter(statusFilter);
       if (caseItem.status !== filterStatus) return false;
@@ -35,7 +57,7 @@ const CasesPage = () => {
     return true;
   });
 
-  const selectedCases = testCases.filter(c => selectedCaseIds.includes(c.id));
+  const selectedCases = cases.filter(c => selectedCaseIds.includes(c.id));
   const allSelectedAreSent = useMemo(() => {
     if (selectedCaseIds.length === 0) return false;
     return selectedCases.every(c => c.status === 'Отправлено');
@@ -50,19 +72,23 @@ const CasesPage = () => {
   };
 
   const handleDelete = () => {
-    alert(`Удалить кейсы: ${selectedCaseIds.join(', ')}`);
+    console.log(`Удалить кейсы: ${selectedCaseIds.join(', ')}`);
+    // TODO: вызвать API удаления
   };
 
   const handleMarkActive = () => {
-    alert(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
+    console.log(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
+    // TODO: вызвать API активации
   };
 
   const handleSendToRevision = () => {
-    alert(`Отправить на доработку: ${selectedCaseIds.join(', ')}`);
+    console.log(`Отправить на доработку: ${selectedCaseIds.join(', ')}`);
+    // TODO: вызвать API отправки на доработку
   };
 
   const handleActivate = () => {
-    alert(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
+    console.log(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
+    // TODO: вызвать API активации
   };
 
   const handleCreateCase = () => {
@@ -83,6 +109,15 @@ const CasesPage = () => {
 
   const hasSelectedCases = selectedCaseIds.length > 0;
 
+  if (loading) {
+    return (
+      <div className="page-wrapper cases-page">
+        <Header />
+        <div className="loading-container">Загрузка кейсов...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper cases-page">
       <Header />
@@ -101,11 +136,13 @@ const CasesPage = () => {
           />
         </div>
         <div className="filters-row">
-          <SemesterFilter
-            selectedSemesters={selectedSemesters}
-            onSemesterChange={setSelectedSemesters}
-            availableSemesters={availableSemesters}
-          />
+          {availableSemesters.length > 0 && (
+            <SemesterFilter
+              selectedSemesters={selectedSemesters}
+              onSemesterChange={setSelectedSemesters}
+              availableSemesters={availableSemesters}
+            />
+          )}
           {hasSelectedCases && allSelectedAreSent && (
             <ActionsDropdown
               onSendToRevision={handleSendToRevision}
@@ -120,12 +157,13 @@ const CasesPage = () => {
           <CaseCard
             key={caseItem.id}
             type="case"
+            id={caseItem.id}
             title={caseItem.title}
-            description={caseItem.description}
+            description={caseItem.description || ''}
             status={caseItem.status}
             defaultOpen={false}
-            likes={caseItem.likes}
-            dislikes={caseItem.dislikes}
+            likes={caseItem.likes || 0}
+            dislikes={caseItem.dislikes || 0}
             onOpenFull={() => handleOpenFullCase(caseItem.id)}
             onComment={() => handleComment(caseItem.id)}
             showCheckbox={true}

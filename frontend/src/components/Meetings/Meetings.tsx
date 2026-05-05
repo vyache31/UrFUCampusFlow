@@ -1,14 +1,33 @@
-import { useState } from 'react';
-import { testMeetings, weeklyMeetings } from '../../data';
+import { useState, useEffect } from 'react';
 import { truncateMeetingProject, truncateMeetingTeam } from '../../utils/truncate';
 import { ExpandArrowIcon, CollapseArrowIcon } from '../common/Icons/Icons';
+import { getMeetings } from '../../services/meetings';
+import type { Meeting } from '../../services/meetings';
 import './meetings.css';
 
 const Meetings = () => {
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  const visibleMeetings = testMeetings.slice(0, 2);
-  const allMeetings = isExpanded ? [...visibleMeetings, ...weeklyMeetings] : visibleMeetings;
+
+  useEffect(() => {
+    const fetchMeetings = async () => {
+      try {
+        const data = await getMeetings();
+        setMeetings(data.slice(0, 2));
+      } catch (error) {
+        console.error('Ошибка загрузки встреч:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMeetings();
+  }, []);
+
+  // Временная заглушка, пока нет данных с бэка
+  const allMeetings = meetings;
+
+  if (loading) return <div>Загрузка встреч...</div>;
 
   return (
     <section className="section">
@@ -23,7 +42,6 @@ const Meetings = () => {
         </div>
 
         {allMeetings.map((meeting) => {
-          // Для таблицы встреч - сильная обрезка
           const { displayText: displayProject, fullText: fullProject } = truncateMeetingProject(meeting.project);
           const { displayText: displayTeam, fullText: fullTeam } = truncateMeetingTeam(meeting.teamName);
           

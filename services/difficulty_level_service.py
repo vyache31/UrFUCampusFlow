@@ -10,7 +10,7 @@ class DifficultyLevelService:
 
     async def create_difficulty_level(self, schema: DifficultyLevelCreate) -> DifficultyLevels:
         level = DifficultyLevels(
-            level_code=schema.level_code,
+            code=schema.code,
             level_name=schema.level_name
         )
 

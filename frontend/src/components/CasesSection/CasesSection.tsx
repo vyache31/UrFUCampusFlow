@@ -1,46 +1,52 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import CaseCard from '../cases/CaseCard/CaseCard';
-import { testCases } from '../../data/cases';
+import { getCases } from '../../services/cases';
+import type { Case } from '../../services/cases';
 import './casesSection.css';
 
 const CasesSection = () => {
   const navigate = useNavigate();
-  const dashboardCases = testCases.slice(0, 2);
-  
-  const handleOpenFullCase = (caseId: string) => {
-    navigate(`/cases/${caseId}`);
-  };
+  const [cases, setCases] = useState<Case[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleComment = (caseId: string) => {
-    navigate(`/cases/${caseId}/comments`);
-  };
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const data = await getCases();
+        setCases(data.slice(0, 2));
+      } catch (error) {
+        console.error('Ошибка загрузки кейсов:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCases();
+  }, []);
 
   const handleViewAllCases = () => {
     navigate('/cases');
   };
+
+  if (loading) return <div>Загрузка кейсов...</div>;
 
   return (
     <section className="section">
       <div className="section-header">
         <h2 className="section-title">Все кейсы</h2>
       </div>
-
-      {dashboardCases.map((caseItem) => (
+      {cases.map((caseItem) => (
         <CaseCard
           key={caseItem.id}
           type="case"
+          id={caseItem.id}
           title={caseItem.title}
-          description={caseItem.description}
+          description={caseItem.description || ''}
           status={caseItem.status}
-          defaultOpen={false}
           likes={caseItem.likes}
           dislikes={caseItem.dislikes}
-          onOpenFull={() => handleOpenFullCase(caseItem.id)}
-          onComment={() => handleComment(caseItem.id)}
-          showCheckbox={false}  // ← СКРЫВАЕМ ЧЕКБОКС НА ГЛАВНОЙ
         />
       ))}
-
       <button className="view-all-btn" onClick={handleViewAllCases}>
         Перейти ко всем кейсам
       </button>
