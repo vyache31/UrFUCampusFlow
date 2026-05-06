@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, GenerateIcon } from '../../components/common/Icons/Icons';
-import { validateForm } from '../../utils/validation';
+import { createCase } from '../../services/cases';
 import './caseCreatePage.css';
 
 const CaseCreatePage = () => {
@@ -11,46 +11,35 @@ const CaseCreatePage = () => {
   
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
-  const customerOrgRef = useRef<HTMLDivElement>(null);
-  const customerNameRef = useRef<HTMLDivElement>(null);
   const expectedResultRef = useRef<HTMLDivElement>(null);
   const criteriaRef = useRef<HTMLDivElement>(null);
-  const programHeadRef = useRef<HTMLDivElement>(null);
   const educationProgramRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    customerOrg: '',
-    customerName: '',
     expectedResult: '',
     criteria: '',
-    programHead: '',
     educationProgram: '',
     semester: ''
   });
 
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Лимиты для полей
   const fieldLimits: Record<string, number> = {
     title: 100,
     description: 2000,
-    customerOrg: 200,
-    customerName: 100,
     expectedResult: 1000,
     criteria: 2000,
-    programHead: 100,
-    educationProgram: 150
+    educationProgram: 150,
   };
 
-  // Функция для ограничения высоты
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
     
     const checkHeight = () => {
       const scrollHeight = element.scrollHeight;
-      
       if (scrollHeight > maxHeight) {
         element.style.maxHeight = maxHeight + 'px';
         element.style.overflowY = 'auto';
@@ -65,22 +54,16 @@ const CaseCreatePage = () => {
     element.addEventListener('input', checkHeight);
     element.addEventListener('paste', () => setTimeout(checkHeight, 10));
     element.addEventListener('keydown', () => setTimeout(checkHeight, 10));
-    
     const observer = new MutationObserver(checkHeight);
     observer.observe(element, { childList: true, subtree: true, characterData: true });
-    
     setTimeout(checkHeight, 100);
   };
 
-  // Настройка скролла
   useEffect(() => {
     setupScrollableEditable(titleRef.current, 53);
     setupScrollableEditable(descriptionRef.current, 116);
-    setupScrollableEditable(customerOrgRef.current, 53);
-    setupScrollableEditable(customerNameRef.current, 53);
     setupScrollableEditable(expectedResultRef.current, 95);
     setupScrollableEditable(criteriaRef.current, 137);
-    setupScrollableEditable(programHeadRef.current, 53);
     setupScrollableEditable(educationProgramRef.current, 53);
   }, []);
 
@@ -127,9 +110,8 @@ const CaseCreatePage = () => {
     }
   };
 
-  // Дополнительный эффект для отслеживания empty
   useEffect(() => {
-    const elements = [titleRef, descriptionRef, customerOrgRef, customerNameRef, expectedResultRef, criteriaRef, programHeadRef, educationProgramRef];
+    const elements = [titleRef, descriptionRef, expectedResultRef, criteriaRef, educationProgramRef];
     elements.forEach(ref => {
       const el = ref.current;
       if (el) {
@@ -139,22 +121,47 @@ const CaseCreatePage = () => {
     });
   }, []);
 
-  const handleSave = () => {
-    const { isValid, errors: validationErrors } = validateForm(formData);
+  const handleSave = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'Введите название кейса';
+    if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
+    if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
+    if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
+    if (!formData.semester) newErrors.semester = 'Выберите семестр';
     
-    if (!isValid) {
-      setErrors(validationErrors);
-      const firstErrorField = Object.keys(validationErrors)[0];
-      const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     
-    setErrors({});
-    console.log('Создан новый кейс:', formData);
-    navigate('/cases');
+    try {
+      setSaving(true);
+      
+      const creator_id = localStorage.getItem('user_id') || 'b494bae1-fddf-4adc-a04e-fed2e4de25ea';
+      
+      const caseForAPI = {
+        title: formData.title,
+        project_goals: formData.description,
+        required_result: formData.expectedResult,
+        grade_criteria: formData.criteria,
+        study_program: formData.educationProgram,
+        difficulty_level_id: 1,
+        status_id: formData.semester === 'Осенний' ? 1 : 2,
+        university_id: 1,
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        creator_id: creator_id,
+      };
+      
+      const newCase = await createCase(caseForAPI);
+      console.log('Создан кейс:', newCase);
+      navigate('/cases');
+    } catch (error) {
+      console.error('Ошибка создания кейса:', error);
+      setErrors({ submit: 'Не удалось создать кейс' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleGenerate = () => {
@@ -179,15 +186,14 @@ const CaseCreatePage = () => {
             <GenerateIcon />
             <span>Сгенерировать</span>
           </button>
-          <button className="save-btn" onClick={handleSave}>
+          <button className="save-btn" onClick={handleSave} disabled={saving}>
             <SaveIcon />
-            <span>Сохранить</span>
+            <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
           </button>
         </div>
       </div>
 
       <div className="create-form">
-        {/* Название кейса */}
         <div className="form-field" data-field="title">
           <label className="form-label">Название кейса</label>
           <div
@@ -202,12 +208,11 @@ const CaseCreatePage = () => {
           {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
 
-        {/* Описание кейса */}
         <div className="form-field" data-field="description">
           <label className="form-label">Описание кейса</label>
           <div
             ref={descriptionRef}
-            className="editable-box empty"
+            className="editable-box description-box empty"
             contentEditable
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
@@ -217,37 +222,6 @@ const CaseCreatePage = () => {
           {errors.description && <div className="error-message">{errors.description}</div>}
         </div>
 
-        {/* Организация заказчика */}
-        <div className="form-field" data-field="customerOrg">
-          <label className="form-label">Организация заказчика</label>
-          <div
-            ref={customerOrgRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'customerOrg')}
-            onInput={() => handleContentChange('customerOrg', customerOrgRef.current)}
-            data-placeholder="Введите организацию заказчика"
-          />
-          {errors.customerOrg && <div className="error-message">{errors.customerOrg}</div>}
-        </div>
-
-        {/* ФИО заказчика */}
-        <div className="form-field" data-field="customerName">
-          <label className="form-label">ФИО заказчика</label>
-          <div
-            ref={customerNameRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'customerName')}
-            onInput={() => handleContentChange('customerName', customerNameRef.current)}
-            data-placeholder="Введите ФИО заказчика"
-          />
-          {errors.customerName && <div className="error-message">{errors.customerName}</div>}
-        </div>
-
-        {/* Предполагаемый результат */}
         <div className="form-field" data-field="expectedResult">
           <label className="form-label">Предполагаемый результат</label>
           <div
@@ -262,7 +236,6 @@ const CaseCreatePage = () => {
           {errors.expectedResult && <div className="error-message">{errors.expectedResult}</div>}
         </div>
 
-        {/* Критерии оценки */}
         <div className="form-field" data-field="criteria">
           <label className="form-label">Критерии оценки</label>
           <div
@@ -277,22 +250,6 @@ const CaseCreatePage = () => {
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
         </div>
 
-        {/* Главный руководитель */}
-        <div className="form-field" data-field="programHead">
-          <label className="form-label">Главный руководитель образовательной программы</label>
-          <div
-            ref={programHeadRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'programHead')}
-            onInput={() => handleContentChange('programHead', programHeadRef.current)}
-            data-placeholder="Введите ФИО руководителя"
-          />
-          {errors.programHead && <div className="error-message">{errors.programHead}</div>}
-        </div>
-
-        {/* Образовательная программа */}
         <div className="form-field" data-field="educationProgram">
           <label className="form-label">Образовательная программа</label>
           <div
@@ -307,7 +264,6 @@ const CaseCreatePage = () => {
           {errors.educationProgram && <div className="error-message">{errors.educationProgram}</div>}
         </div>
 
-        {/* Семестр */}
         <div className="form-field form-field-row" data-field="semester">
           <label className="form-label">Семестр</label>
           <div className="semester-wrapper">
@@ -328,6 +284,8 @@ const CaseCreatePage = () => {
             {errors.semester && <div className="error-message semester-error">{errors.semester}</div>}
           </div>
         </div>
+
+        {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
     </div>
   );

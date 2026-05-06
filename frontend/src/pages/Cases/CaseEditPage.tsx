@@ -1,75 +1,132 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
-import EditableField from '../../components/common/EditableField/EditableField';
-import { testCases } from '../../data/cases';
+import { getCaseById, updateCase } from '../../services/cases';
 import { SaveIcon, DeleteIcon } from '../../components/common/Icons/Icons';
-import { validateForm } from '../../utils/validation';
 import './caseEditPage.css';
 
 const CaseEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const caseData = testCases.find(c => c.id === id);
   
+  const titleRef = useRef<HTMLDivElement>(null);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const expectedResultRef = useRef<HTMLDivElement>(null);
+  const criteriaRef = useRef<HTMLDivElement>(null);
+  const educationProgramRef = useRef<HTMLDivElement>(null);
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    customerOrg: 'Альфа-Банк, Департамент малого и среднего бизнеса',
-    customerName: 'Кузнецов Дмитрий Андреевич',
-    expectedResult: 'Прототип мобильного приложения (iOS/Android) с реализованной скоринговой моделью, возможностью ввода данных по клиенту и формирования заключения о кредитном риске. Результат должен включать техническую документацию и презентацию для руководства.',
-    criteria: '1. Корректность работы скоринговой модели (точность предсказания — не менее 80% на тестовых данных).\n2. Удобство интерфейса (время заполнения анкеты — не более 3 минут).\n3. Стабильность работы в офлайн-режиме.\n4. Полнота технической документации.\n5. Качество презентации и защиты решения.',
-    programHead: 'Смирнова Елена Викторовна',
-    educationProgram: '09.03.04/33.01 Программная инженерия',
-    semester: 'Весенний'
+    expectedResult: '',
+    criteria: '',
+    educationProgram: '',
+    semester: ''
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const limits = {
+  useEffect(() => {
+    const fetchCase = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const data = await getCaseById(id);
+        
+        const semesterValue = data.status_id === 1 ? 'Осенний' : data.status_id === 2 ? 'Весенний' : '';
+        
+        const formValues = {
+          title: data.title,
+          description: data.project_goals || '',
+          expectedResult: data.required_result || '',
+          criteria: data.grade_criteria || '',
+          educationProgram: data.study_program || '',
+          semester: semesterValue
+        };
+        
+        setFormData(formValues);
+        
+        if (titleRef.current) titleRef.current.innerText = formValues.title;
+        if (descriptionRef.current) descriptionRef.current.innerText = formValues.description;
+        if (expectedResultRef.current) expectedResultRef.current.innerText = formValues.expectedResult;
+        if (criteriaRef.current) criteriaRef.current.innerText = formValues.criteria;
+        if (educationProgramRef.current) educationProgramRef.current.innerText = formValues.educationProgram;
+        
+      } catch (error) {
+        console.error('Ошибка загрузки кейса:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCase();
+  }, [id]);
+
+  const fieldLimits: Record<string, number> = {
     title: 100,
     description: 2000,
-    customerOrg: 200,
-    customerName: 100,
     expectedResult: 1000,
     criteria: 2000,
-    programHead: 100,
-    educationProgram: 150
+    educationProgram: 150,
   };
 
-  const fieldHeights = {
-    title: 53,
-    description: 116,
-    customerOrg: 53,
-    customerName: 53,
-    expectedResult: 95,
-    criteria: 137,
-    programHead: 53,
-    educationProgram: 53
+  const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
+    if (!element) return;
+    
+    const checkHeight = () => {
+      const scrollHeight = element.scrollHeight;
+      if (scrollHeight > maxHeight) {
+        element.style.maxHeight = maxHeight + 'px';
+        element.style.overflowY = 'auto';
+        element.classList.add('with-scroll');
+      } else {
+        element.style.maxHeight = 'none';
+        element.style.overflowY = 'visible';
+        element.classList.remove('with-scroll');
+      }
+    };
+    
+    element.addEventListener('input', checkHeight);
+    element.addEventListener('paste', () => setTimeout(checkHeight, 10));
+    element.addEventListener('keydown', () => setTimeout(checkHeight, 10));
+    const observer = new MutationObserver(checkHeight);
+    observer.observe(element, { childList: true, subtree: true, characterData: true });
+    setTimeout(checkHeight, 100);
   };
 
   useEffect(() => {
-    if (caseData) {
-      let semesterValue = 'Весенний';
-      if (caseData.semester) {
-        if (caseData.semester.includes('Осень')) {
-          semesterValue = 'Осенний';
-        } else if (caseData.semester.includes('Весна')) {
-          semesterValue = 'Весенний';
-        }
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        title: caseData.title,
-        description: caseData.description,
-        semester: semesterValue
-      }));
+    if (!loading) {
+      setupScrollableEditable(titleRef.current, 53);
+      setupScrollableEditable(descriptionRef.current, 116);
+      setupScrollableEditable(expectedResultRef.current, 95);
+      setupScrollableEditable(criteriaRef.current, 137);
+      setupScrollableEditable(educationProgramRef.current, 53);
     }
-  }, [caseData]);
+  }, [loading]);
 
-  const handleFieldChange = (field: string, value: string) => {
+  const handleBeforeInput = (e: React.FormEvent<HTMLDivElement>, field: string) => {
+    const target = e.currentTarget;
+    const maxLength = fieldLimits[field];
+    if (!maxLength) return;
+    
+    const currentLength = target.innerText.length;
+    const inputEvent = e.nativeEvent as InputEvent;
+    const insertedText = inputEvent.data || '';
+    
+    if (currentLength + insertedText.length > maxLength) {
+      e.preventDefault();
+      setErrors(prev => ({ ...prev, [field]: `Максимум ${maxLength} символов` }));
+    } else if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleContentChange = (field: string, element: HTMLDivElement | null) => {
+    if (!element) return;
+    const value = element.innerText;
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -83,28 +140,96 @@ const CaseEditPage = () => {
     }
   };
 
-  const handleSave = () => {
-    const { isValid, errors: validationErrors } = validateForm(formData);
+  const updateEmptyClass = (element: HTMLDivElement | null) => {
+    if (!element) return;
+      const text = element.innerText.trim();
+      const isEmpty = text === '';
     
-    if (!isValid) {
-      setErrors(validationErrors);
-      const firstErrorField = Object.keys(validationErrors)[0];
-      const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
+    if (isEmpty) {
+      element.classList.add('empty');
+    } else {
+      element.classList.remove('empty');
     }
+};
+
+useEffect(() => {
+  if (!loading) {
+    const elements = [
+      { ref: titleRef, field: 'title' },
+      { ref: descriptionRef, field: 'description' },
+      { ref: expectedResultRef, field: 'expectedResult' },
+      { ref: criteriaRef, field: 'criteria' },
+      { ref: educationProgramRef, field: 'educationProgram' }
+    ];
     
-    setErrors({});
-    console.log('Сохраненные данные:', formData);
+    setTimeout(() => {
+      elements.forEach(({ ref }) => {
+        const el = ref.current;
+        if (el) {
+          updateEmptyClass(el);
+        }
+      });
+    }, 50);
+  }
+}, [loading, formData]);
+
+const handleSave = async () => {
+  const newErrors: Record<string, string> = {};
+  if (!formData.title.trim()) newErrors.title = 'Введите название кейса';
+  if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
+  if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
+  if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
+  if (!formData.semester) newErrors.semester = 'Выберите семестр';
+  
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+  
+  try {
+    setSaving(true);
+    const currentCase = await getCaseById(id!);
+    
+    const caseForAPI = {
+      title: formData.title,
+      difficulty_level_id: currentCase.difficulty_level_id || 1,
+      project_goals: formData.description,
+      required_result: formData.expectedResult,
+      grade_criteria: formData.criteria,
+      study_program: formData.educationProgram,
+      status_id: formData.semester === 'Осенний' ? 1 : 2,
+      university_id: currentCase.university_id || 1,
+      start_date: currentCase.start_date,
+      end_date: currentCase.end_date,
+      creator_id: currentCase.creator_id,
+    };
+    
+    console.log('Отправляем на обновление:', caseForAPI);
+    
+    await updateCase(id!, caseForAPI);
+    console.log('Кейс обновлён');
     navigate(`/cases/${id}`);
+    } catch (error) {
+      console.error('Ошибка обновления кейса:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: unknown } };
+        console.log('Детали ошибки:', axiosError.response?.data);
+        setErrors({ submit: 'Ошибка валидации. Проверьте поля.' });
+      } else {
+        setErrors({ submit: 'Не удалось обновить кейс' });
+      }
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('Вы уверены, что хотите удалить этот кейс?')) {
-      console.log('Удален кейс:', id);
-      navigate('/cases');
+      try {
+        // вызвать API удаления
+        console.log('Удален кейс:', id);
+        navigate('/cases');
+      } catch (error) {
+        console.error('Ошибка удаления:', error);
+      }
     }
   };
 
@@ -115,11 +240,11 @@ const CaseEditPage = () => {
     { label: 'Редактирование' },
   ];
 
-  if (!caseData) {
+  if (loading) {
     return (
       <div className="page-wrapper">
         <Header />
-        <div className="not-found">Кейс не найден</div>
+        <div className="loading-container">Загрузка...</div>
       </div>
     );
   }
@@ -136,9 +261,9 @@ const CaseEditPage = () => {
             <DeleteIcon />
             <span>Удалить</span>
           </button>
-          <button className="save-btn" onClick={handleSave}>
+          <button className="save-btn" onClick={handleSave} disabled={saving}>
             <SaveIcon />
-            <span>Сохранить</span>
+            <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
           </button>
         </div>
       </div>
@@ -146,93 +271,74 @@ const CaseEditPage = () => {
       <div className="edit-form">
         <div className="form-field" data-field="title">
           <label className="form-label">Название кейса</label>
-          <EditableField
-            value={formData.title}
-            onChange={(v) => handleFieldChange('title', v)}
-            maxLength={limits.title}
-            maxHeight={fieldHeights.title}
+          <div
+            ref={titleRef}
+            className="editable-box empty"
+            contentEditable
+            suppressContentEditableWarning
+            onBeforeInput={(e) => handleBeforeInput(e, 'title')}
+            onInput={() => handleContentChange('title', titleRef.current)}
+            data-placeholder="Введите название кейса"
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
 
         <div className="form-field" data-field="description">
           <label className="form-label">Описание кейса</label>
-          <EditableField
-            value={formData.description}
-            onChange={(v) => handleFieldChange('description', v)}
-            maxLength={limits.description}
-            maxHeight={fieldHeights.description}
+          <div
+            ref={descriptionRef}
+            className="editable-box empty"
+            contentEditable
+            suppressContentEditableWarning
+            onBeforeInput={(e) => handleBeforeInput(e, 'description')}
+            onInput={() => handleContentChange('description', descriptionRef.current)}
+            data-placeholder="Введите описание кейса"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
         </div>
 
-        <div className="form-field" data-field="customerOrg">
-          <label className="form-label">Организация заказчика</label>
-          <EditableField
-            value={formData.customerOrg}
-            onChange={(v) => handleFieldChange('customerOrg', v)}
-            maxLength={limits.customerOrg}
-            maxHeight={fieldHeights.customerOrg}
-          />
-          {errors.customerOrg && <div className="error-message">{errors.customerOrg}</div>}
-        </div>
-
-        <div className="form-field" data-field="customerName">
-          <label className="form-label">ФИО заказчика</label>
-          <EditableField
-            value={formData.customerName}
-            onChange={(v) => handleFieldChange('customerName', v)}
-            maxLength={limits.customerName}
-            maxHeight={fieldHeights.customerName}
-          />
-          {errors.customerName && <div className="error-message">{errors.customerName}</div>}
-        </div>
-
         <div className="form-field" data-field="expectedResult">
           <label className="form-label">Предполагаемый результат</label>
-          <EditableField
-            value={formData.expectedResult}
-            onChange={(v) => handleFieldChange('expectedResult', v)}
-            maxLength={limits.expectedResult}
-            maxHeight={fieldHeights.expectedResult}
+          <div
+            ref={expectedResultRef}
+            className="editable-box empty"
+            contentEditable
+            suppressContentEditableWarning
+            onBeforeInput={(e) => handleBeforeInput(e, 'expectedResult')}
+            onInput={() => handleContentChange('expectedResult', expectedResultRef.current)}
+            data-placeholder="Введите предполагаемый результат"
           />
           {errors.expectedResult && <div className="error-message">{errors.expectedResult}</div>}
         </div>
 
         <div className="form-field" data-field="criteria">
           <label className="form-label">Критерии оценки</label>
-          <EditableField
-            value={formData.criteria}
-            onChange={(v) => handleFieldChange('criteria', v)}
-            maxLength={limits.criteria}
-            maxHeight={fieldHeights.criteria}
+          <div
+            ref={criteriaRef}
+            className="editable-box criteria-box empty"
+            contentEditable
+            suppressContentEditableWarning
+            onBeforeInput={(e) => handleBeforeInput(e, 'criteria')}
+            onInput={() => handleContentChange('criteria', criteriaRef.current)}
+            data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
         </div>
 
-        <div className="form-field" data-field="programHead">
-          <label className="form-label">Главный руководитель образовательной программы</label>
-          <EditableField
-            value={formData.programHead}
-            onChange={(v) => handleFieldChange('programHead', v)}
-            maxLength={limits.programHead}
-            maxHeight={fieldHeights.programHead}
-          />
-          {errors.programHead && <div className="error-message">{errors.programHead}</div>}
-        </div>
-
         <div className="form-field" data-field="educationProgram">
           <label className="form-label">Образовательная программа</label>
-          <EditableField
-            value={formData.educationProgram}
-            onChange={(v) => handleFieldChange('educationProgram', v)}
-            maxLength={limits.educationProgram}
-            maxHeight={fieldHeights.educationProgram}
+          <div
+            ref={educationProgramRef}
+            className="editable-box empty"
+            contentEditable
+            suppressContentEditableWarning
+            onBeforeInput={(e) => handleBeforeInput(e, 'educationProgram')}
+            onInput={() => handleContentChange('educationProgram', educationProgramRef.current)}
+            data-placeholder="Введите образовательную программу"
           />
           {errors.educationProgram && <div className="error-message">{errors.educationProgram}</div>}
         </div>
 
-        {/* Семестр */}
         <div className="form-field form-field-row" data-field="semester">
           <label className="form-label">Семестр</label>
           <div className="semester-wrapper">
@@ -253,6 +359,8 @@ const CaseEditPage = () => {
             {errors.semester && <div className="error-message semester-error">{errors.semester}</div>}
           </div>
         </div>
+
+        {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
     </div>
   );

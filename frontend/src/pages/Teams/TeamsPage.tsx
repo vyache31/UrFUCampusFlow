@@ -1,19 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import TeamStatusFilter from '../../components/teams/TeamFilters/TeamStatusFilter';
 import TeamBulkActionsBar from '../../components/teams/TeamBulkActions/TeamBulkActionsBar';
 import TeamCard from '../../components/teams/TeamCard/TeamCard';
-import { testTeams } from '../../data/teams';
+import { getTeams, type Team } from '../../services/teams';
 import './teamsPage.css';
 
 const TeamsPage = () => {
   const navigate = useNavigate();
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Все команды');
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
 
-  const filteredTeams = testTeams.filter(team => {
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        setLoading(true);
+        const data = await getTeams();
+        setTeams(data);
+      } catch (error) {
+        console.error('Ошибка загрузки команд:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTeams();
+  }, []);
+
+  const filteredTeams = teams.filter(team => {
     if (statusFilter !== 'Все команды' && team.status !== statusFilter) {
       return false;
     }
@@ -29,7 +46,7 @@ const TeamsPage = () => {
   };
 
   const handleDelete = () => {
-    alert(`Удалить команды: ${selectedTeamIds.join(', ')}`);
+    console.log(`Удалить команды: ${selectedTeamIds.join(', ')}`);
   };
 
   const handleCreateTeam = () => {
@@ -43,6 +60,15 @@ const TeamsPage = () => {
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
   ];
+
+  if (loading) {
+    return (
+      <div className="page-wrapper teams-page">
+        <Header />
+        <div className="loading-container">Загрузка команд...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-wrapper teams-page">
@@ -68,7 +94,7 @@ const TeamsPage = () => {
             key={team.id}
             id={team.id}
             name={team.name}
-            description={team.description}
+            description={team.description || ''}
             status={team.status}
             defaultOpen={false}
             onOpenFull={handleOpenFullTeam}

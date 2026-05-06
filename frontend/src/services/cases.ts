@@ -3,21 +3,19 @@ import api from './api';
 export interface Case {
   id: string;
   title: string;
-  description?: string;
   project_goals?: string;
   required_result?: string;
   grade_criteria?: string;
-  status: string;
-  semester?: string;
-  likes?: number;
-  dislikes?: number;
-  difficulty_level_id?: number;
-  creator_id?: string;
   study_program?: string;
+  difficulty_level_id?: number;
+  status_id?: number;
+  university_id?: number;
   start_date?: string;
   end_date?: string;
-  university_id?: number;
-  status_id?: number;
+  creator_id?: string;
+  customerOrg?: string;
+  customerName?: string;
+  programHead?: string;
 }
 
 export const getCases = async (): Promise<Case[]> => {

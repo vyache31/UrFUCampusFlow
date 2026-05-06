@@ -9,6 +9,7 @@ import ReportPage from '../pages/Report/ReportPage';
 import TeamsPage from '../pages/Teams/TeamsPage';
 import LoginPage from '../pages/Login/LoginPage';
 import TeamCreatePage from '../pages/Teams/TeamCreatePage';
+import TeamViewPage from '../pages/Teams/TeamViewPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/report" element={<ReportPage />} /> 
         <Route path="/teams" element={<TeamsPage />} />
         <Route path="/teams/create" element={<TeamCreatePage />} />
+        <Route path="/teams/:id" element={<TeamViewPage />} />
       </Routes>
     </BrowserRouter>
   );
