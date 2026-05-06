@@ -41,10 +41,10 @@ const CasesSection = () => {
           type="case"
           id={caseItem.id}
           title={caseItem.title}
-          description={caseItem.description || ''}
-          status={caseItem.status}
-          likes={caseItem.likes}
-          dislikes={caseItem.dislikes}
+          description={caseItem.description || caseItem.project_goals || ''}
+          status={caseItem.status || 'На оценке'}
+          likes={caseItem.likes || 0}
+          dislikes={caseItem.dislikes || 0}
         />
       ))}
       <button className="view-all-btn" onClick={handleViewAllCases}>

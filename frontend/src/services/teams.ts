@@ -1,10 +1,22 @@
 import api from './api';
 
+export interface TeamMember {
+  name: string;
+  role: string;
+  university: string;
+  group: string;
+}
+
 export interface Team {
   id: string;
   name: string;
   description?: string;
   status: string;
+  notes?: string;
+  members?: TeamMember[];
+  caseId?: string;
+  caseName?: string;
+  createdAt?: string;
 }
 
 export const getTeams = async (): Promise<Team[]> => {

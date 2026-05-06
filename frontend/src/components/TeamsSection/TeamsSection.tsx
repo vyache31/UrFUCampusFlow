@@ -41,7 +41,7 @@ const TeamsSection = () => {
           type="team"
           id={team.id}
           title={team.name}
-          description={team.description}
+          description={team.description || ''}
           status={team.status}
         />
       ))}

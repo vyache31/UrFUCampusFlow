@@ -53,17 +53,26 @@ const CaseCard = ({
   const [disliked, setDisliked] = useState(false);
 
   const showReactions = type === 'case' && status === 'На оценке';
-  
+
   const { displayText: displayTitle, fullText: fullTitle } = truncateCardTitle(title);
+  
   const displayDescription = isOpen ? description : truncateCardDescription(description);
 
-  const handleOpenFull = () => {
-    if (onOpenFull) {
-      onOpenFull();
-    } else if (id) {
+  console.log('Description:', description);
+  console.log('Display description:', displayDescription);
+  console.log('Is open:', isOpen);
+
+const handleOpenFull = () => {
+  if (onOpenFull) {
+    onOpenFull();
+  } else if (id) {
+    if (type === 'case') {
       navigate(`/cases/${id}`);
+    } else if (type === 'team') {
+      navigate(`/teams/${id}`);
     }
-  };
+  }
+};
 
   const handleLike = () => {
     if (liked) {
@@ -131,59 +140,13 @@ const CaseCard = ({
               <span className="status-text">{status}</span>
             </div>
           )}
-          <button 
+          <div 
             className="accordion-open-btn" 
             onClick={handleOpenFull}
-            style={{
-              padding: '10px 20px',
-              background: '#F9E27D',
-              borderRadius: '25px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              fontSize: '16px',
-              fontWeight: '400',
-              whiteSpace: 'nowrap',
-              fontFamily: 'Montserrat, sans-serif',
-              border: 'none',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseDown={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = '#F6CF22';
-              e.currentTarget.style.outline = '1px solid #F6CF22';
-              e.currentTarget.style.outlineOffset = '-1px';
-              
-              const svg = e.currentTarget.querySelector('svg');
-              if (svg) {
-                svg.style.filter = 'invert(85%) sepia(51%) saturate(846%) hue-rotate(1deg) brightness(100%) contrast(98%)';
-              }
-            }}
-            onMouseUp={(e) => {
-              e.currentTarget.style.background = '#F9E27D';
-              e.currentTarget.style.color = '#202024';
-              e.currentTarget.style.outline = '';
-              
-              const svg = e.currentTarget.querySelector('svg');
-              if (svg) {
-                svg.style.filter = '';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#F9E27D';
-              e.currentTarget.style.color = '#202024';
-              e.currentTarget.style.outline = '';
-              
-              const svg = e.currentTarget.querySelector('svg');
-              if (svg) {
-                svg.style.filter = '';
-              }
-            }}
           >
             Открыть полностью
             <OpenFullIcon />
-          </button>
+          </div>
         </div>
         {isOpen && (
           <div className="accordion-body">

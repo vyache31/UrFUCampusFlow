@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon } from '../../components/common/Icons/Icons';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
-import { validateFormWithRules, teamValidationRules } from '../../utils/validation';
+import { createTeam } from '../../services/teams';
 import './teamCreatePage.css';
 
 interface TeamMember {
@@ -38,16 +38,10 @@ const TeamCreatePage = () => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [teamCases, setTeamCases] = useState<TeamCase[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
   
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
-
-  // Лимиты для полей
-  const fieldLimits: Record<string, number> = {
-    name: 100,
-    description: 2000,
-    notes: 500
-  };
 
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
@@ -85,8 +79,7 @@ const TeamCreatePage = () => {
 
   const handleBeforeInput = (e: React.FormEvent<HTMLDivElement>, field: string) => {
     const target = e.currentTarget;
-    const maxLength = fieldLimits[field];
-    if (!maxLength) return;
+    const maxLength = field === 'name' ? 100 : field === 'description' ? 2000 : 500;
     
     const currentLength = target.innerText.length;
     const inputEvent = e.nativeEvent as InputEvent;
@@ -111,9 +104,6 @@ const TeamCreatePage = () => {
 
   const handleStatusChange = (status: string) => {
     setFormData(prev => ({ ...prev, status }));
-    if (errors.status) {
-      setErrors(prev => ({ ...prev, status: '' }));
-    }
   };
 
   const updateEmptyClass = (element: HTMLDivElement | null) => {
@@ -159,29 +149,70 @@ const TeamCreatePage = () => {
     setTeamCases(teamCases.filter(c => c.id !== id));
   };
 
-  const handleSave = () => {
-    const formDataToValidate = {
-      name: formData.name,
-      description: formData.description,
-      status: formData.status
-    };
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
     
-    const { isValid, errors: validationErrors } = validateFormWithRules(formDataToValidate, teamValidationRules);
-    
-    if (!isValid) {
-      setErrors(validationErrors);
-      const firstErrorField = Object.keys(validationErrors)[0];
-      const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
+    if (!formData.name.trim()) {
+      newErrors.name = 'Введите название команды';
+    } else if (formData.name.trim().length < 3) {
+      newErrors.name = 'Название команды должно быть не менее 3 символов';
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = 'Название команды должно быть не более 100 символов';
     }
     
-    setErrors({});
-    console.log('Создана новая команда:', { ...formData, members, cases: teamCases });
-    navigate('/teams');
+    if (!formData.description.trim()) {
+      newErrors.description = 'Введите описание команды';
+    } else if (formData.description.trim().length < 10) {
+      newErrors.description = 'Описание команды должно быть не менее 10 символов';
+    } else if (formData.description.trim().length > 2000) {
+      newErrors.description = 'Описание команды должно быть не более 2000 символов';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
+
+  const handleSave = async () => {
+  if (!validateForm()) {
+    const firstErrorField = Object.keys(errors)[0];
+    const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
+    if (errorElement) {
+      errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return;
+  }
+  
+  try {
+    setSaving(true);
+    
+    const university_id = localStorage.getItem('university_id') 
+      ? Number(localStorage.getItem('university_id')) 
+      : 1; // временно ставим 1
+    
+    const teamForAPI = {
+      name: formData.name,
+      description: formData.description,
+      notes: formData.notes,  // заметки
+      university_id: university_id,
+      status: formData.status,
+    };
+    
+    console.log('Отправляем данные:', teamForAPI);
+    
+    const newTeam = await createTeam(teamForAPI);
+    console.log('Создана команда:', newTeam);
+    navigate('/teams');
+  } catch (error) {
+  console.error('Ошибка создания команды:', error);
+  const err = error as { response?: { data?: unknown } };
+  if (err.response?.data) {
+    console.log('Детали ошибки:', err.response.data);
+    setErrors({ submit: JSON.stringify(err.response.data) });
+  } else {
+    setErrors({ submit: 'Не удалось создать команду' });
+  }
+}
+};
 
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
@@ -198,9 +229,9 @@ const TeamCreatePage = () => {
 
       <div className="create-header">
         <h1 className="page-title">Создание команды</h1>
-        <button className="save-btn" onClick={handleSave}>
+        <button className="save-btn" onClick={handleSave} disabled={saving}>
           <SaveIcon />
-          <span>Сохранить</span>
+          <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
         </button>
       </div>
 
@@ -323,9 +354,11 @@ const TeamCreatePage = () => {
           </div>
           {errors.status && <div className="error-message">{errors.status}</div>}
         </div>
+
+        {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
 
-      {/* Модалки */}
+      {/* Модальные окна */}
       <AddMemberModal
         isOpen={isMemberModalOpen}
         onClose={() => setIsMemberModalOpen(false)}

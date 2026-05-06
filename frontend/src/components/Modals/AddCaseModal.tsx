@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
-import { testCases } from '../../data/cases';
+import { getCases, type Case } from '../../services/cases';
 import './Modal.css';
 
 interface AddCaseModalProps {
@@ -10,27 +10,42 @@ interface AddCaseModalProps {
 }
 
 const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
-  const [selectedCases, setSelectedCases] = useState<string[]>([]);
+  const [cases, setCases] = useState<Case[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCases = async () => {
+        try {
+          setLoading(true);
+          const data = await getCases();
+          setCases(data);
+        } catch (error) {
+          console.error('Ошибка загрузки кейсов:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCases();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleToggleCase = (caseId: string) => {
-    setSelectedCases(prev =>
-      prev.includes(caseId)
-        ? prev.filter(id => id !== caseId)
-        : [...prev, caseId]
-    );
+  const handleSelectCase = (caseId: string) => {
+    setSelectedCaseId(caseId);
   };
 
   const handleSubmit = () => {
-    selectedCases.forEach(caseId => {
-      const foundCase = testCases.find(c => c.id === caseId);
+    if (selectedCaseId) {
+      const foundCase = cases.find(c => c.id === selectedCaseId);
       if (foundCase) {
-        onAdd(caseId, foundCase.title);
+        onAdd(selectedCaseId, foundCase.title);
+        setSelectedCaseId(null);
+        onClose();
       }
-    });
-    setSelectedCases([]);
-    onClose();
+    }
   };
 
   return (
@@ -43,24 +58,33 @@ const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
         </div>
         
         <div className="modal-body">
-          <div className="cases-list-modal">
-            {testCases.map((caseItem) => (
-              <div
-                key={caseItem.id}
-                className={`case-item-modal ${selectedCases.includes(caseItem.id) ? 'selected' : ''}`}
-                onClick={() => handleToggleCase(caseItem.id)}
-              >
-                <div className="case-checkbox-modal">
-                  {selectedCases.includes(caseItem.id) && <CheckIcon />}
+          <div className="cases-scroll-list">
+            {loading ? (
+              <div className="loading-cases">Загрузка кейсов...</div>
+            ) : (
+              cases.map((caseItem) => (
+                <div
+                  key={caseItem.id}
+                  className={`case-item-modal ${selectedCaseId === caseItem.id ? 'selected' : ''}`}
+                  onClick={() => handleSelectCase(caseItem.id)}
+                >
+                  <div className="case-checkbox-modal">
+                    {selectedCaseId === caseItem.id && <CheckIcon />}
+                  </div>
+                  <span className="case-title-modal">{caseItem.title}</span>
                 </div>
-                <span className="case-title-modal">{caseItem.title}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
         
         <div className="modal-footer">
-          <button className="modal-add-btn" onClick={handleSubmit}>
+          <button 
+            className="modal-add-btn" 
+            onClick={handleSubmit}
+            disabled={!selectedCaseId}
+            style={{ opacity: !selectedCaseId ? 0.5 : 1 }}
+          >
             <CheckIcon />
             <span>Добавить</span>
           </button>

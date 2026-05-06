@@ -185,15 +185,6 @@
   border: none;
 }
 
-.case-title-modal {
-  flex: 1;
-  color: #202024;
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 400;
-  line-height: 21px;
-}
-
 /* Адаптив */
 @media (max-width: 900px) {
   .modal-large {
@@ -213,4 +204,376 @@
   .modal-input {
     width: 100%;
   }
+}
+
+/* Список кейсов с прокруткой */
+.cases-scroll-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cases-scroll-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cases-scroll-list::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.cases-scroll-list::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.cases-scroll-list::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.case-item-modal {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.case-item-modal:hover {
+  background: #EBEBEB;
+}
+
+.case-title-modal {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.loading-cases {
+  text-align: center;
+  padding: 20px;
+  color: #A5A5B0;
+}
+
+/* Модальное окно встречи */
+.schedule-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.schedule-modal-container {
+  width: 560px;
+  background: white;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.schedule-modal-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 20px 20px 0;
+  background: #A5A5B0;
+}
+
+.schedule-modal-close {
+  width: 24px;
+  height: 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+}
+
+.schedule-modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.schedule-modal-close svg path {
+  fill: #202024;
+}
+
+.schedule-modal-close:hover {
+  background: #E0E0E0;
+}
+
+.schedule-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.schedule-modal-footer {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.schedule-title {
+  text-align: center;
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.schedule-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.schedule-label {
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+  min-width: 170px;
+}
+
+.schedule-date-row-single {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.schedule-date-row-single .schedule-label {
+  min-width: 170px;
+}
+
+.datetime-group {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+.date-picker-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  padding: 10px 15px;
+  gap: 10px;
+}
+
+.date-picker-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  cursor: pointer;
+}
+
+.date-picker-input::placeholder {
+  color: #A5A5B0;
+}
+
+.date-picker-wrapper svg {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.time-input {
+  width: 85px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  border: none;
+  outline: none;
+  padding: 10px 15px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  text-align: center;
+}
+
+.time-input::placeholder {
+  color: #A5A5B0;
+}
+
+.weekdays-row {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.weekday-btn {
+  width: 48px;
+  padding: 8px 0;
+  background: transparent;
+  border-radius: 25px;
+  border: 1px solid #A5A5B0;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.weekday-btn:hover {
+  background: #F4F4F4;
+}
+
+.weekday-btn.active {
+  background: #F9E27D;
+  border-color: #F9E27D;
+}
+
+.weekly-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weekly-checkbox .custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.weekly-checkbox .custom-checkbox.selected {
+  background: #D0DFB9;
+  border: none;
+}
+
+.weekly-checkbox .custom-checkbox svg {
+  width: 18px;
+  height: 18px;
+}
+
+.weekly-checkbox .custom-checkbox svg path {
+  fill: #202024;
+}
+
+.weekly-label {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  cursor: pointer;
+}
+
+.weekly-label:hover {
+  color: #A5A5B0;
+}
+
+.schedule-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #4E85FC;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.schedule-submit-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.schedule-submit-btn svg path {
+  fill: white;
+}
+
+.schedule-submit-btn:hover {
+  background: #3563C6;
+}
+
+.schedule-submit-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.schedule-submit-btn:active span {
+  color: #4E85FC;
+}
+
+.schedule-submit-btn:active svg path {
+  fill: #4E85FC;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+}
+
+.react-datepicker {
+  font-family: 'Montserrat', sans-serif;
+  border-radius: 20px;
+  border: 1px solid #A5A5B0;
+}
+
+.react-datepicker__header {
+  background: #D0DFB9;
+  border-bottom: none;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: #202024;
+}
+
+.react-datepicker__day--selected {
+  background: #F9E27D;
+  color: #202024;
+}
+
+.react-datepicker__day:hover {
+  background: #F4F4F4;
 }

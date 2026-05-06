@@ -23,16 +23,24 @@
   margin: 0;
 }
 
-.edit-btn {
+.header-buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.edit-btn, .schedule-btn {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 20px;
-  background: #4E85FC;
   border-radius: 25px;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.edit-btn {
+  background: #4E85FC;
 }
 
 .edit-btn span {
@@ -63,6 +71,40 @@
 
 .edit-btn:active svg path {
   fill: #4E85FC;
+}
+
+.schedule-btn {
+  background: #4E85FC;
+}
+
+.schedule-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.schedule-btn svg path {
+  stroke: white;
+}
+
+.schedule-btn:hover {
+  background: #3563C6;
+}
+
+.schedule-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.schedule-btn:active span {
+  color: #4E85FC;
+}
+
+.schedule-btn:active svg path {
+  stroke: #4E85FC;
 }
 
 .team-content {
@@ -107,12 +149,276 @@
   line-height: 21px;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #F4F4F4;
-  border-radius: 20px;
+/* Таблица участников */
+.members-table {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.members-header span {
+  color: #A5A5B0;
   font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.members-header span:first-child {
+  flex: 2;
+  text-align: left;
+}
+
+.members-header span:nth-child(2) {
+  flex: 1.5;
+  text-align: center;
+}
+
+.members-header span:nth-child(3),
+.members-header span:nth-child(4) {
+  flex: 1;
+  text-align: right;
+}
+
+.member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.member-name {
+  flex: 2;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: left;
+}
+
+.member-role {
+  flex: 1.5;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: center;
+}
+
+.member-university {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: right;
+}
+
+.member-group {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: right;
+}
+
+/* Кейсы с контрольными точками */
+.cases-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.case-item-view {
+  background: #F4F4F4;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.case-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+}
+
+.case-title {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.case-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.control-points-label {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  transition: color 0.2s ease;
+}
+
+.case-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 24px;
+  height: 24px;
+}
+
+.case-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: stroke 0.2s ease;
+}
+
+.case-toggle-btn svg path {
+  stroke: #202024;
+  transition: stroke 0.2s ease;
+}
+
+.case-right:hover {
+  color: #A5A5B0;
+}
+
+.case-right:hover .control-points-label {
+  color: #A5A5B0;
+}
+
+.case-right:hover .case-toggle-btn svg path {
+  stroke: #A5A5B0;
+}
+
+.case-right:active {
+  color: #F9E27D;
+}
+
+.case-right:active .control-points-label {
+  color: #F9E27D;
+}
+
+.case-right:active .case-toggle-btn svg path {
+  stroke: #F9E27D;
+}
+
+.meetings-block {
+  width: 100%;
+}
+
+.meetings-scroll-container {
+  width: 100%;
+  background: #F4F4F4;
+  border-radius: 25px;
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.meetings-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meetings-scroll-container::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.meetings-scroll-container::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.meetings-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.meetings-header-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(165, 165, 176, 0.2);
+  position: sticky;
+  top: 0;
+  background: #F4F4F4;
+}
+
+.meetings-header-row span {
+  color: #A5A5B0;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.meetings-header-row span:first-child {
+  text-align: left;
+}
+
+.meetings-header-row span:nth-child(2),
+.meetings-header-row span:nth-child(3) {
+  text-align: center;
+}
+
+.meetings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.meeting-row-view {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px;
+  align-items: center;
+}
+
+.meeting-project {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: left;
+}
+
+.meeting-date,
+.meeting-time {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: center;
 }
 
 .loading-container,
@@ -123,6 +429,7 @@
   color: #A5A5B0;
 }
 
+/* Адаптив */
 @media (max-width: 1200px) {
   .team-content {
     margin-left: 0;
@@ -132,6 +439,29 @@
   .page-title {
     font-size: 32px;
     line-height: 48px;
+  }
+  
+  .members-header,
+  .member-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .member-name,
+  .member-role,
+  .member-university,
+  .member-group {
+    flex: auto;
+    text-align: left;
+  }
+  
+  .members-header span {
+    display: none;
+  }
+  
+  .meetings-header-row,
+  .meeting-row-view {
+    grid-template-columns: 1fr 80px 80px;
   }
 }
 
@@ -148,5 +478,31 @@
 
   .team-content {
     gap: 20px;
+  }
+  
+  .meetings-header-row,
+  .meeting-row-view {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  
+  .meeting-date,
+  .meeting-time {
+    text-align: left;
+  }
+  
+  .meetings-header-row span:nth-child(2),
+  .meetings-header-row span:nth-child(3) {
+    display: none;
+  }
+  
+  .case-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .case-right {
+    align-self: flex-end;
   }
 }
