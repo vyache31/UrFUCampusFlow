@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from services.microsoft_oauth_service import MicrosoftOAuthService
 from schemas.microsoft_oauth import ConnectResponse, OAuthCallbackResponse, OAuthStatusResponse
 from dependies.oauth_depends import get_oauth_service
+from dependies.auth_depends import check_auth
+from models.auth import Users
 
 
 router = APIRouter(
@@ -20,7 +22,7 @@ async def get_microsoft_oauth_redirect_uri(
 
 @router.get('/outlook/callback', response_model=OAuthCallbackResponse)
 async def outlook_callback(
-        user_id: str,
+        user: Users = Depends(check_auth),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
         code: str | None = Query(default=None),
         error: str | None = Query(default=None)
@@ -33,7 +35,7 @@ async def outlook_callback(
 
     try:
         oauth_object_shema = await service.handle_callback(
-            user_id=user_id,
+            user_id=user.id,
             code=code
         )
 
@@ -45,21 +47,21 @@ async def outlook_callback(
 
 @router.delete('/outlook/disconnect', response_model=OAuthStatusResponse)
 async def disconnect_outlook(
-        user_id: str,
+        user: Users = Depends(check_auth),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
 ):
     try:
-        return await service.disconnect_oauth(user_id)
+        return await service.disconnect_oauth(user.id)
     except ValueError as err:
         raise HTTPException(status_code=404, detail=str(err))
 
 
 @router.get('/outlook/integration-status', response_model=OAuthStatusResponse)
 async def get_integration_status(
-        user_id: str,
+        user: Users = Depends(check_auth),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
 ):
     try:
-        return await service.get_status(user_id)
+        return await service.get_status(user.id)
     except ValueError as err:
         raise HTTPException(status_code=404, detail=str(err))
