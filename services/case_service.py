@@ -1,6 +1,6 @@
 from models import Cases
 import uuid
-from services.const.case_status_workflow import ALLOWED_CASE_STATUS_TRANSITIONS
+from services.const.case_status_workflow import ALLOWED_CASE_STATUS_TRANSITIONS, CASE_STATUS_DRAFT
 from repositories.case_repository import CaseRepository
 from schemas.case import CaseCreate, CaseUpdate, CaseResponse
 from repositories.user_repository import UserRepository
@@ -34,7 +34,6 @@ class CaseService:
 
     async def _apply_fk_updates(self, case: Cases, fk_data: dict[str, Any]) -> None:
         config = {
-            'status_id': (self.statuses_repo.get_by_id, 'Status not found.'),
             'creator_id': (self.user_repo.get_by_id, 'Creator not found.'),
             'university_id': (self.uni_repo.get_by_id, 'University not found.'),
             'difficulty_level_id': (self.diff_repo.get_by_id, 'Difficulty level not found'),
@@ -54,6 +53,11 @@ class CaseService:
         if is_exist:
             raise HTTPException(status_code=409, detail="Case already exists")
 
+        draft_status = await self.statuses_repo.get_by_code(CASE_STATUS_DRAFT)
+
+        if not draft_status:
+            raise ValueError('Draft status not found in db')
+
         case = Cases(
             id=str(uuid.uuid4()),
             title=schema.title,
@@ -66,14 +70,13 @@ class CaseService:
             start_date=schema.start_date,
             end_date=schema.end_date,
             university_id=schema.university_id,
-            status_id=schema.status_id,
+            status_id=draft_status.id,
             created_at=datetime.now(UTC)
         )
 
         await self._apply_fk_updates(case, {
             "difficulty_level_id": schema.difficulty_level_id,
             "university_id": schema.university_id,
-            "status_id": schema.status_id,
             "creator_id": schema.creator_id,
         })
 
@@ -179,20 +182,12 @@ class CaseService:
         return await self._transit_case_status(case_id=case_id, new_status_code='SUBMITTED')
 
 
-    async def send_to_revision(self, case_id: str) -> Cases | None:
+    async def reject(self, case_id: str) -> Cases | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
-
-
-    async def review_after_revision(self, case_id: str) -> Cases | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='IN_REVIEW')
 
 
     async def activate_after_submition(self, case_id: str) -> Cases | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='ACTIVE')
-
-
-    async def revise_after_submision(self, case_id: str) -> Cases | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
 
 
     async def archive(self, case_id: str) -> Cases | None:
