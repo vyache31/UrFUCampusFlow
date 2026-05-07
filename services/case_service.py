@@ -1,6 +1,6 @@
 from models import Cases
 import uuid
-
+from services.const.case_status_workflow import ALLOWED_CASE_STATUS_TRANSITIONS
 from repositories.case_repository import CaseRepository
 from schemas.case import CaseCreate, CaseUpdate, CaseResponse
 from repositories.user_repository import UserRepository
@@ -14,7 +14,6 @@ from fastapi import HTTPException
 FK_FIELDS = {
     "difficulty_level_id",
     "university_id",
-    "status_id",
     "creator_id"
 }
 
@@ -148,3 +147,53 @@ class CaseService:
             created_at=case.created_at,
             updated_at=case.updated_at,
         )
+
+
+    #Работа с переходами статусов кейсов
+    async def _transit_case_status(self, case_id: str, new_status_code: str) -> Cases | None:
+        case = await self.case_repo.get_by_id(case_id)
+
+        if not case:
+            return None
+
+        if new_status_code not in ALLOWED_CASE_STATUS_TRANSITIONS[case.status.code]:
+            raise ValueError('Invalid status transition')
+
+        new_status = await self.statuses_repo.get_by_code(status_code=new_status_code)
+
+        if not new_status:
+            raise ValueError(f'Status with code {new_status_code} not found')
+
+        case.status = new_status
+
+        await self.case_repo.update()
+
+        return case
+
+
+    async def send_to_review(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='IN_REVIEW')
+
+
+    async def submit_at_university(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='SUBMITTED')
+
+
+    async def send_to_revision(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
+
+
+    async def review_after_revision(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='IN_REVIEW')
+
+
+    async def activate_after_submition(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='ACTIVE')
+
+
+    async def revise_after_submision(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
+
+
+    async def archive(self, case_id: str) -> Cases | None:
+        return await self._transit_case_status(case_id=case_id, new_status_code='ARCHIVED')

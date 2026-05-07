@@ -41,10 +41,13 @@ class CaseCreate(BaseModel):
     status_id: Optional[int] = None
 
 
-class CaseUpdate(CaseCreate):
-    pass
-
-
-
-
-
+class CaseUpdate(BaseModel):
+    title: str = None
+    project_goals: Optional[str] = None
+    required_result: Optional[str] = None
+    grade_criteria: Optional[str] = None
+    study_program: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    difficulty_level_id: Optional[int] = None
+    university_id: Optional[int] = None
