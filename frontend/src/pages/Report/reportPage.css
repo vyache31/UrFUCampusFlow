@@ -167,3 +167,35 @@
     align-items: flex-start;
   }
 }
+
+.loading-container,
+.error-container,
+.empty-report {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #A5A5B0;
+  background: #fff;
+  border-radius: 40px;
+  margin-top: 40px;
+}
+
+.error-container {
+  color: #F63333;
+}
+
+/* Стили для печати */
+@media print {
+  .report-header {
+    display: none;
+  }
+  
+  .download-btn {
+    display: none;
+  }
+  
+  .report-content {
+    margin: 0;
+    width: 100%;
+  }
+}

@@ -577,3 +577,309 @@
 .react-datepicker__day:hover {
   background: #F4F4F4;
 }
+
+/* Модальное окно контрольных точек */
+.control-points-modal {
+  width: 886px;
+  background: white;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.control-points-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 20px 20px 0;
+  background: #A5A5B0;
+}
+
+.control-points-close {
+  width: 24px;
+  height: 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+}
+
+.control-points-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.control-points-close svg path {
+  fill: #202024;
+}
+
+.control-points-close:hover {
+  background: #E0E0E0;
+}
+
+.control-points-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.control-points-title {
+  text-align: center;
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.control-points-subtitle {
+  text-align: center;
+  color: #A5A5B0;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.control-points-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.table-header span {
+  color: #A5A5B0;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.table-header span:first-child {
+  flex: 2;
+  text-align: left;
+}
+
+.table-header span:last-child {
+  width: 100px;
+  text-align: center;
+}
+
+.table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.point-name-input {
+  flex: 2;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+}
+
+.point-name-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.point-name-input::placeholder {
+  color: #A5A5B0;
+}
+
+.point-score-input {
+  width: 100px;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  text-align: center;
+  transition: border-color 0.2s ease;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.point-score-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.point-score-input::-webkit-inner-spin-button,
+.point-score-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.add-point-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.add-point-fields {
+  display: flex;
+  gap: 20px;
+}
+
+.add-point-name {
+  flex: 2;
+  padding: 12px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+}
+
+.add-point-name:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-point-name::placeholder {
+  color: #A5A5B0;
+}
+
+.add-point-score {
+  width: 100px;
+  padding: 12px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.add-point-score:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-point-score::placeholder {
+  color: #A5A5B0;
+}
+
+.add-point-score::-webkit-inner-spin-button,
+.add-point-score::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.add-point-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #202024;
+  padding: 10px;
+  transition: color 0.2s ease;
+  width: fit-content;
+  align-self: center;
+}
+
+.add-point-btn svg path {
+  fill: #202024;
+  transition: fill 0.2s ease;
+}
+
+.add-point-btn:hover {
+  color: #A5A5B0;
+}
+
+.add-point-btn:hover svg path {
+  fill: #A5A5B0;
+}
+
+/* Скролл для таблицы КТ */
+.table-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-body::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.table-body::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.table-body::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+/* Адаптив */
+@media (max-width: 900px) {
+  .control-points-modal {
+    width: 90%;
+    max-width: 600px;
+  }
+  
+  .table-header span:first-child,
+  .point-name-input,
+  .add-point-name {
+    flex: 1;
+  }
+  
+  .add-point-fields {
+    flex-direction: column;
+  }
+  
+  .add-point-score {
+    width: 100%;
+  }
+}

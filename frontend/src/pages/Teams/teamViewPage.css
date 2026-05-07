@@ -294,6 +294,7 @@
   transition: all 0.2s ease;
   width: 24px;
   height: 24px;
+  transform: rotate(-90deg);
 }
 
 .case-toggle-btn svg {

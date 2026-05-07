@@ -3,47 +3,93 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
-import { getCaseById } from '../../services/cases';
 import { testTeamMeetings, type TeamMeeting } from '../../data/teamMeetings';
 import { EditIcon, FlagIcon, ChevronDownIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
+import ControlPointsModal from '../../components/Modals/ControlPointsModal';
 import './teamViewPage.css';
+
+interface ControlPoint {
+  id: string;
+  name: string;
+  score: number | null;
+}
+
+interface TeamMember {
+  name: string;
+  role: string;
+  university: string;
+  group: string;
+}
+
+// тестовые данные для демонстрации
+const TEST_TEAM_MEMBERS: TeamMember[] = [
+  { name: 'Абдыкеримов Бексултан Талантович', role: 'Аналитик', university: 'УрФУ', group: 'РИ-240932' },
+  { name: 'Попова Анна Михайловна', role: 'Дизайнер / Фронтендер', university: 'УрФУ', group: 'РИ-240932' },
+  { name: 'Семёнов Вячеслав Андреевич', role: 'Бэкендер', university: 'УрФУ', group: 'РИ-240932' },
+  { name: 'Соловьев Даниил Сергеевич', role: 'Бэкендер', university: 'УрФУ', group: 'РИ-240932' },
+  { name: 'Хамитова Ксения Андреевна', role: 'Дизайнер / Фронтендер', university: 'УрФУ', group: 'РИ-240932' },
+];
+
+const TEST_TEAM_CASES = [
+  { id: 'test1', title: 'Разработка мобильного приложения для оценки кредитного риска МСБ' },
+  { id: 'test2', title: 'Веб-приложение для автоматизации учета работы с ВУЗами' },
+];
 
 const TeamViewPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
-  const [members, setMembers] = useState<{ name: string; role: string; university: string; group: string }[]>([]);
-  const [teamCases, setTeamCases] = useState<{ id: string; title: string }[]>([]);
-  const [notes, setNotes] = useState('');
+  const [members, setMembers] = useState<TeamMember[]>(TEST_TEAM_MEMBERS);
+  const [teamCases, setTeamCases] = useState<{ id: string; title: string }[]>(TEST_TEAM_CASES);
+  const [notes, setNotes] = useState('Не определено');
   const [meetings] = useState<TeamMeeting[]>(testTeamMeetings);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isControlPointsModalOpen, setIsControlPointsModalOpen] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState('');
+  const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
+  const [controlPointsMap, setControlPointsMap] = useState<Map<string, ControlPoint[]>>(new Map());
 
   useEffect(() => {
     const fetchTeam = async () => {
       try {
         setLoading(true);
-        const data = await getTeamById(id!);
-        setTeam(data);
-        setMembers(data.members || []);
-        setNotes(data.notes || 'Не определено');
         
-        if (data.caseId) {
-          try {
-            const caseData = await getCaseById(data.caseId);
-            setTeamCases([{ id: caseData.id, title: caseData.title }]);
-          } catch (err) {
-            console.error('Ошибка загрузки кейса:', err);
-            setTeamCases([]);
+        // пытаюсь получить из API
+        const apiTeam = await getTeamById(id!);
+        
+        if (apiTeam) {
+          setTeam(apiTeam);
+          // если API вернул участников, использую их
+          if (apiTeam.members && apiTeam.members.length > 0) {
+            setMembers(apiTeam.members);
+          }
+          if (apiTeam.notes) {
+            setNotes(apiTeam.notes);
+          }
+          if (apiTeam.caseName) {
+            setTeamCases([{ id: apiTeam.caseId || id!, title: apiTeam.caseName }]);
           }
         } else {
-          setTeamCases([]);
+          // если данных нет, беру тестовые
+          setTeam({
+            id: id!,
+            name: 'Скомпилированные гении',
+            description: 'Команда полного цикла разработки и сопровождения продуктов.',
+            status: 'Работает над кейсом',
+            createdAt: new Date().toISOString(),
+          });
         }
       } catch (err) {
         console.error('Ошибка загрузки команды:', err);
-        setError('Команда не найдена');
+        setTeam({
+          id: id!,
+          name: 'Скомпилированные гении',
+          description: 'Команда полного цикла разработки и сопровождения продуктов.',
+          status: 'Работает над кейсом',
+          createdAt: new Date().toISOString(),
+        });
       } finally {
         setLoading(false);
       }
@@ -56,17 +102,23 @@ const TeamViewPage = () => {
   };
 
   const handleScheduleMeeting = (data: {
-  date: string;
-  time: string;
-  repeatDays: string[];
-  weekly: boolean;
-}) => {
-  console.log('Создать встречу:', data);
-  // отправить запрос на бэкенд
-};
+    date: string;
+    time: string;
+    repeatDays: string[];
+    weekly: boolean;
+  }) => {
+    console.log('Создать встречу:', data);
+  };
 
-  const handleControlPoints = (caseId: string) => {
-    console.log('Открыть контрольные точки для кейса:', caseId);
+  const handleOpenControlPoints = (caseId: string, caseTitle: string) => {
+    setSelectedCaseId(caseId);
+    setSelectedCaseTitle(caseTitle);
+    setIsControlPointsModalOpen(true);
+  };
+
+  const handleControlPointsChange = (points: ControlPoint[]) => {
+    setControlPointsMap(prev => new Map(prev).set(selectedCaseId, points));
+    console.log(`Изменены контрольные точки для кейса ${selectedCaseId}:`, points);
   };
 
   const breadcrumbItems = [
@@ -84,11 +136,11 @@ const TeamViewPage = () => {
     );
   }
 
-  if (error || !team) {
+  if (!team) {
     return (
       <div className="page-wrapper">
         <Header />
-        <div className="not-found">{error || 'Команда не найдена'}</div>
+        <div className="not-found">Команда не найдена</div>
       </div>
     );
   }
@@ -101,10 +153,7 @@ const TeamViewPage = () => {
       <div className="team-view-header">
         <h1 className="page-title">Просмотр команды</h1>
         <div className="header-buttons">
-          <button 
-            className="schedule-btn" 
-            onClick={() => setIsScheduleModalOpen(true)}
-          >
+          <button className="schedule-btn" onClick={() => setIsScheduleModalOpen(true)}>
             <FlagIcon />
             <span>Назначить встречу</span>
           </button>
@@ -165,7 +214,7 @@ const TeamViewPage = () => {
                     <span className="case-title">{teamCase.title}</span>
                     <div 
                       className="case-right" 
-                      onClick={() => handleControlPoints(teamCase.id)}
+                      onClick={() => handleOpenControlPoints(teamCase.id, teamCase.title)}
                     >
                       <span className="control-points-label">Контрольные точки</span>
                       <button className="case-toggle-btn">
@@ -186,7 +235,6 @@ const TeamViewPage = () => {
           <div className="info-value">{team.status}</div>
         </div>
 
-        {/* Запланированные встречи (заглушка) */}
         <div className="info-block meetings-block">
           <div className="info-label">Запланированные встречи</div>
           <div className="meetings-scroll-container">
@@ -208,11 +256,18 @@ const TeamViewPage = () => {
         </div>
       </div>
 
-      {/* Модальное окно назначения встречи */}
       <ScheduleMeetingModal
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
         onSchedule={handleScheduleMeeting}
+      />
+
+      <ControlPointsModal
+        isOpen={isControlPointsModalOpen}
+        onClose={() => setIsControlPointsModalOpen(false)}
+        caseTitle={selectedCaseTitle}
+        initialPoints={controlPointsMap.get(selectedCaseId) || []}
+        onPointsChange={handleControlPointsChange}
       />
     </div>
   );
