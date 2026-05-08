@@ -10,6 +10,7 @@ import TeamsPage from '../pages/Teams/TeamsPage';
 import LoginPage from '../pages/Login/LoginPage';
 import TeamCreatePage from '../pages/Teams/TeamCreatePage';
 import TeamViewPage from '../pages/Teams/TeamViewPage';
+import BotManagementPage from '../pages/BotManagement/BotManagementPage';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/teams" element={<TeamsPage />} />
         <Route path="/teams/create" element={<TeamCreatePage />} />
         <Route path="/teams/:id" element={<TeamViewPage />} />
+        <Route path="/bot-management" element={<BotManagementPage />} />
       </Routes>
     </BrowserRouter>
   );
