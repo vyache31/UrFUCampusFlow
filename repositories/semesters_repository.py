@@ -42,7 +42,7 @@ class SemestersRepository:
             select(Semesters)
             .where(
                 Semesters.start_date <= target_date,
-                target_date <= Semesters.end_date
+                target_date < Semesters.end_date
             )
         )
 
