@@ -2,7 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogoIcon, SearchIcon } from '../Icons/Icons';
 import { searchAll, type SearchResult } from '../../../services/search';
+import { truncateWithTooltip } from '../../../utils/truncate';
 import './header.css';
+
+const USER_EMAIL_MAX_LENGTH = 30;
 
 const Header = () => {
   const navigate = useNavigate();
@@ -11,9 +14,24 @@ const Header = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [userEmail] = useState<string>(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return '';
+    
+    try {
+      const payload = token.split('.')[1];
+      const decodedPayload = JSON.parse(atob(payload));
+      return decodedPayload.sub || decodedPayload.email || '';
+    } catch (error) {
+      console.error('Ошибка при декодировании токена:', error);
+      return '';
+    }
+  });
+  
   const searchRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMount = useRef(true);
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -95,6 +113,8 @@ const Header = () => {
     }
   };
 
+  const { displayText, fullText } = truncateWithTooltip(userEmail, USER_EMAIL_MAX_LENGTH);
+
   return (
     <header className="header">
       <div className="header-left">
@@ -118,7 +138,11 @@ const Header = () => {
           {showResults && searchResults.length > 0 && (
             <div className="search-results">
               {searchResults.map((result) => (
-                <div key={`${result.type}-${result.id}`} className="search-result-item" onClick={() => handleResultClick(result)}>
+                <div 
+                  key={`${result.type}-${result.id}`} 
+                  className="search-result-item" 
+                  onClick={() => handleResultClick(result)}
+                >
                   <span className={`result-type ${result.type}`}>
                     {result.type === 'case' ? 'Кейс' : 'Команда'}
                   </span>
@@ -135,8 +159,12 @@ const Header = () => {
         </div>
       </div>
       <div className="user-menu-wrapper">
-        <div className="user-name" onClick={toggleDropdown}>
-          Данил Колбасенко
+        <div 
+          className="user-name" 
+          onClick={toggleDropdown} 
+          title={fullText}
+        >
+          {userEmail ? displayText : 'Загрузка...'}
         </div>
         <div className={`user-dropdown ${isDropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
           <button className="dropdown-item" onClick={handleConnectOutlook}>
