@@ -1,4 +1,4 @@
-from models import Cases
+from models import Cases, CaseSemesters
 import uuid
 from services.const.case_status_workflow import ALLOWED_CASE_STATUS_TRANSITIONS, CASE_STATUS_DRAFT
 from repositories.case_repository import CaseRepository
@@ -11,6 +11,7 @@ from datetime import datetime, UTC
 from typing import Any
 from fastapi import HTTPException
 from services.semesters_service import SemestersService
+from repositories.case_semesters_repository import CaseSemestersRepository
 
 
 
@@ -30,7 +31,8 @@ class CaseService:
             uni_repo: UniversityInfoRepository,
             diff_repo: DifficultyLevelRepository,
             statuses_repo: CaseStatusRepository,
-            semesters_service: SemestersService
+            semesters_service: SemestersService,
+            case_semester_repo: CaseSemestersRepository
         ):
         self.case_repo = case_repo
         self.user_repo = user_repo
@@ -38,6 +40,7 @@ class CaseService:
         self.diff_repo = diff_repo
         self.statuses_repo = statuses_repo
         self.semesters_service = semesters_service
+        self.case_semester_repo = case_semester_repo
 
     async def _apply_fk_updates(self, case: Cases, fk_data: dict[str, Any]) -> None:
         config = {
@@ -89,6 +92,21 @@ class CaseService:
 
         case = await self.case_repo.create(case)
         case = await self.case_repo.get_with_relations(case.id)
+
+        semester = await self.semesters_service.get_or_create_current()
+
+        case_semester_existing_connection = await self.case_semester_repo.get_by_case_and_semester(case.id, semester.id)
+
+        if case_semester_existing_connection:
+            raise ValueError('This Case already exists in the current semester')
+
+        case_semester_connection = CaseSemesters(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            semester_id=semester.id
+        )
+
+        await self.case_semester_repo.create(case_semester_connection)
 
         return self._to_response(case)
 
