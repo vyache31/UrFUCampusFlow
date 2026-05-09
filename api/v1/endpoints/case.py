@@ -119,24 +119,6 @@ async def reject_case(
         raise HTTPException(status_code=409, detail=str(err))
 
 
-@router.post('/{case_id}/submit-to-university', response_model=CaseResponse)
-async def submit_case_to_uni(
-    case_id: str,
-    user=Depends(check_auth),
-    service: CaseService = Depends(get_case_service)
-):
-    try:
-        case = await service.submit_at_university(case_id)
-
-        if not case:
-            raise _case_not_found(case_id)
-
-        return case
-
-    except ValueError as err:
-        raise HTTPException(status_code=409, detail=str(err))
-
-
 @router.post('/{case_id}/activate', response_model=CaseResponse)
 async def activate_case(
     case_id: str,

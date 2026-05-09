@@ -185,10 +185,6 @@ class CaseService:
         return await self._transit_case_status(case_id=case_id, new_status_code='IN_REVIEW')
 
 
-    async def submit_at_university(self, case_id: str) -> Cases | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='SUBMITTED')
-
-
     async def reject(self, case_id: str) -> Cases | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
 

@@ -8,10 +8,6 @@ CASE_STATUSES = [
         'status_name': 'На оценке'
     },
     {
-        'code': 'SUBMITTED',
-        'status_name': 'Отправлено в ВУЗ'
-    },
-    {
         'code': 'ACTIVE',
         'status_name': 'Активный'
     },
