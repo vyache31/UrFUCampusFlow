@@ -47,12 +47,10 @@ async def check_auth(
 async def require_admin_role(
         user=Depends(check_auth)
 ):
-    if not user.role.role_name == 'admin':
+    if not user.role.code == 'ADMIN':
         raise HTTPException(
             status_code=403,
             detail="forbidden"
         )
 
     return user
-
-
