@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    String, ForeignKey, DateTime
+    String, ForeignKey, DateTime, UniqueConstraint
 )
 from datetime import datetime
 from typing import Optional
@@ -54,6 +54,14 @@ class CaseSemesters(Base):
     case = relationship('Cases', back_populates='case_semesters')
     semester = relationship('Semesters', back_populates='case_semesters')
     team_case_history = relationship('TeamCaseHistory', back_populates='case_semester')
+
+    __table_args__ = (
+        UniqueConstraint(
+            'case_id',
+            'semester_id',
+            name='uq_case_id_semester_id',
+        ),
+    )
 
 
 class CaseStatuses(Base):
