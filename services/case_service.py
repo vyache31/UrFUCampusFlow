@@ -10,6 +10,9 @@ from repositories.case_status_repository import CaseStatusRepository
 from datetime import datetime, UTC
 from typing import Any
 from fastapi import HTTPException
+from services.semesters_service import SemestersService
+
+
 
 FK_FIELDS = {
     "difficulty_level_id",
@@ -20,17 +23,21 @@ FK_FIELDS = {
 
 class CaseService:
 
-    def __init__(self,
-                 case_repo: CaseRepository,
-                 user_repo: UserRepository,
-                 uni_repo: UniversityInfoRepository,
-                 diff_repo: DifficultyLevelRepository,
-                 statuses_repo: CaseStatusRepository):
+    def __init__(
+            self,
+            case_repo: CaseRepository,
+            user_repo: UserRepository,
+            uni_repo: UniversityInfoRepository,
+            diff_repo: DifficultyLevelRepository,
+            statuses_repo: CaseStatusRepository,
+            semesters_service: SemestersService
+        ):
         self.case_repo = case_repo
         self.user_repo = user_repo
         self.uni_repo = uni_repo
         self.diff_repo = diff_repo
         self.statuses_repo = statuses_repo
+        self.semesters_service = semesters_service
 
     async def _apply_fk_updates(self, case: Cases, fk_data: dict[str, Any]) -> None:
         config = {
@@ -47,7 +54,7 @@ class CaseService:
             else:
                 raise ValueError(config[key][1])
 
-    async def create_case(self, schema: CaseCreate) -> CaseResponse | None:
+    async def create_case(self, schema: CaseCreate, ) -> CaseResponse | None:
         is_exist = await self.case_repo.get_by_title(schema.title)
 
         if is_exist:
