@@ -31,7 +31,7 @@ async def create_case(
         service: CaseService = Depends(get_case_service)
 ):
     try:
-        return await service.create_case(schema)
+        return await service.create_case(schema, creator_id=user.id)
 
     except ValueError as error:
         detail = str(error)

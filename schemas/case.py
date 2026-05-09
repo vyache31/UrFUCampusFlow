@@ -33,7 +33,6 @@ class CaseCreate(BaseModel):
     project_goals: Optional[str] = None
     required_result: Optional[str] = None
     grade_criteria: Optional[str] = None
-    creator_id: str
     study_program: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None

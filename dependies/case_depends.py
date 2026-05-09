@@ -6,6 +6,8 @@ from repositories.user_repository import UserRepository
 from repositories.university_info_repository import UniversityInfoRepository
 from repositories.difficulty_level_repository import DifficultyLevelRepository
 from repositories.case_status_repository import CaseStatusRepository
+from repositories.semesters_repository import SemestersRepository
+from services.semesters_service import SemestersService
 from services.case_service import CaseService
 
 
@@ -15,5 +17,7 @@ def get_case_service(db: AsyncSession = Depends(get_db)):
     uni_repo = UniversityInfoRepository(db)
     diff_repo = DifficultyLevelRepository(db)
     statuses_repo = CaseStatusRepository(db)
+    semesters_repo = SemestersRepository(db)
+    semesters_service = SemestersService(semesters_repo)
 
-    return CaseService(case_repo, user_repo, uni_repo, diff_repo, statuses_repo)
+    return CaseService(case_repo, user_repo, uni_repo, diff_repo, statuses_repo, semesters_service)

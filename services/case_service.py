@@ -54,7 +54,7 @@ class CaseService:
             else:
                 raise ValueError(config[key][1])
 
-    async def create_case(self, schema: CaseCreate, ) -> CaseResponse | None:
+    async def create_case(self, schema: CaseCreate, creator_id: str) -> CaseResponse | None:
         is_exist = await self.case_repo.get_by_title(schema.title)
 
         if is_exist:
@@ -72,7 +72,7 @@ class CaseService:
             project_goals=schema.project_goals,
             required_result=schema.required_result,
             grade_criteria=schema.grade_criteria,
-            creator_id=schema.creator_id,
+            creator_id=creator_id,
             study_program=schema.study_program,
             start_date=schema.start_date,
             end_date=schema.end_date,
@@ -84,7 +84,7 @@ class CaseService:
         await self._apply_fk_updates(case, {
             "difficulty_level_id": schema.difficulty_level_id,
             "university_id": schema.university_id,
-            "creator_id": schema.creator_id,
+            "creator_id": creator_id,
         })
 
         case = await self.case_repo.create(case)
