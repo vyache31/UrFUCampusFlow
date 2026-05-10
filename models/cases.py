@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    String, ForeignKey, DateTime
+    String, ForeignKey, DateTime, UniqueConstraint
 )
 from datetime import datetime
 from typing import Optional
@@ -22,6 +22,7 @@ class Cases(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     title: Mapped[str]
+    short_title: Mapped[Optional[str]] = mapped_column(nullable=True)
     difficulty_level_id: Mapped[int] = mapped_column(ForeignKey('case_difficulty_levels.id'))
     project_goals: Mapped[Optional[str]] = mapped_column(nullable=True)
     required_result: Mapped[Optional[str]] = mapped_column(nullable=True)
@@ -54,6 +55,14 @@ class CaseSemesters(Base):
     case = relationship('Cases', back_populates='case_semesters')
     semester = relationship('Semesters', back_populates='case_semesters')
     team_case_history = relationship('TeamCaseHistory', back_populates='case_semester')
+
+    __table_args__ = (
+        UniqueConstraint(
+            'case_id',
+            'semester_id',
+            name='uq_case_id_semester_id',
+        ),
+    )
 
 
 class CaseStatuses(Base):
