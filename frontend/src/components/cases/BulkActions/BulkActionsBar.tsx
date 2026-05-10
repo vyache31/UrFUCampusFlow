@@ -1,14 +1,13 @@
-import { DeleteIcon, MarkActiveIcon, CreateIcon } from '../../common/Icons/Icons';
+import { DeleteIcon, CreateIcon } from '../../common/Icons/Icons';
 import './bulkActionsBar.css';
 
 interface BulkActionsBarProps {
   selectedCount: number;
   onDelete: () => void;
-  onMarkActive: () => void;
   onCreate: () => void;
 }
 
-const BulkActionsBar = ({ selectedCount, onDelete, onMarkActive, onCreate }: BulkActionsBarProps) => {
+const BulkActionsBar = ({ selectedCount, onDelete, onCreate }: BulkActionsBarProps) => {
   return (
     <div className="action-cards-buttons">
       {selectedCount > 0 && (
@@ -17,14 +16,9 @@ const BulkActionsBar = ({ selectedCount, onDelete, onMarkActive, onCreate }: Bul
             <DeleteIcon />
             Удалить выбранное
           </button>
-          <button className="card-action-btn mark" onClick={onMarkActive}>
-            <MarkActiveIcon />
-            Отметить активным
-          </button>
         </>
       )}
       
-      {/* Кнопка создания кейса */}
       <button className="card-action-btn create" onClick={onCreate}>
         <CreateIcon />
         Создать кейс

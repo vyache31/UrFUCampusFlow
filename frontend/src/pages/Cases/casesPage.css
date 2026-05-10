@@ -54,6 +54,29 @@
   color: #A5A5B0;
 }
 
+.filters-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  gap: 16px;
+}
+
+.filters-left-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.filters-right-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 /* Адаптив */
 @media (max-width: 1200px) {
   .page-wrapper {
@@ -66,16 +89,17 @@
 }
 
 @media (max-width: 768px) {
-  .filters-header {
+  .filters-actions-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
   }
   
-  .cases-page .cases-wrapper {
-    padding: 20px;
+  .filters-left-side {
+    order: 2;
   }
   
-  .status-selector {
-    font-size: 28px;
+  .filters-right-side {
+    order: 1;
+    justify-content: flex-end;
   }
 }

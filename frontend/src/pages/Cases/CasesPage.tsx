@@ -7,7 +7,7 @@ import SemesterFilter from '../../components/cases/CaseFilters/SemesterFilter';
 import BulkActionsBar from '../../components/cases/BulkActions/BulkActionsBar';
 import ActionsDropdown from '../../components/sent-cases/ActionsDropdown';
 import CaseCard from '../../components/cases/CaseCard/CaseCard';
-import { getCases, deleteCase, type Case } from '../../services/cases';
+import { getCases, deleteCase, sendToReview, rejectCase, activateCase, archiveCase, type Case } from '../../services/cases';
 import './casesPage.css';
 
 const CasesPage = () => {
@@ -18,14 +18,11 @@ const CasesPage = () => {
   const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
   const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
 
-  // Загрузка кейсов из API
   useEffect(() => {
     const fetchCases = async () => {
       try {
         setLoading(true);
         const data = await getCases(100);
-        console.log('Загруженные кейсы:', data);  // Добавить для отладки
-        console.log('Первый кейс:', data[0]);     // Добавить для отладки
         setCases(data);
       } catch (error) {
         console.error('Ошибка загрузки кейсов:', error);
@@ -36,16 +33,13 @@ const CasesPage = () => {
     fetchCases();
   }, []);
 
-  // Доступные семестры из реальных данных
   const availableSemesters = useMemo(() => {
     const semesters = [...new Set(cases.map(c => c.semester).filter(Boolean))] as string[];
     return semesters;
   }, [cases]);
 
   const getStatusForFilter = (status: string) => {
-    // Если выбран фильтр "Все кейсы" - возвращаем как есть
     if (status === 'Все кейсы') return 'Все кейсы';
-    // Прямое сопоставление без преобразований
     return status;
   };
 
@@ -61,9 +55,47 @@ const CasesPage = () => {
   });
 
   const selectedCases = cases.filter(c => selectedCaseIds.includes(c.id));
-  const allSelectedAreSent = useMemo(() => {
-    if (selectedCaseIds.length === 0) return false;
-    return selectedCases.every(c => c.status === 'Отправлено');
+
+  const getAvailableActions = useMemo(() => {
+    if (selectedCaseIds.length === 0) return { actions: [], isMixed: false };
+
+    const actionsMap = new Map<string, string[]>();
+    
+    selectedCases.forEach(c => {
+      const actions: string[] = [];
+      const status = c.status;
+      
+      if (status === 'Черновик') {
+        actions.push('Отправить на оценку');
+      } else if (status === 'На оценке') {
+        actions.push('Одобрить', 'Отправить на доработку');
+      } else if (status === 'Активный') {
+        actions.push('Архивировать');
+      } else if (status === 'На доработке') {
+        actions.push('Отправить на оценку');
+      } else if (status === 'Архивирован') {
+        // Нет действий
+      }
+      
+      actionsMap.set(c.id, actions);
+    });
+
+    const firstActions = actionsMap.get(selectedCaseIds[0]) || [];
+    let isMixed = false;
+    
+    for (const caseId of selectedCaseIds) {
+      const currentActions = actionsMap.get(caseId) || [];
+      if (JSON.stringify(firstActions) !== JSON.stringify(currentActions)) {
+        isMixed = true;
+        break;
+      }
+    }
+
+    if (isMixed) {
+      return { actions: [], isMixed: true };
+    }
+
+    return { actions: firstActions, isMixed: false };
   }, [selectedCaseIds, selectedCases]);
 
   const handleCaseSelect = (caseId: string, isSelected: boolean) => {
@@ -83,39 +115,87 @@ const CasesPage = () => {
     
     if (window.confirm(confirmMessage)) {
       try {
-        // Удаляем кейсы последовательно
         for (const caseId of selectedCaseIds) {
           await deleteCase(caseId);
         }
-        
-        // Перезагружаем список кейсов
-        const updatedCases = await getCases();
+        const updatedCases = await getCases(100);
         setCases(updatedCases);
-        
-        // Очищаем выбранные
         setSelectedCaseIds([]);
-        
-        console.log(`Удалено кейсов: ${selectedCaseIds.length}`);
       } catch (error) {
         console.error('Ошибка при удалении:', error);
-        alert('Не удалось удалить некоторые кейсы. Попробуйте позже.');
+        alert('Не удалось удалить некоторые кейсы.');
       }
     }
   };
 
-  const handleMarkActive = () => {
-    console.log(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
-    // TODO: вызвать API активации
+  // Отправить на оценку
+  const handleSendToReview = async () => {
+    if (selectedCaseIds.length === 0) return;
+    
+    try {
+      for (const caseId of selectedCaseIds) {
+        await sendToReview(caseId);
+      }
+      const updatedCases = await getCases(100);
+      setCases(updatedCases);
+      setSelectedCaseIds([]);
+    } catch (error) {
+      console.error('Ошибка при отправке на оценку:', error);
+      alert('Не удалось отправить кейсы на оценку.');
+    }
   };
 
-  const handleSendToRevision = () => {
-    console.log(`Отправить на доработку: ${selectedCaseIds.join(', ')}`);
-    // TODO: вызвать API отправки на доработку
+  // Одобрить
+  const handleApprove = async () => {
+    if (selectedCaseIds.length === 0) return;
+    
+    try {
+      for (const caseId of selectedCaseIds) {
+        await activateCase(caseId);
+      }
+      const updatedCases = await getCases(100);
+      setCases(updatedCases);
+      setSelectedCaseIds([]);
+      alert(`Кейсы одобрены и стали активными`);
+    } catch (error) {
+      console.error('Ошибка при одобрении:', error);
+      alert('Не удалось одобрить кейсы.');
+    }
   };
 
-  const handleActivate = () => {
-    console.log(`Активировать кейсы: ${selectedCaseIds.join(', ')}`);
-    // TODO: вызвать API активации
+  // Отправить на доработку
+  const handleSendToRevision = async () => {
+    if (selectedCaseIds.length === 0) return;
+    
+    try {
+      for (const caseId of selectedCaseIds) {
+        await rejectCase(caseId);
+      }
+      const updatedCases = await getCases(100);
+      setCases(updatedCases);
+      setSelectedCaseIds([]);
+    } catch (error) {
+      console.error('Ошибка при отправке на доработку:', error);
+      alert('Не удалось отправить кейсы на доработку.');
+    }
+  };
+
+  // Архивировать
+  const handleArchive = async () => {
+    if (selectedCaseIds.length === 0) return;
+    
+    try {
+      for (const caseId of selectedCaseIds) {
+        await archiveCase(caseId);
+      }
+      const updatedCases = await getCases(100);
+      setCases(updatedCases);
+      setSelectedCaseIds([]);
+      alert(`Кейсы архивированы`);
+    } catch (error) {
+      console.error('Ошибка при архивации:', error);
+      alert('Не удалось архивировать кейсы.');
+    }
   };
 
   const handleCreateCase = () => {
@@ -158,24 +238,32 @@ const CasesPage = () => {
           <BulkActionsBar
             selectedCount={selectedCaseIds.length}
             onDelete={handleDelete}
-            onMarkActive={handleMarkActive}
             onCreate={handleCreateCase}
           />
         </div>
-        <div className="filters-row">
-          {availableSemesters.length > 0 && (
-            <SemesterFilter
-              selectedSemesters={selectedSemesters}
-              onSemesterChange={setSelectedSemesters}
-              availableSemesters={availableSemesters}
-            />
-          )}
-          {hasSelectedCases && allSelectedAreSent && (
-            <ActionsDropdown
-              onSendToRevision={handleSendToRevision}
-              onActivate={handleActivate}
-            />
-          )}
+        
+        <div className="filters-actions-row">
+          <div className="filters-left-side">
+            {availableSemesters.length > 0 && (
+              <SemesterFilter
+                selectedSemesters={selectedSemesters}
+                onSemesterChange={setSelectedSemesters}
+                availableSemesters={availableSemesters}
+              />
+            )}
+          </div>
+          <div className="filters-right-side">
+            {hasSelectedCases && (
+              <ActionsDropdown
+                availableActions={getAvailableActions.actions}
+                isMixed={getAvailableActions.isMixed}
+                onSendToReview={handleSendToReview}
+                onApprove={handleApprove}
+                onSendToRevision={handleSendToRevision}
+                onArchive={handleArchive}
+              />
+            )}
+          </div>
         </div>
       </div>
 

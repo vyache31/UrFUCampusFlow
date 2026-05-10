@@ -57,7 +57,7 @@ const CaseCard = ({
   const showReactions = type === 'case' && status === 'На оценке';
 
   const displayTitle = shortTitle || title;
-  const { displayText: displayTitleText, fullText: fullTitle } = truncateCardTitle(displayTitle);
+  const { fullText: fullTitle } = truncateCardTitle(displayTitle);
   
   const displayDescription = isOpen ? description : truncateCardDescription(description);
 

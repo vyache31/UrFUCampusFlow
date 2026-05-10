@@ -61,7 +61,7 @@
 .actions-item {
   display: block;
   width: 100%;
-  padding: 20px 20px;
+  padding: 10px 20px;
   background: transparent;
   border: none;
   font-family: 'Montserrat', sans-serif;
@@ -73,16 +73,34 @@
   transition: background 0.2s ease;
 }
 
-.actions-item:first-child {
+.actions-menu.single-item .actions-item:first-child {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.actions-menu.multiple-items .actions-item:first-child {
   padding-top: 30px;
   padding-bottom: 10px;
 }
 
-.actions-item:last-child {
+.actions-menu.multiple-items .actions-item:last-child {
   padding-top: 10px;
   padding-bottom: 30px;
 }
 
 .actions-item:hover {
   background: rgba(0, 0, 0, 0.08);
+}
+
+.actions-empty {
+  padding: 20px 16px;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+  cursor: default;
+}
+
+.actions-selector:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

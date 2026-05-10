@@ -34,15 +34,14 @@ export const getCases = async (limit?: number): Promise<Case[]> => {
   const url = limit ? `/cases/?limit=${limit}` : '/cases/';
   const response = await api.get(url);
   return response.data.map((item: Record<string, unknown>) => {
-    let status = 'На оценке';
+    let status = 'Неизвестно';
     const statusId = item.status_id as number;
     
     if (statusId === 1) status = 'Черновик';
     else if (statusId === 2) status = 'На оценке';
-    else if (statusId === 3) status = 'Отправлено в ВУЗ';
-    else if (statusId === 4) status = 'Активный';
-    else if (statusId === 5) status = 'На доработке';
-    else if (statusId === 6) status = 'Архивирован';
+    else if (statusId === 3) status = 'Активный';
+    else if (statusId === 4) status = 'На доработке';
+    else if (statusId === 5) status = 'Архивирован';
     
     return {
       ...item,
@@ -59,14 +58,13 @@ export const getCaseById = async (id: string): Promise<Case> => {
   
   let status = 'На оценке';
   const statusId = item.status_id as number;
-  
+
   if (statusId === 1) status = 'Черновик';
   else if (statusId === 2) status = 'На оценке';
-  else if (statusId === 3) status = 'Отправлено в ВУЗ';
-  else if (statusId === 4) status = 'Активный';
-  else if (statusId === 5) status = 'На доработке';
-  else if (statusId === 6) status = 'Архивирован';
-  
+  else if (statusId === 3) status = 'Активный';
+  else if (statusId === 4) status = 'На доработке';
+  else if (statusId === 5) status = 'Архивирован';
+
   return {
     ...item,
     status: status,
@@ -87,4 +85,24 @@ export const updateCase = async (id: string, data: Partial<Case>): Promise<Case>
 
 export const deleteCase = async (id: string): Promise<void> => {
   await api.delete(`/cases/${id}`);
+};
+
+export const sendToReview = async (id: string): Promise<Case> => {
+  const response = await api.post(`/cases/${id}/submit-for-review`);
+  return response.data;
+};
+
+export const rejectCase = async (id: string): Promise<Case> => {
+  const response = await api.post(`/cases/${id}/reject`);
+  return response.data;
+};
+
+export const activateCase = async (id: string): Promise<Case> => {
+  const response = await api.post(`/cases/${id}/activate`);
+  return response.data;
+};
+
+export const archiveCase = async (id: string): Promise<Case> => {
+  const response = await api.post(`/cases/${id}/archive`);
+  return response.data;
 };
