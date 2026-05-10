@@ -3,6 +3,7 @@ import api from './api';
 export interface Case {
   id: string;
   title: string;
+  short_title?: string | null;
   project_goals?: string;
   required_result?: string;
   grade_criteria?: string;
@@ -27,25 +28,50 @@ export interface Case {
   customerOrg?: string;
   customerName?: string;
   programHead?: string;
-  educationProgram?: string;
 }
 
-export const getCases = async (): Promise<Case[]> => {
-  const response = await api.get('/cases/');
-  return response.data.map((item: Record<string, unknown>) => ({
-    ...item,
-    status: item.status_name as string || 'На оценке',
-    description: item.project_goals as string || '',
-  }));
+export const getCases = async (limit?: number): Promise<Case[]> => {
+  const url = limit ? `/cases/?limit=${limit}` : '/cases/';
+  const response = await api.get(url);
+  return response.data.map((item: Record<string, unknown>) => {
+    let status = 'На оценке';
+    const statusId = item.status_id as number;
+    
+    if (statusId === 1) status = 'Черновик';
+    else if (statusId === 2) status = 'На оценке';
+    else if (statusId === 3) status = 'Отправлено в ВУЗ';
+    else if (statusId === 4) status = 'Активный';
+    else if (statusId === 5) status = 'На доработке';
+    else if (statusId === 6) status = 'Архивирован';
+    
+    return {
+      ...item,
+      status: status,
+      description: item.project_goals as string || '',
+      short_title: item.short_title as string || '',
+    };
+  });
 };
 
 export const getCaseById = async (id: string): Promise<Case> => {
   const response = await api.get(`/cases/${id}`);
   const item = response.data;
+  
+  let status = 'На оценке';
+  const statusId = item.status_id as number;
+  
+  if (statusId === 1) status = 'Черновик';
+  else if (statusId === 2) status = 'На оценке';
+  else if (statusId === 3) status = 'Отправлено в ВУЗ';
+  else if (statusId === 4) status = 'Активный';
+  else if (statusId === 5) status = 'На доработке';
+  else if (statusId === 6) status = 'Архивирован';
+  
   return {
     ...item,
-    status: item.status_name || 'На оценке',
+    status: status,
     description: item.project_goals || '',
+    short_title: item.short_title || '',
   };
 };
 

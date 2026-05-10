@@ -14,6 +14,7 @@ interface CaseCardProps {
   type: 'case' | 'team';
   id?: string;
   title: string;
+  shortTitle?: string;
   description: string;
   status?: string;
   defaultOpen?: boolean;
@@ -32,6 +33,7 @@ const CaseCard = ({
   type,
   id,
   title,
+  shortTitle,
   description,
   status = "На оценке",
   defaultOpen = false,
@@ -54,7 +56,8 @@ const CaseCard = ({
 
   const showReactions = type === 'case' && status === 'На оценке';
 
-  const { displayText: displayTitle, fullText: fullTitle } = truncateCardTitle(title);
+  const displayTitle = shortTitle || title;
+  const { displayText: displayTitleText, fullText: fullTitle } = truncateCardTitle(displayTitle);
   
   const displayDescription = isOpen ? description : truncateCardDescription(description);
 

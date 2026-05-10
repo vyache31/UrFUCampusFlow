@@ -79,6 +79,12 @@ const CaseViewPage = () => {
       </div>
 
       <div className="case-content">
+        {caseData.short_title && (
+          <div className="info-block">
+            <div className="info-label">Короткое название</div>
+            <div className="info-value">{caseData.short_title}</div>
+          </div>
+        )}
         <div className="info-block">
           <div className="info-label">Название кейса</div>
           <div className="info-value">{caseData.title}</div>
@@ -97,11 +103,6 @@ const CaseViewPage = () => {
         <div className="info-block">
           <div className="info-label">Критерии оценки</div>
           <div className="info-value-description">{caseData.grade_criteria || 'Не указаны'}</div>
-        </div>
-
-        <div className="info-block">
-          <div className="info-label">Образовательная программа</div>
-          <div className="info-value">{caseData.study_program || 'Не указана'}</div>
         </div>
 
         <div className="info-block">

@@ -13,14 +13,14 @@ const CaseCreatePage = () => {
   const descriptionRef = useRef<HTMLDivElement>(null);
   const expectedResultRef = useRef<HTMLDivElement>(null);
   const criteriaRef = useRef<HTMLDivElement>(null);
-  const educationProgramRef = useRef<HTMLDivElement>(null);
+  const shortTitleRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     title: '',
+    shortTitle: '',
     description: '',
     expectedResult: '',
     criteria: '',
-    educationProgram: '',
     semester: ''
   });
 
@@ -29,10 +29,10 @@ const CaseCreatePage = () => {
 
   const fieldLimits: Record<string, number> = {
     title: 100,
+    shortTitle: 50,
     description: 2000,
     expectedResult: 1000,
     criteria: 2000,
-    educationProgram: 150,
   };
 
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
@@ -61,10 +61,10 @@ const CaseCreatePage = () => {
 
   useEffect(() => {
     setupScrollableEditable(titleRef.current, 53);
+    setupScrollableEditable(shortTitleRef.current, 53); 
     setupScrollableEditable(descriptionRef.current, 116);
     setupScrollableEditable(expectedResultRef.current, 95);
     setupScrollableEditable(criteriaRef.current, 137);
-    setupScrollableEditable(educationProgramRef.current, 53);
   }, []);
 
   const handleBeforeInput = (e: React.FormEvent<HTMLDivElement>, field: string) => {
@@ -111,7 +111,7 @@ const CaseCreatePage = () => {
   };
 
   useEffect(() => {
-    const elements = [titleRef, descriptionRef, expectedResultRef, criteriaRef, educationProgramRef];
+    const elements = [titleRef, shortTitleRef, descriptionRef, expectedResultRef, criteriaRef];
     elements.forEach(ref => {
       const el = ref.current;
       if (el) {
@@ -141,10 +141,10 @@ const CaseCreatePage = () => {
       
       const caseForAPI = {
         title: formData.title,
+        short_title: formData.shortTitle,
         project_goals: formData.description,
         required_result: formData.expectedResult,
         grade_criteria: formData.criteria,
-        study_program: formData.educationProgram,
         difficulty_level_id: 1,
         status_id: formData.semester === 'Осенний' ? 1 : 2,
         university_id: 1,
@@ -207,6 +207,19 @@ const CaseCreatePage = () => {
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
+        <div className="form-field" data-field="shortTitle">
+          <label className="form-label">Короткое название</label>
+          <div
+            ref={shortTitleRef}
+            className="editable-box empty"
+            contentEditable
+            suppressContentEditableWarning
+            onBeforeInput={(e) => handleBeforeInput(e, 'shortTitle')}
+            onInput={() => handleContentChange('shortTitle', shortTitleRef.current)}
+            data-placeholder="Введите короткое название (будет отображаться в карточке)"
+          />
+          {errors.shortTitle && <div className="error-message">{errors.shortTitle}</div>}
+        </div>
 
         <div className="form-field" data-field="description">
           <label className="form-label">Описание кейса</label>
@@ -248,20 +261,6 @@ const CaseCreatePage = () => {
             data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
-        </div>
-
-        <div className="form-field" data-field="educationProgram">
-          <label className="form-label">Образовательная программа</label>
-          <div
-            ref={educationProgramRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'educationProgram')}
-            onInput={() => handleContentChange('educationProgram', educationProgramRef.current)}
-            data-placeholder="Введите образовательную программу"
-          />
-          {errors.educationProgram && <div className="error-message">{errors.educationProgram}</div>}
         </div>
 
         <div className="form-field form-field-row" data-field="semester">

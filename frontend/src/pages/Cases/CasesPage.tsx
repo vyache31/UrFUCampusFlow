@@ -7,7 +7,7 @@ import SemesterFilter from '../../components/cases/CaseFilters/SemesterFilter';
 import BulkActionsBar from '../../components/cases/BulkActions/BulkActionsBar';
 import ActionsDropdown from '../../components/sent-cases/ActionsDropdown';
 import CaseCard from '../../components/cases/CaseCard/CaseCard';
-import { getCases, type Case } from '../../services/cases';
+import { getCases, deleteCase, type Case } from '../../services/cases';
 import './casesPage.css';
 
 const CasesPage = () => {
@@ -23,7 +23,9 @@ const CasesPage = () => {
     const fetchCases = async () => {
       try {
         setLoading(true);
-        const data = await getCases();
+        const data = await getCases(100);
+        console.log('Загруженные кейсы:', data);  // Добавить для отладки
+        console.log('Первый кейс:', data[0]);     // Добавить для отладки
         setCases(data);
       } catch (error) {
         console.error('Ошибка загрузки кейсов:', error);
@@ -41,8 +43,9 @@ const CasesPage = () => {
   }, [cases]);
 
   const getStatusForFilter = (status: string) => {
-    if (status === 'Активные кейсы') return 'Активный';
-    if (status === 'Отправленные кейсы') return 'Отправлено';
+    // Если выбран фильтр "Все кейсы" - возвращаем как есть
+    if (status === 'Все кейсы') return 'Все кейсы';
+    // Прямое сопоставление без преобразований
     return status;
   };
 
@@ -71,9 +74,33 @@ const CasesPage = () => {
     }
   };
 
-  const handleDelete = () => {
-    console.log(`Удалить кейсы: ${selectedCaseIds.join(', ')}`);
-    // TODO: вызвать API удаления
+  const handleDelete = async () => {
+    if (selectedCaseIds.length === 0) return;
+    
+    const confirmMessage = selectedCaseIds.length === 1 
+      ? 'Вы уверены, что хотите удалить выбранный кейс? Это действие необратимо.'
+      : `Вы уверены, что хотите удалить ${selectedCaseIds.length} кейсов? Это действие необратимо.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        // Удаляем кейсы последовательно
+        for (const caseId of selectedCaseIds) {
+          await deleteCase(caseId);
+        }
+        
+        // Перезагружаем список кейсов
+        const updatedCases = await getCases();
+        setCases(updatedCases);
+        
+        // Очищаем выбранные
+        setSelectedCaseIds([]);
+        
+        console.log(`Удалено кейсов: ${selectedCaseIds.length}`);
+      } catch (error) {
+        console.error('Ошибка при удалении:', error);
+        alert('Не удалось удалить некоторые кейсы. Попробуйте позже.');
+      }
+    }
   };
 
   const handleMarkActive = () => {
@@ -159,6 +186,7 @@ const CasesPage = () => {
             type="case"
             id={caseItem.id}
             title={caseItem.title}
+            shortTitle={caseItem.short_title || undefined}
             description={caseItem.description || ''}
             status={caseItem.status}
             defaultOpen={false}

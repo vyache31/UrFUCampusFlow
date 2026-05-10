@@ -9,11 +9,11 @@ interface StatusFilterProps {
 
 const statuses = [
   { value: 'Все кейсы', label: 'Все кейсы' },
+  { value: 'Черновик', label: 'Черновик' },
   { value: 'На оценке', label: 'На оценке' },
+  { value: 'Активный', label: 'Активные кейсы' },
   { value: 'На доработке', label: 'На доработке' },
-  { value: 'Активные кейсы', label: 'Активные кейсы' },
-  { value: 'Отправленные кейсы', label: 'Отправленные кейсы' },
-  { value: 'В архиве', label: 'В архиве' },
+  { value: 'Архивирован', label: 'В архиве' },
 ];
 
 const StatusFilter = ({ currentStatus, onStatusChange }: StatusFilterProps) => {
