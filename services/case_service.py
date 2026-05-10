@@ -71,6 +71,7 @@ class CaseService:
         case = Cases(
             id=str(uuid.uuid4()),
             title=schema.title,
+            short_title=schema.short_title,
             difficulty_level_id=schema.difficulty_level_id,
             project_goals=schema.project_goals,
             required_result=schema.required_result,
@@ -158,6 +159,7 @@ class CaseService:
         return CaseResponse(
             id=case.id,
             title=case.title,
+            short_title=case.short_title,
             difficulty_level_id=case.difficulty_level_id,
             difficulty_level_name=case.difficulty_level.level_name if case.difficulty_level else None,
             project_goals=case.project_goals,

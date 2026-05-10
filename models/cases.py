@@ -22,6 +22,7 @@ class Cases(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     title: Mapped[str]
+    short_title: Mapped[Optional[str]] = mapped_column(nullable=True)
     difficulty_level_id: Mapped[int] = mapped_column(ForeignKey('case_difficulty_levels.id'))
     project_goals: Mapped[Optional[str]] = mapped_column(nullable=True)
     required_result: Mapped[Optional[str]] = mapped_column(nullable=True)
