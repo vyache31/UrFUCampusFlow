@@ -7,9 +7,10 @@ interface AddCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (caseId: string, caseTitle: string) => void;
+  existingCaseIds?: string[];
 }
 
-const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
+const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseModalProps) => {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -20,7 +21,8 @@ const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
         try {
           setLoading(true);
           const data = await getCases();
-          setCases(data);
+          const availableCases = data.filter(c => !existingCaseIds.includes(c.id));
+          setCases(availableCases);
         } catch (error) {
           console.error('Ошибка загрузки кейсов:', error);
         } finally {
@@ -29,7 +31,7 @@ const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
       };
       fetchCases();
     }
-  }, [isOpen]);
+  }, [isOpen, existingCaseIds]);
 
   if (!isOpen) return null;
 
@@ -50,9 +52,9 @@ const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <button className="modal-close" onClick={onClose}>
+      <div className="modal-container case-modal modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header-bar">
+          <button className="modal-close-circle" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>
@@ -71,7 +73,7 @@ const AddCaseModal = ({ isOpen, onClose, onAdd }: AddCaseModalProps) => {
                   <div className="case-checkbox-modal">
                     {selectedCaseId === caseItem.id && <CheckIcon />}
                   </div>
-                  <span className="case-title-modal">{caseItem.title}</span>
+                  <span className="case-title-modal">{caseItem.short_title || caseItem.title}</span>
                 </div>
               ))
             )}

@@ -17,38 +17,52 @@ const Header = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [isOutlookConnected, setIsOutlookConnected] = useState(false);
   const [isCheckingOutlook, setIsCheckingOutlook] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  const [userEmail] = useState<string>(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return '';
-    
-    try {
-      const payload = token.split('.')[1];
-      const decodedPayload = JSON.parse(atob(payload));
-      return decodedPayload.sub || decodedPayload.email || '';
-    } catch {
-      return '';
-    }
-  });
+  const [userEmail, setUserEmail] = useState<string>('');
   
   const searchRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Проверка авторизации при загрузке
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsAuthenticated(true);
+      try {
+        const payload = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(payload));
+        setUserEmail(decodedPayload.sub || decodedPayload.email || '');
+      } catch {
+        setUserEmail('');
+      }
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsAuthenticated(false);
+      setUserEmail('');
+    }
+  }, []);
+
   useEffect(() => {
     const checkOutlookStatus = async () => {
+      if (!isAuthenticated) {
+        setIsCheckingOutlook(false);
+        return;
+      }
+      
       try {
         const status = await getOutlookStatus();
         setIsOutlookConnected(status.is_active);
       } catch {
-        // 404 или другая ошибка - значит не подключён
         setIsOutlookConnected(false);
       } finally {
         setIsCheckingOutlook(false);
       }
     };
     checkOutlookStatus();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -56,6 +70,7 @@ const Header = () => {
     const error = urlParams.get('error');
     
     if (code) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsOutlookConnected(true);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -67,11 +82,19 @@ const Header = () => {
     }
   }, []);
 
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+  const toggleDropdown = () => {
+    if (isAuthenticated) {
+      setIsDropdownOpen(!isDropdownOpen);
+    } else {
+      navigate('/login');
+    }
+  };
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
     localStorage.removeItem('access_token');
+    setIsAuthenticated(false);
+    setUserEmail('');
     navigate('/login');
   };
 
@@ -167,6 +190,7 @@ const Header = () => {
   };
 
   const { displayText, fullText } = truncateWithTooltip(userEmail, USER_EMAIL_MAX_LENGTH);
+  const displayName = isAuthenticated && userEmail ? displayText : 'Войти';
 
   return (
     <header className="header">
@@ -213,27 +237,29 @@ const Header = () => {
       </div>
       <div className="user-menu-wrapper">
         <div 
-          className="user-name" 
+          className={`user-name ${!isAuthenticated ? 'guest' : ''}`}
           onClick={toggleDropdown} 
-          title={fullText}
+          title={isAuthenticated ? fullText : ''}
         >
-          {userEmail ? displayText : 'Загрузка...'}
+          {displayName}
         </div>
-        <div className={`user-dropdown ${isDropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
-          {!isCheckingOutlook && !isOutlookConnected && (
-            <button className="dropdown-item" onClick={handleConnectOutlook}>
-              Связать с Outlook
+        {isAuthenticated && (
+          <div className={`user-dropdown ${isDropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
+            {!isCheckingOutlook && !isOutlookConnected && (
+              <button className="dropdown-item" onClick={handleConnectOutlook}>
+                Связать с Outlook
+              </button>
+            )}
+            {!isCheckingOutlook && isOutlookConnected && (
+              <button className="dropdown-item" onClick={handleDisconnectOutlook}>
+                Отвязать Outlook
+              </button>
+            )}
+            <button className="dropdown-item" onClick={handleLogout}>
+              Выйти
             </button>
-          )}
-          {!isCheckingOutlook && isOutlookConnected && (
-            <button className="dropdown-item" onClick={handleDisconnectOutlook}>
-              Отвязать Outlook
-            </button>
-          )}
-          <button className="dropdown-item" onClick={handleLogout}>
-            Выйти
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

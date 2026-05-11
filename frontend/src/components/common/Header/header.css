@@ -185,6 +185,10 @@
   cursor: pointer;
 }
 
+.user-name.guest {
+  text-decoration: underline;
+}
+
 .user-name:hover {
   color: #A5A5B0;
 }

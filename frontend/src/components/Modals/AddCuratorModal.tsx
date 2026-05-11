@@ -43,10 +43,9 @@ const AddCuratorModal = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container curator-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-drag-handle"></div>
-          <button className="modal-close" onClick={onClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header-bar">
+          <button className="modal-close-circle" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>

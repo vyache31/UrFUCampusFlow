@@ -18,13 +18,14 @@ export const searchAll = async (query: string): Promise<SearchResult[]> => {
     const teams = teamsResponse.data;
     
     const filteredCases = cases
-      .filter((item: { title?: string; project_goals?: string }) => 
+      .filter((item: { title?: string; short_title?: string; project_goals?: string }) => 
         item.title?.toLowerCase().includes(query.toLowerCase()) ||
+        item.short_title?.toLowerCase().includes(query.toLowerCase()) ||
         item.project_goals?.toLowerCase().includes(query.toLowerCase())
       )
-      .map((item: { id: string; title: string }) => ({
+      .map((item: { id: string; title: string; short_title?: string }) => ({
         id: item.id,
-        title: item.title,
+        title: item.short_title || item.title,
         type: 'case' as const,
         status: 'case'
       }));

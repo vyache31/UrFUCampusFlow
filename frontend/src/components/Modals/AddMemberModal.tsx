@@ -28,9 +28,9 @@ const AddMemberModal = ({ isOpen, onClose, onAdd }: AddMemberModalProps) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <button className="modal-close" onClick={onClose}>
+      <div className="modal-container member-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header-bar">
+          <button className="modal-close-circle" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>
