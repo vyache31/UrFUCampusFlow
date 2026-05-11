@@ -41,7 +41,7 @@ class Cases(Base):
     creator = relationship('Users', back_populates='created_cases')
     university = relationship('Universities', back_populates='cases')
     difficulty_level = relationship('DifficultyLevels', back_populates='cases')
-    case_semesters = relationship('CaseSemesters', back_populates='case')
+    case_semesters = relationship('CaseSemesters', back_populates='case', cascade='all, delete-orphan')
 
 
 
