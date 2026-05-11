@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogoIcon, SearchIcon } from '../Icons/Icons';
 import { searchAll, type SearchResult } from '../../../services/search';
+import { connectOutlook, getOutlookStatus, disconnectOutlook } from '../../../services/outlook';
 import { truncateWithTooltip } from '../../../utils/truncate';
 import './header.css';
 
@@ -14,6 +15,9 @@ const Header = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isOutlookConnected, setIsOutlookConnected] = useState(false);
+  const [isCheckingOutlook, setIsCheckingOutlook] = useState(true);
+  
   const [userEmail] = useState<string>(() => {
     const token = localStorage.getItem('access_token');
     if (!token) return '';
@@ -22,8 +26,7 @@ const Header = () => {
       const payload = token.split('.')[1];
       const decodedPayload = JSON.parse(atob(payload));
       return decodedPayload.sub || decodedPayload.email || '';
-    } catch (error) {
-      console.error('Ошибка при декодировании токена:', error);
+    } catch {
       return '';
     }
   });
@@ -31,6 +34,39 @@ const Header = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const checkOutlookStatus = async () => {
+      try {
+        const status = await getOutlookStatus();
+        setIsOutlookConnected(status.is_active);
+      } catch {
+        // 404 или другая ошибка - значит не подключён
+        setIsOutlookConnected(false);
+      } finally {
+        setIsCheckingOutlook(false);
+      }
+    };
+    checkOutlookStatus();
+  }, []);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (code) {
+      setIsOutlookConnected(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (error) {
+      console.error('Ошибка авторизации Outlook:', error);
+      alert('Не удалось подключить Outlook. Попробуйте снова.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const handleLogout = () => {
@@ -39,9 +75,28 @@ const Header = () => {
     navigate('/login');
   };
 
-  const handleConnectOutlook = () => {
+  const handleConnectOutlook = async () => {
     setIsDropdownOpen(false);
-    console.log('Связать с Outlook');
+    try {
+      const { authorize_url } = await connectOutlook();
+      window.location.href = authorize_url;
+    } catch (error) {
+      console.error('Ошибка при подключении Outlook:', error);
+      alert('Не удалось подключить Outlook');
+    }
+  };
+
+  const handleDisconnectOutlook = async () => {
+    setIsDropdownOpen(false);
+    if (window.confirm('Вы уверены, что хотите отключить Outlook?')) {
+      try {
+        await disconnectOutlook();
+        setIsOutlookConnected(false);
+        alert('Outlook отключён');
+      } catch {
+        alert('Не удалось отключить Outlook');
+      }
+    }
   };
 
   const performSearch = useCallback(async (query: string) => {
@@ -165,9 +220,16 @@ const Header = () => {
           {userEmail ? displayText : 'Загрузка...'}
         </div>
         <div className={`user-dropdown ${isDropdownOpen ? 'open' : ''}`} ref={dropdownRef}>
-          <button className="dropdown-item" onClick={handleConnectOutlook}>
-            Связать с Outlook
-          </button>
+          {!isCheckingOutlook && !isOutlookConnected && (
+            <button className="dropdown-item" onClick={handleConnectOutlook}>
+              Связать с Outlook
+            </button>
+          )}
+          {!isCheckingOutlook && isOutlookConnected && (
+            <button className="dropdown-item" onClick={handleDisconnectOutlook}>
+              Отвязать Outlook
+            </button>
+          )}
           <button className="dropdown-item" onClick={handleLogout}>
             Выйти
           </button>
