@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from services.microsoft_oauth_service import MicrosoftOAuthService
 from schemas.microsoft_oauth import ConnectResponse, OAuthStatusResponse
 from dependies.oauth_depends import get_oauth_service
-from dependies.auth_depends import check_auth
+from dependies.auth_depends import get_current_auth_user
 from models.auth import Users
 from config import settings
 from urllib.parse import urlencode
@@ -29,7 +29,7 @@ def redirect_to_frontend(**params: str) -> RedirectResponse:
 @router.get('/outlook', response_model=ConnectResponse)
 async def get_microsoft_oauth_redirect_uri(
         service: MicrosoftOAuthService = Depends(get_oauth_service),
-        user: Users = Depends(check_auth)
+        user: Users = Depends(get_current_auth_user)
 ):
 
     return await service.start_connection(user.id)
@@ -73,7 +73,7 @@ async def outlook_callback(
 
 @router.delete('/outlook/disconnect', response_model=OAuthStatusResponse)
 async def disconnect_outlook(
-        user: Users = Depends(check_auth),
+        user: Users = Depends(get_current_auth_user),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
 ):
     try:
@@ -84,7 +84,7 @@ async def disconnect_outlook(
 
 @router.get('/outlook/integration-status', response_model=OAuthStatusResponse)
 async def get_integration_status(
-        user: Users = Depends(check_auth),
+        user: Users = Depends(get_current_auth_user),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
 ):
     try:
