@@ -64,24 +64,6 @@ const Header = () => {
     checkOutlookStatus();
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const error = urlParams.get('error');
-    
-    if (code) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsOutlookConnected(true);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    if (error) {
-      console.error('Ошибка авторизации Outlook:', error);
-      alert('Не удалось подключить Outlook. Попробуйте снова.');
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
   const toggleDropdown = () => {
     if (isAuthenticated) {
       setIsDropdownOpen(!isDropdownOpen);

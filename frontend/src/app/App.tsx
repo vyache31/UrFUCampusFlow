@@ -11,6 +11,7 @@ import LoginPage from '../pages/Login/LoginPage';
 import TeamCreatePage from '../pages/Teams/TeamCreatePage';
 import TeamViewPage from '../pages/Teams/TeamViewPage';
 import BotManagementPage from '../pages/BotManagement/BotManagementPage';
+import OutlookCallbackPage from '../pages/OutlookCallback/OutlookCallbackPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/teams/create" element={<TeamCreatePage />} />
         <Route path="/teams/:id" element={<TeamViewPage />} />
         <Route path="/bot-management" element={<BotManagementPage />} />
+        <Route path="/outlook/callback" element={<OutlookCallbackPage />} />
       </Routes>
     </BrowserRouter>
   );
