@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     OAUTH_MICROSOFT_CLIENT_ID: str
     OAUTH_MICROSOFT_CLIENT_SECRET: str
     DATABASE_URL: str
+    oauth_microsoft_redirect_url: str
+    oauth_microsoft_authority: str
+    oauth_microsoft_auth_base_url: str
+    oauth_microsoft_token_url: str
+    oauth_microsoft_me_url: str
+    token_encryption_key: str
     auth_jwt: AuthJWT = AuthJWT()
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
