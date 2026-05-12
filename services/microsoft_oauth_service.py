@@ -34,8 +34,8 @@ class MicrosoftOAuthService:
 
 
     async def create_state(self, user_id: str) -> str:
-        state_key = str(uuid.uuid4())
-        state = await self.redis.setex(
+        state_key = f'oauth:microsoft:state:{str(uuid.uuid4())}'
+        await self.redis.setex(
             f'{state_key}',
             600,
             json.dumps({
@@ -47,13 +47,16 @@ class MicrosoftOAuthService:
         return state_key
 
 
-    async def consume_state(self, state_input: str) -> dict | RuntimeError:
+    async def consume_state(self, state_input: str) -> dict | None:
         data = await self.redis.getdel(state_input)
 
         if data is None:
             return None
 
-        return data
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError:
+            return None
 
 
     async def update_oauth(

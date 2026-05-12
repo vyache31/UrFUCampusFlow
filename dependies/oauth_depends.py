@@ -7,7 +7,7 @@ from integrations.microsoft_graph_client import GraphClient
 from integrations.microsoft_oauth_client import OAuthClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from dependies.http_client_dependency import get_graph_client
-from outlook_redis_depends import get_redis_session
+from dependies.outlook_redis_depends import get_redis_session
 import redis.asyncio as aioredis
 
 
