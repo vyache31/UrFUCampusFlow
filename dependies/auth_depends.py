@@ -5,28 +5,32 @@ from dependies.user_depends import get_user_service
 from services.user_service import UserService
 from services.auth_service import auth_utils
 from models.auth import Users
+from auth.utils_jwt import (
+    TOKEN_TYPE_FIELD, TOKEN_TYPE_REFRESH,
+    TOKEN_TYPE_ACCESS,
+)
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
 def get_auth_service(user_service: UserService = Depends(get_user_service)):
     return AuthService(user_service)
 
 
-async def check_auth(
-    credentials=Depends(security),
-    user_service: UserService = Depends(get_user_service),
+def get_validate_token_type(payload: dict, token_type: str) -> bool:
+    current_token_type = payload.get(TOKEN_TYPE_FIELD)
+    if current_token_type == token_type:
+        return True
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=f"Invalid token type {current_token_type!r} excepted {token_type!r}",
+    )
+
+
+async def get_user_by_token_type(
+        payload: dict,
+        user_service: UserService,
 ) -> Users:
-    token = credentials.credentials
-
-    try:
-        payload = auth_utils.decode_jwt(token)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalid token"
-        )
-
     user_email = payload.get('sub')
     if not user_email:
         raise HTTPException(
@@ -44,8 +48,36 @@ async def check_auth(
     return user
 
 
+class UserGetterFromToken:
+    def __init__(self, token_type: str):
+        self.token_type = token_type
+
+    async def __call__(self,
+                       credentials=Depends(security),
+                       user_service: UserService = Depends(get_user_service),
+                       ):
+        token = credentials.credentials
+
+        try:
+            payload = auth_utils.decode_jwt(token)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="invalid token"
+            )
+        get_validate_token_type(payload, self.token_type)
+        return await get_user_by_token_type(
+            payload=payload,
+            user_service=user_service,
+        )
+
+
+get_current_auth_user = UserGetterFromToken(TOKEN_TYPE_ACCESS)
+get_current_auth_user_for_refresh = UserGetterFromToken(TOKEN_TYPE_REFRESH)
+
+
 async def require_admin_role(
-        user=Depends(check_auth)
+        user=Depends(get_current_auth_user)
 ):
     if not user.role.role_name == 'admin':
         raise HTTPException(

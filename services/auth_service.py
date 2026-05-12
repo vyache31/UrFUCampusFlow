@@ -1,9 +1,11 @@
+from models import Users
 from services.user_service import UserService, InvalidCredentialsError
 from schemas.user import (
     UserCreate, UserTokenInfo,
     UserLoginRequest
 )
 import auth.utils_jwt as auth_utils
+from auth.utils_jwt import create_access_token, create_refresh_token
 from fastapi import HTTPException, status
 
 
@@ -15,17 +17,13 @@ class AuthService:
             self,
             schema: UserCreate
     ) -> UserTokenInfo:
-        user = await self.user_service.create_user(schema)
+        await self.user_service.create_user(schema)
 
-        jwt_payload = {
-            "sub": user.email,
-            "email": user.email,
-        }
-        access_token = auth_utils.encode_jwt(jwt_payload)
-
+        access_token = create_access_token(schema)
+        refresh_token = create_refresh_token(schema)
         return UserTokenInfo(
             access_token=access_token,
-            token_type="Bearer"
+            refresh_token=refresh_token,
         )
 
     async def login_user(
@@ -40,16 +38,21 @@ class AuthService:
             )
         except InvalidCredentialsError:
             raise HTTPException(
-                status_code=401,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="invalid username or password"
             )
-
-        jwt_payload = {
-            "sub": schema.email,
-            "email": schema.email,
-        }
-        access_token = auth_utils.encode_jwt(jwt_payload)
+        access_token = create_access_token(schema)
+        refresh_token = create_refresh_token(schema)
         return UserTokenInfo(
             access_token=access_token,
-            token_type="Bearer"
+            refresh_token=refresh_token,
+        )
+
+    async def refresh_user(
+            self,
+            schema: UserLoginRequest
+    ):
+        access_token = create_access_token(schema)
+        return UserTokenInfo(
+            access_token=access_token,
         )
