@@ -5,7 +5,7 @@ from schemas.user import (
     UserUpdate
 )
 from dependies.user_depends import get_user_service
-from dependies.auth_depends import check_auth, require_admin_role
+from dependies.auth_depends import get_current_auth_user, require_admin_role
 from typing import List
 
 router = APIRouter(
@@ -41,7 +41,7 @@ async def get_all_users(
 @router.get('/{user_id}', response_model=UserResponse)
 async def get_user(
         user_id: str,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: UserService = Depends(get_user_service)
 ):
     user = await service.get_user(user_id)
@@ -55,7 +55,7 @@ async def get_user(
 async def update_user(
         user_id: str,
         schema: UserUpdate,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: UserService = Depends(get_user_service)
 ):
     try:
