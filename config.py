@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     OAUTH_MICROSOFT_TOKEN_URL: str
     OAUTH_MICROSOFT_ME_URL: str
     TOKEN_ENCRYPTION_KEY: str
+    REDIS_URL: str
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 
