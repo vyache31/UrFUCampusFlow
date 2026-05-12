@@ -4,7 +4,11 @@ from schemas.user import (
     UserCreate, UserLoginRequest,
     UserTokenInfo
 )
-from dependies.auth_depends import get_auth_service
+from dependies.auth_depends import (
+    get_auth_service,
+    get_current_auth_user,
+    get_current_auth_user_for_refresh,
+)
 
 router = APIRouter(
     prefix="",
@@ -26,3 +30,15 @@ async def login_user(
     service: AuthService = Depends(get_auth_service)
 ) -> UserTokenInfo:
     return await service.login_user(schema)
+
+
+@router.post(
+    '/refresh',
+    response_model=UserTokenInfo,
+    response_model_exclude_none=True,
+)
+async def auth_refresh_jwt(
+    user: UserLoginRequest = Depends(get_current_auth_user_for_refresh),
+    service: AuthService = Depends(get_auth_service),
+) -> UserTokenInfo:
+    return await service.refresh_user(user)
