@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.difficulty_level_depends import get_difficulty_level_service
-from dependies.auth_depends import check_auth, require_admin_role
+from dependies.auth_depends import get_current_auth_user, require_admin_role
 from schemas.difficulty_level import DifficultyLevelResponse
 from services.difficulty_level_service import DifficultyLevelService
 
@@ -16,7 +16,7 @@ router = APIRouter(
 @router.get('/', response_model=List[DifficultyLevelResponse])
 async def get_all_difficulty_levels(
         limit: int = Query(10),
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: DifficultyLevelService = Depends(get_difficulty_level_service)
 ):
     return await service.get_all_difficulty_levels(limit)
@@ -25,7 +25,7 @@ async def get_all_difficulty_levels(
 @router.get('/{level_id}', response_model=DifficultyLevelResponse)
 async def get_difficulty_level(
         level_id: int,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: DifficultyLevelService = Depends(get_difficulty_level_service)
 ):
     level = await service.get_difficulty_level_by_id(level_id)

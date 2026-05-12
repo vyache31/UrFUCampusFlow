@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from services.case_service import CaseService
 from schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from dependies.case_depends import get_case_service
-from dependies.auth_depends import check_auth, require_admin_role
+from dependies.auth_depends import get_current_auth_user, require_admin_role
 
 
 def _case_not_found(case_id: str) -> HTTPException:
@@ -18,7 +18,7 @@ router = APIRouter(
 @router.get('/', response_model=list[CaseResponse])
 async def get_all_cases(
         service: CaseService = Depends(get_case_service),
-        user = Depends(check_auth),
+        user = Depends(get_current_auth_user),
         limit: int = Query(10, ge=1, le=100)
 ):
     return await service.get_all_cases(limit=limit)
@@ -27,7 +27,7 @@ async def get_all_cases(
 @router.post('/', response_model=CaseResponse, status_code=200)
 async def create_case(
         schema: CaseCreate,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
     try:
@@ -42,7 +42,7 @@ async def create_case(
 @router.get('/{case_id}', response_model=CaseResponse)
 async def get_case(
         case_id: str,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
     case = await service.get_case_by_id(case_id=case_id)
@@ -57,7 +57,7 @@ async def get_case(
 async def update_case(
         case_id: str,
         schema: CaseUpdate,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
     try:
@@ -73,7 +73,7 @@ async def update_case(
 @router.delete('/{case_id}')
 async def delete_case(
         case_id: str,
-        user=Depends(check_auth),
+        user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
     result = await service.delete_case(case_id=case_id)
