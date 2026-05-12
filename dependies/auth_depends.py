@@ -85,12 +85,10 @@ get_current_auth_user_for_refresh = UserGetterFromToken(TOKEN_TYPE_REFRESH)
 async def require_admin_role(
         user=Depends(get_current_auth_user)
 ):
-    if not user.role.role_name == 'ADMIN':
+    if not user.role.code == 'ADMIN':
         raise HTTPException(
             status_code=403,
             detail="forbidden"
         )
 
     return user
-
-

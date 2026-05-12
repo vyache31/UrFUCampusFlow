@@ -11,7 +11,7 @@ class Users(Base):
     __tablename__ = 'users'
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
-    email: Mapped[str]
+    email: Mapped[str] = mapped_column(unique=True)
     role_id: Mapped[int] = mapped_column(ForeignKey('roles.id'))
     password_hash: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -30,12 +30,6 @@ class Roles(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     role_name: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
 
     users = relationship('Users', back_populates='role')
-
-
-
-
-
-
-

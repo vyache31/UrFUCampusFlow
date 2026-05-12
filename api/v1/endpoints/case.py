@@ -24,14 +24,14 @@ async def get_all_cases(
     return await service.get_all_cases(limit=limit)
 
 
-@router.post('/', response_model=CaseResponse, status_code=201)
+@router.post('/', response_model=CaseResponse, status_code=200)
 async def create_case(
         schema: CaseCreate,
         user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
     try:
-        return await service.create_case(schema)
+        return await service.create_case(schema, creator_id=user.id)
 
     except ValueError as error:
         detail = str(error)
@@ -81,3 +81,75 @@ async def delete_case(
         raise _case_not_found(case_id)
 
     return {'status': 'deleted'}
+
+
+@router.post('/{case_id}/submit-for-review', response_model=CaseResponse)
+async def send_case_to_review(
+    case_id: str,
+    user=Depends(check_auth),
+    service: CaseService = Depends(get_case_service)
+):
+    try:
+        case = await service.send_to_review(case_id)
+
+        if not case:
+            raise _case_not_found(case_id)
+
+        return case
+
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.post('/{case_id}/reject', response_model=CaseResponse)
+async def reject_case(
+    case_id: str,
+    user=Depends(check_auth),
+    service: CaseService = Depends(get_case_service)
+):
+    try:
+        case = await service.reject(case_id)
+
+        if not case:
+            raise _case_not_found(case_id)
+
+        return case
+
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.post('/{case_id}/activate', response_model=CaseResponse)
+async def activate_case(
+    case_id: str,
+    user=Depends(check_auth),
+    service: CaseService = Depends(get_case_service)
+):
+    try:
+        case = await service.activate_after_submition(case_id)
+
+        if not case:
+            raise _case_not_found(case_id)
+
+        return case
+
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.post('/{case_id}/archive', response_model=CaseResponse)
+async def archive_case(
+    case_id: str,
+    user=Depends(check_auth),
+    service: CaseService = Depends(get_case_service)
+):
+    try:
+        case = await service.archive(case_id)
+
+        if not case:
+            raise _case_not_found(case_id)
+
+        return case
+
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))

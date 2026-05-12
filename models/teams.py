@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    String, ForeignKey, DateTime, Boolean
+    String, ForeignKey, DateTime, Boolean, UniqueConstraint
 )
 from datetime import datetime
 from typing import Optional
@@ -80,6 +80,14 @@ class Semesters(Base):
     start_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
+    __table_args__ = (
+        UniqueConstraint(
+            'season',
+            'year',
+            name='uq_semesters_season_year'
+        ),
+    )
+
     case_semesters = relationship('CaseSemesters', back_populates='semester')
 
 
@@ -93,6 +101,3 @@ class Universities(Base):
     teams = relationship('Teams', back_populates='university')
     cases = relationship('Cases', back_populates='university')
     students = relationship('Students', back_populates='university')
-
-
-

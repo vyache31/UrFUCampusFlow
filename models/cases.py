@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    String, ForeignKey, DateTime
+    String, ForeignKey, DateTime, UniqueConstraint
 )
 from datetime import datetime
 from typing import Optional
@@ -11,7 +11,7 @@ class DifficultyLevels(Base):
     __tablename__ = 'case_difficulty_levels'
 
     id: Mapped[int] = mapped_column(primary_key=True, unique=True, autoincrement=True)
-    level_code: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
     level_name: Mapped[str]
 
     cases = relationship('Cases', back_populates='difficulty_level')
@@ -22,6 +22,7 @@ class Cases(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     title: Mapped[str]
+    short_title: Mapped[Optional[str]] = mapped_column(nullable=True)
     difficulty_level_id: Mapped[int] = mapped_column(ForeignKey('case_difficulty_levels.id'))
     project_goals: Mapped[Optional[str]] = mapped_column(nullable=True)
     required_result: Mapped[Optional[str]] = mapped_column(nullable=True)
@@ -40,7 +41,7 @@ class Cases(Base):
     creator = relationship('Users', back_populates='created_cases')
     university = relationship('Universities', back_populates='cases')
     difficulty_level = relationship('DifficultyLevels', back_populates='cases')
-    case_semesters = relationship('CaseSemesters', back_populates='case')
+    case_semesters = relationship('CaseSemesters', back_populates='case', cascade='all, delete-orphan')
 
 
 
@@ -55,12 +56,20 @@ class CaseSemesters(Base):
     semester = relationship('Semesters', back_populates='case_semesters')
     team_case_history = relationship('TeamCaseHistory', back_populates='case_semester')
 
+    __table_args__ = (
+        UniqueConstraint(
+            'case_id',
+            'semester_id',
+            name='uq_case_id_semester_id',
+        ),
+    )
+
 
 class CaseStatuses(Base):
     __tablename__ = 'case_statuses'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    status_code: Mapped[str]
+    code: Mapped[str] = mapped_column(unique=True)
     status_name: Mapped[str]
 
     cases = relationship('Cases', back_populates='status')
@@ -104,6 +113,3 @@ class EvaluationFormComments(Base):
 
     form = relationship('EvaluationForm', back_populates='comments')
     creator = relationship('Users', back_populates='evaluation_form_comments')
-
-
-

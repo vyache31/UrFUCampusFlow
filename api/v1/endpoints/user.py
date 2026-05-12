@@ -44,7 +44,7 @@ async def get_user(
         user=Depends(get_current_auth_user),
         service: UserService = Depends(get_user_service)
 ):
-    user = await service.get_user(user_id)
+    user = await service.get_user_by_id(user_id)
 
     if not user:
         raise HTTPException(status_code=404, detail='User not found')

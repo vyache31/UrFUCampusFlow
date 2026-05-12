@@ -6,6 +6,7 @@ from typing import Optional
 class CaseResponse(BaseModel):
     id: str
     title: str = None
+    short_title: Optional[str] = None
     difficulty_level_id: int
     difficulty_level_name: Optional[str] = None
     project_goals: Optional[str] = None
@@ -29,22 +30,25 @@ class CaseResponse(BaseModel):
 
 class CaseCreate(BaseModel):
     title: str
-    difficulty_level_id: int = None
+    short_title: Optional[str] = None
+    difficulty_level_id: Optional[int] = None
     project_goals: Optional[str] = None
     required_result: Optional[str] = None
     grade_criteria: Optional[str] = None
-    creator_id: str
     study_program: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     university_id: Optional[int] = None
-    status_id: Optional[int] = None
 
 
-class CaseUpdate(CaseCreate):
-    pass
-
-
-
-
-
+class CaseUpdate(BaseModel):
+    title: str = None
+    short_title: Optional[str] = None
+    project_goals: Optional[str] = None
+    required_result: Optional[str] = None
+    grade_criteria: Optional[str] = None
+    study_program: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    difficulty_level_id: Optional[int] = None
+    university_id: Optional[int] = None

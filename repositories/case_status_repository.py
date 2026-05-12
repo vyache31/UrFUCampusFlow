@@ -25,6 +25,14 @@ class CaseStatusRepository:
 
         return status.scalar_one_or_none()
 
+    async def get_by_code(self, status_code: str) -> CaseStatuses | None:
+        status = await self.db.execute(
+            select(CaseStatuses).
+            where(CaseStatuses.code == status_code)
+        )
+
+        return status.scalar_one_or_none()
+
     async def create(self, status: CaseStatuses) -> CaseStatuses:
         self.db.add(status)
         await self.db.commit()
