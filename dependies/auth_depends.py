@@ -9,6 +9,7 @@ from auth.utils_jwt import (
     TOKEN_TYPE_FIELD, TOKEN_TYPE_REFRESH,
     TOKEN_TYPE_ACCESS,
 )
+from jwt.exceptions import ExpiredSignatureError
 
 security = HTTPBearer(auto_error=False)
 
@@ -60,10 +61,15 @@ class UserGetterFromToken:
 
         try:
             payload = auth_utils.decode_jwt(token)
-        except Exception:
+        except ExpiredSignatureError as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="invalid token"
+                detail=f"token was expired"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"invalid token"
             )
         get_validate_token_type(payload, self.token_type)
         return await get_user_by_token_type(
@@ -79,7 +85,7 @@ get_current_auth_user_for_refresh = UserGetterFromToken(TOKEN_TYPE_REFRESH)
 async def require_admin_role(
         user=Depends(get_current_auth_user)
 ):
-    if not user.role.role_name == 'admin':
+    if not user.role.role_name == 'ADMIN':
         raise HTTPException(
             status_code=403,
             detail="forbidden"
