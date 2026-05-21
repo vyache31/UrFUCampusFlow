@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     TOKEN_ENCRYPTION_KEY: str
     REDIS_URL: str
     FRONTEND_URL: str
+    OAUTH_MICROSOFT_EVENTS_URL: str
+    OAUTH_MICROSOFT_CALENDAR_VIEW_URL: str
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 

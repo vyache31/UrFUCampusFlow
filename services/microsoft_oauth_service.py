@@ -195,6 +195,23 @@ class MicrosoftOAuthService:
     async def ensure_actual_tokens(self, oauth: MicrosoftOAuth) -> MicrosoftOAuth:
 
         if oauth.access_token_expires_at <= datetime.now(UTC) + timedelta(minutes=3):
-            await self.refresh_tokens(oauth)
+            oauth = await self.refresh_tokens(oauth)
 
         return oauth
+
+
+    async def get_actual_access_token(self, user_id: str) -> str:
+        oauth = await self.rep.get_oauth_by_user_id(user_id)
+
+        if not oauth:
+            raise ValueError('This OAuth connection does not exist')
+
+        if not oauth.is_active:
+            raise ValueError('This OAuth connection is inactive')
+
+        oauth_with_updated_tokens = await self.ensure_actual_tokens(oauth)
+
+        encrypted_access_token = oauth_with_updated_tokens.encrypted_access_token
+
+        decrypted_access_token = encryption.decrypt_token(encrypted_access_token)
+        return decrypted_access_token

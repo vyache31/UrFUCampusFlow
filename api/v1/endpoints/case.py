@@ -86,7 +86,7 @@ async def delete_case(
 @router.post('/{case_id}/submit-for-review', response_model=CaseResponse)
 async def send_case_to_review(
     case_id: str,
-    user=Depends(check_auth),
+    user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
     try:
@@ -104,7 +104,7 @@ async def send_case_to_review(
 @router.post('/{case_id}/reject', response_model=CaseResponse)
 async def reject_case(
     case_id: str,
-    user=Depends(check_auth),
+    user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
     try:
@@ -122,7 +122,7 @@ async def reject_case(
 @router.post('/{case_id}/activate', response_model=CaseResponse)
 async def activate_case(
     case_id: str,
-    user=Depends(check_auth),
+    user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
     try:
@@ -140,7 +140,7 @@ async def activate_case(
 @router.post('/{case_id}/archive', response_model=CaseResponse)
 async def archive_case(
     case_id: str,
-    user=Depends(check_auth),
+    user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
     try:
