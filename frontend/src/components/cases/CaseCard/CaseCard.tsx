@@ -137,7 +137,7 @@ const handleOpenFull = () => {
               {displayTitle}
             </span>
           </div>
-          {type === 'case' && (
+          {(type === 'case' || type === 'team') && (
             <div className="accordion-header-center">
               <div className="status-dot"></div>
               <span className="status-text">{status}</span>

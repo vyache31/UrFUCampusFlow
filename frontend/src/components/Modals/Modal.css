@@ -1024,7 +1024,7 @@
   gap: 8px;
   width: 100%;
   background: none;
-  border: 1px dashed #A5A5B0;
+  border: 1px dashed #4E85FC;
   border-radius: 40px;
   padding: 12px;
   font-family: 'Montserrat', sans-serif;
@@ -1035,9 +1035,18 @@
   transition: all 0.2s ease;
 }
 
+.add-new-curator-btn svg path {
+  fill: #4E85FC;
+}
+
 .add-new-curator-btn:hover {
-  border-color: #4E85FC;
+  border-color: #3563C6;
   background: #F4F8FF;
+  color: #3563C6;
+}
+
+.add-new-curator-btn:hover svg path {
+  fill: #3563C6;
 }
 
 .add-curator-form {

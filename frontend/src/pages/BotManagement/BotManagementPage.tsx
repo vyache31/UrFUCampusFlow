@@ -83,15 +83,20 @@ const BotManagementPage = () => {
 
   const handleSelectCurator = (curatorId: string) => {
     if (currentCaseId) {
-      const curatorToAdd = allCurators.find(c => c.id === curatorId);
-      if (curatorToAdd) {
-        setCases(prev => prev.map(c => {
-          if (c.id === currentCaseId && !c.curators.some(cur => cur.id === curatorId)) {
-            return { ...c, curators: [...c.curators, curatorToAdd] };
+      setCases(prev => prev.map(c => {
+        if (c.id === currentCaseId) {
+          const isSelected = c.curators.some(cur => cur.id === curatorId);
+          if (isSelected) {
+            return { ...c, curators: c.curators.filter(cur => cur.id !== curatorId) };
+          } else {
+            const curatorToAdd = allCurators.find(cur => cur.id === curatorId);
+            if (curatorToAdd) {
+              return { ...c, curators: [...c.curators, curatorToAdd] };
+            }
           }
-          return c;
-        }));
-      }
+        }
+        return c;
+      }));
     }
   };
 

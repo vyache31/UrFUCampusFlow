@@ -213,11 +213,11 @@
 
 .add-case-btn svg path {
   fill: #202024;
-  transition: stroke 0.2s ease;
+  transition: fill 0.2s ease;
 }
 
 .add-case-btn:hover {
-  fill: #A5A5B0;
+  color: #A5A5B0;
 }
 
 .add-case-btn:hover svg path {
@@ -225,7 +225,7 @@
 }
 
 .add-case-btn:active {
-  fill: #F9E27D;
+  color: #F9E27D;
 }
 
 .add-case-btn:active svg path {
