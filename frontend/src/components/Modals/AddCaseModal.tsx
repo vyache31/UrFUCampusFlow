@@ -20,8 +20,10 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
       const fetchCases = async () => {
         try {
           setLoading(true);
-          const data = await getCases();
-          const availableCases = data.filter(c => !existingCaseIds.includes(c.id));
+          const data = await getCases(100);
+          const availableCases = data.filter(c => 
+            c.status_id === 3 && !existingCaseIds.includes(c.id)
+          );
           setCases(availableCases);
         } catch (error) {
           console.error('Ошибка загрузки кейсов:', error);
@@ -31,7 +33,12 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
       };
       fetchCases();
     }
-  }, [isOpen, existingCaseIds]);
+  }, [isOpen]);
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedCaseId(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -63,6 +70,8 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
           <div className="cases-scroll-list">
             {loading ? (
               <div className="loading-cases">Загрузка кейсов...</div>
+            ) : cases.length === 0 ? (
+              <div className="empty-cases-modal">Нет доступных активных кейсов</div>
             ) : (
               cases.map((caseItem) => (
                 <div
@@ -84,8 +93,8 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
           <button 
             className="modal-add-btn" 
             onClick={handleSubmit}
-            disabled={!selectedCaseId}
-            style={{ opacity: !selectedCaseId ? 0.5 : 1 }}
+            disabled={!selectedCaseId || cases.length === 0}
+            style={{ opacity: !selectedCaseId || cases.length === 0 ? 0.5 : 1 }}
           >
             <CheckIcon />
             <span>Добавить</span>
