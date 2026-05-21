@@ -56,6 +56,10 @@ const LoginPage = () => {
     }
   };
 
+  const handleSSOLogin = () => {
+    navigate('/sso');
+  };
+
   return (
     <div className="login-page">
       <div className="login-container">
@@ -100,7 +104,7 @@ const LoginPage = () => {
           </button>
         </form>
 
-        <button className="sso-btn" onClick={() => console.log('SSO login')}>
+        <button className="sso-btn" onClick={handleSSOLogin}>
           Войти через корпоративный аккаунт (SSO)
         </button>
       </div>
