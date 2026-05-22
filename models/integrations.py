@@ -30,7 +30,7 @@ class Meetings(Base):
     __tablename__ = 'meetings'
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    team_case_history_id: Mapped[Optional[str]] = mapped_column(ForeignKey('team_case_history.id'), nullable=True)  # TODO: убрать nullable как только team_case_history_id будет готов
+    team_case_history_id: Mapped[str] = mapped_column(ForeignKey('team_case_history.id'))
     title: Mapped[str]
     location: Mapped[Optional[str]] = mapped_column(nullable=True)
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

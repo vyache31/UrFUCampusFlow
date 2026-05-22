@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from services.team_service import TeamService
 from schemas.team import TeamCreate, TeamUpdate, TeamResponse
+from dependies.team_case_history_depends import get_current_team_case_history_by_team_id
+from schemas.outlook_meetings import MeetingResponse, MeetingCreate
+from services.meetings_service import MeetingsService
+from dependies.meetings_depends import get_meetings_service
 from schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
 from schemas.team_members import TeamMemberCreate, TeamMemberResponse
 from dependies.team_depends import get_team_service
@@ -185,3 +189,35 @@ async def end_current_team_case_history(
         raise HTTPException(status_code=404, detail='Current team case history not found')
 
     return service.to_response(team_case_history)
+
+
+@router.post('/{team_id}/meetings', response_model=MeetingResponse)
+async def create_meeting_for_team(
+    team_id: str,
+    schema: MeetingCreate,
+    user=Depends(get_current_auth_user),
+    current_team_case_history = Depends(get_current_team_case_history_by_team_id),
+    service: MeetingsService = Depends(get_meetings_service),
+):
+    try:
+        meeting = await service.create_meeting(
+            user_id=user.id,
+            current_team_case_history_id=current_team_case_history.id,
+            meeting_data=schema
+        )
+
+        return meeting
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.get('/{team_id}/meetings', response_model=list[MeetingResponse])
+async def get_team_meetings(
+    team_id: str,
+    user=Depends(get_current_auth_user),
+    current_team_case_history = Depends(get_current_team_case_history_by_team_id),
+    service: MeetingsService = Depends(get_meetings_service),
+):
+    return await service.get_by_team_case_history_id(
+        team_case_history_id=current_team_case_history.id
+    )

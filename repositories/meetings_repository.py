@@ -47,6 +47,15 @@ class MeetingsRepository:
         return meetings.scalars().all()
 
 
+    async def get_by_team_case_history_id(self, team_case_history_id: str) -> list[Meetings]:
+        meetings = await self.db.execute(
+            select(Meetings)
+            .where(Meetings.team_case_history_id == team_case_history_id)
+        )
+
+        return meetings.scalars().all()
+
+
     async def delete(self, meeting: Meetings) -> None:
         await self.db.delete(meeting)
 
