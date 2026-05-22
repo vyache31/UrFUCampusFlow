@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.university_depends import get_university_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 from schemas.university import UniversityCreate, UniversityResponse, UniversityUpdate
 from services.university_info_service import UniversityInfoService
 

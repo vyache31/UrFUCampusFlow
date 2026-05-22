@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, UTC
 from schemas.team import TeamCreate, TeamUpdate
-from models.teams import Teams
+from models import Teams
 from repositories.team_repository import TeamRepository
 
 

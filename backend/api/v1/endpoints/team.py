@@ -10,7 +10,7 @@ from schemas.team_members import TeamMemberCreate, TeamMemberResponse
 from dependies.team_depends import get_team_service
 from dependies.team_case_history_depends import get_team_case_history_service
 from dependies.team_members_depends import get_team_members_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 from services.team_case_history_service import TeamCaseHistoryService
 from services.team_members_service import TeamMembersService
 from typing import List

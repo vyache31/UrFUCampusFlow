@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from schemas.student import StudentCreate, StudentUpdate, StudentResponse
 from services.student_service import StudentService
 from dependies.student_depends import get_student_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
-
+from dependies.auth_depends import get_current_auth_user
 
 router = APIRouter(
     prefix='/students',

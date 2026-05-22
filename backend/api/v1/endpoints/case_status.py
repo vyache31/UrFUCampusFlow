@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.case_status_depends import get_case_status_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 from schemas.case_status import CaseStatusResponse
 from services.case_status_service import CaseStatusService
 

@@ -1,10 +1,8 @@
-from models import Users
 from services.user_service import UserService, InvalidCredentialsError
 from schemas.user import (
     UserCreate, UserTokenInfo,
     UserLoginRequest
 )
-import auth.utils_jwt as auth_utils
 from auth.utils_jwt import create_access_token, create_refresh_token
 from fastapi import HTTPException, status
 

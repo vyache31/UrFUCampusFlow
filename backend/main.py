@@ -1,19 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from api.v1.endpoints import (
-    user,
-    case,
-    student,
-    team,
-    university,
-    role,
-    case_status,
-    difficulty_level,
-    iteration,
-    auth,
-    microsoft_oauth
-)
+from api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
+    iteration, auth, case_status
 import httpx
 import redis.asyncio as aioredis
 from config import settings

@@ -3,12 +3,11 @@ from datetime import datetime, UTC
 from repositories.user_repository import UserRepository
 from schemas.user import (
     UserCreate, UserUpdate,
-    UserLoginRequest, UserTokenInfo,
     UserResponse
 )
-from models.auth import Users
+from models import Users
 import auth.utils_jwt as auth_utils_jwt
-from fastapi import HTTPException, Form, status
+from fastapi import HTTPException, status
 
 
 class InvalidCredentialsError(Exception):

@@ -1,7 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from dependies.role_depends import get_role_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 from schemas.role import RoleResponse
 from services.role_service import RoleService
 

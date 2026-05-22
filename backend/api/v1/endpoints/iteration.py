@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.iteration_depends import get_iteration_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 from schemas.iteration import IterationResponse
 from services.iteration_service import IterationService
 

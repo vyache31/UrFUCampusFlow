@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer
 from services.auth_service import AuthService
 from dependies.user_depends import get_user_service
 from services.user_service import UserService
-from services.auth_service import auth_utils
+from auth import utils_jwt
 from models.auth import Users
 from auth.utils_jwt import (
     TOKEN_TYPE_FIELD, TOKEN_TYPE_REFRESH,
@@ -59,7 +59,7 @@ class UserGetterFromToken:
                        ):
         try:
             token = credentials.credentials
-            payload = auth_utils.decode_jwt(token)
+            payload = utils_jwt.decode_jwt(token)
         except AttributeError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -73,7 +73,7 @@ class UserGetterFromToken:
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"invalid token"
+                detail=f"invalid token {e}" # ONLY FOR DEV MODE
             )
         get_validate_token_type(payload, self.token_type)
         return await get_user_by_token_type(

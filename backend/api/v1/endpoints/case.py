@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from services.case_service import CaseService
 from schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from dependies.case_depends import get_case_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 
 
 def _case_not_found(case_id: str) -> HTTPException:

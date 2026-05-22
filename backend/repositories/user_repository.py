@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from models.auth import Users, Roles
+from models import Users, Roles
 
 
 class UserRepository:

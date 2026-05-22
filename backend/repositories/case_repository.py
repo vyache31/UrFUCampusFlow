@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from models import Cases, CaseStatuses, DifficultyLevels, Universities, Users
+from models import Cases
 
 CASE_LOAD_OPTIONS = (
     selectinload(Cases.difficulty_level),

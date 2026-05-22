@@ -1,7 +1,7 @@
 import asyncio
-from models.auth import Roles
+from models import Roles
 from models.cases import CaseStatuses, DifficultyLevels
-from models.grades import Iterations
+from models import Iterations
 from database import SessionLocal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

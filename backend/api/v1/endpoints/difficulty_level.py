@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from dependies.difficulty_level_depends import get_difficulty_level_service
-from dependies.auth_depends import get_current_auth_user, require_admin_role
+from dependies.auth_depends import get_current_auth_user
 from schemas.difficulty_level import DifficultyLevelResponse
 from services.difficulty_level_service import DifficultyLevelService
 

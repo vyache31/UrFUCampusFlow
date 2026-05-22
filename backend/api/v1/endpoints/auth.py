@@ -6,7 +6,6 @@ from schemas.user import (
 )
 from dependies.auth_depends import (
     get_auth_service,
-    get_current_auth_user,
     get_current_auth_user_for_refresh,
 )
 
