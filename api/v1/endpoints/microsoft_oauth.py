@@ -37,6 +37,7 @@ async def get_microsoft_oauth_redirect_uri(
 
 @router.get('/outlook/callback')
 async def outlook_callback(
+        user: Users = Depends(get_current_auth_user),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
         code: str | None = Query(default=None),
         error: str | None = Query(default=None),
