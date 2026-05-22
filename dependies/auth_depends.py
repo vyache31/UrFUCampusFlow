@@ -57,10 +57,14 @@ class UserGetterFromToken:
                        credentials=Depends(security),
                        user_service: UserService = Depends(get_user_service),
                        ):
-        token = credentials.credentials
-
         try:
+            token = credentials.credentials
             payload = auth_utils.decode_jwt(token)
+        except AttributeError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="request must include a token"
+            )
         except ExpiredSignatureError as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
