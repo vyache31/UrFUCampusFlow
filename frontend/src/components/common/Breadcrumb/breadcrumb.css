@@ -1,0 +1,16 @@
+.breadcrumb {
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
+
+.breadcrumb span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb span:hover {
+  color: #202024;
+}

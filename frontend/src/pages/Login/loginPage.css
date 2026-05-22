@@ -1,0 +1,181 @@
+/* src/pages/Login/loginPage.css */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 600px;  /* ← УВЕЛИЧЕНО: было 520px, стало 600px */
+  padding: 0 20px;
+}
+
+.logo-wrapper {
+  width: 80px;
+  height: 78px;
+  margin-bottom: 20px;
+}
+
+.logo-wrapper svg {
+  width: 80px;
+  height: 78px;
+}
+
+.logo-wrapper svg path {
+  fill: #202024;
+}
+
+.login-title {
+  color: #202024;
+  font-size: 48px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 72px;
+  margin-bottom: 50px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Форма занимает 100% ширины контейнера */
+form {
+  width: 100%;
+}
+
+.input-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.input-label {
+  color: #202024;
+  font-size: 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 30px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 18px 24px;
+  background: #F4F4F4;
+  border-radius: 30px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.login-input::placeholder {
+  color: #A5A5B0;
+  font-size: 16px;
+}
+
+.login-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.login-input:hover {
+  background: #EBEBEB;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 18px 24px;
+  background: #4E85FC;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  color: white;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.login-btn:hover {
+  background: #3563C6;
+}
+
+.login-btn:active {
+  background: transparent;
+  color: #3563C6;
+  outline: 1px solid #3563C6;
+  outline-offset: -1px;
+}
+
+.sso-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 24px;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.sso-btn:hover {
+  color: #A5A5B0;
+}
+
+.sso-btn:active {
+  color: #F9E27D;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .login-container {
+    max-width: 100%;
+    padding: 0 20px;
+  }
+
+  .login-title {
+    font-size: 32px;
+    line-height: 48px;
+    white-space: normal;
+  }
+
+  .input-label {
+    font-size: 18px;
+  }
+
+  .login-input {
+    padding: 14px 20px;
+    font-size: 14px;
+  }
+
+  .login-input::placeholder {
+    font-size: 14px;
+  }
+
+  .login-btn {
+    padding: 14px 20px;
+    font-size: 16px;
+  }
+
+  .sso-btn {
+    font-size: 14px;
+  }
+}

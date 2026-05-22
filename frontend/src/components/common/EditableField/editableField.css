@@ -1,0 +1,68 @@
+.editable-field {
+  width: 100%;
+  padding: 15px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+  cursor: text;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-y: visible;
+  box-sizing: border-box;
+}
+
+.editable-field:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.editable-field:hover {
+  background: #EBEBEB;
+}
+
+/* Состояние со скроллом */
+.editable-field.with-scroll {
+  overflow-y: auto !important;
+}
+
+.editable-field.with-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.editable-field.with-scroll::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.editable-field.with-scroll::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.editable-field.with-scroll::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+/* Firefox */
+.editable-field.with-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #A5A5B0 #E0E0E0;
+}
+
+/* Плейсхолдер */
+.editable-field.has-placeholder:empty:before {
+  content: attr(data-placeholder);
+  color: #A5A5B0;
+}
+
+.editable-field.has-placeholder:focus:empty:before {
+  content: none;
+}
+

@@ -1,0 +1,1182 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container,
+.modal-content,
+.schedule-modal-container,
+.control-points-modal {
+  background: #fff;
+  border-radius: 25px;
+  width: 531px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  border: none;
+  outline: none;
+}
+
+.modal-large {
+  width: 886px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-close {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close svg path {
+  fill: #202024;
+  transition: fill 0.2s ease;
+}
+
+.modal-close:hover svg path {
+  fill: #A5A5B0;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.modal-label {
+  width: 80px;
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.modal-input {
+  flex: 1;
+  padding: 10px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+}
+
+.modal-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.modal-input::placeholder {
+  color: #A5A5B0;
+}
+
+.modal-footer {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.modal-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #4E85FC;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-add-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.modal-add-btn svg path {
+  fill: white;
+}
+
+.modal-add-btn:hover {
+  background: #3563C6;
+}
+
+.modal-add-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.modal-add-btn:active span {
+  color: #4E85FC;
+}
+
+.modal-add-btn:active svg path {
+  fill: #4E85FC;
+}
+
+/* Список кейсов в модалке */
+.cases-list-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.case-item-modal {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.case-item-modal:hover {
+  background: #EBEBEB;
+}
+
+.case-checkbox-modal {
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.case-item-modal.selected .case-checkbox-modal {
+  background: #D0DFB9;
+  border: none;
+}
+
+/* Адаптив */
+@media (max-width: 900px) {
+  .modal-large {
+    width: 90%;
+    max-width: 600px;
+  }
+  
+  .modal-field {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .modal-label {
+    width: auto;
+  }
+  
+  .modal-input {
+    width: 100%;
+  }
+}
+
+/* Список кейсов с прокруткой */
+.cases-scroll-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cases-scroll-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cases-scroll-list::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.cases-scroll-list::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.cases-scroll-list::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.case-item-modal {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.case-item-modal:hover {
+  background: #EBEBEB;
+}
+
+.case-title-modal {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.loading-cases {
+  text-align: center;
+  padding: 20px;
+  color: #A5A5B0;
+}
+
+/* Модальное окно встречи */
+.schedule-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.schedule-modal-container {
+  width: 560px;
+  background: white;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.schedule-modal-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 20px 20px 0;
+  background: #A5A5B0;
+}
+
+.schedule-modal-close {
+  width: 24px;
+  height: 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+}
+
+.schedule-modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.schedule-modal-close svg path {
+  fill: #202024;
+}
+
+.schedule-modal-close:hover {
+  background: #E0E0E0;
+}
+
+.schedule-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.schedule-modal-footer {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.schedule-title {
+  text-align: center;
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.schedule-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.schedule-label {
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+  min-width: 170px;
+}
+
+.schedule-date-row-single {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.schedule-date-row-single .schedule-label {
+  min-width: 170px;
+}
+
+.datetime-group {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+.date-picker-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  padding: 10px 15px;
+  gap: 10px;
+}
+
+.date-picker-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  cursor: pointer;
+}
+
+.date-picker-input::placeholder {
+  color: #A5A5B0;
+}
+
+.date-picker-wrapper svg {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.time-input {
+  width: 85px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  border: none;
+  outline: none;
+  padding: 10px 15px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  text-align: center;
+}
+
+.time-input::placeholder {
+  color: #A5A5B0;
+}
+
+.weekdays-row {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.weekday-btn {
+  width: 48px;
+  padding: 8px 0;
+  background: transparent;
+  border-radius: 25px;
+  border: 1px solid #A5A5B0;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.weekday-btn:hover {
+  background: #F4F4F4;
+}
+
+.weekday-btn.active {
+  background: #F9E27D;
+  border-color: #F9E27D;
+}
+
+.weekly-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weekly-checkbox .custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.weekly-checkbox .custom-checkbox.selected {
+  background: #D0DFB9;
+  border: none;
+}
+
+.weekly-checkbox .custom-checkbox svg {
+  width: 18px;
+  height: 18px;
+}
+
+.weekly-checkbox .custom-checkbox svg path {
+  fill: #202024;
+}
+
+.weekly-label {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  cursor: pointer;
+}
+
+.weekly-label:hover {
+  color: #A5A5B0;
+}
+
+.schedule-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #4E85FC;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.schedule-submit-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.schedule-submit-btn svg path {
+  fill: white;
+}
+
+.schedule-submit-btn:hover {
+  background: #3563C6;
+}
+
+.schedule-submit-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.schedule-submit-btn:active span {
+  color: #4E85FC;
+}
+
+.schedule-submit-btn:active svg path {
+  fill: #4E85FC;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+}
+
+.react-datepicker {
+  font-family: 'Montserrat', sans-serif;
+  border-radius: 20px;
+  border: 1px solid #A5A5B0;
+}
+
+.react-datepicker__header {
+  background: #D0DFB9;
+  border-bottom: none;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: #202024;
+}
+
+.react-datepicker__day--selected {
+  background: #F9E27D;
+  color: #202024;
+}
+
+.react-datepicker__day:hover {
+  background: #F4F4F4;
+}
+
+/* Модальное окно контрольных точек */
+.control-points-modal {
+  width: 886px;
+  background: white;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.control-points-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 20px 20px 0;
+  background: #A5A5B0;
+}
+
+.control-points-close {
+  width: 24px;
+  height: 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+}
+
+.control-points-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.control-points-close svg path {
+  fill: #202024;
+}
+
+.control-points-close:hover {
+  background: #E0E0E0;
+}
+
+.control-points-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.control-points-title {
+  text-align: center;
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.control-points-subtitle {
+  text-align: center;
+  color: #A5A5B0;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.control-points-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.table-header span {
+  color: #A5A5B0;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.table-header span:first-child {
+  flex: 2;
+  text-align: left;
+}
+
+.table-header span:last-child {
+  width: 100px;
+  text-align: center;
+}
+
+.table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.point-name-input {
+  flex: 2;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+}
+
+.point-name-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.point-name-input::placeholder {
+  color: #A5A5B0;
+}
+
+.point-score-input {
+  width: 100px;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  text-align: center;
+  transition: border-color 0.2s ease;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.point-score-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.point-score-input::-webkit-inner-spin-button,
+.point-score-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.add-point-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.add-point-fields {
+  display: flex;
+  gap: 20px;
+}
+
+.add-point-name {
+  flex: 2;
+  padding: 12px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+}
+
+.add-point-name:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-point-name::placeholder {
+  color: #A5A5B0;
+}
+
+.add-point-score {
+  width: 100px;
+  padding: 12px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #202024;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.add-point-score:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-point-score::placeholder {
+  color: #A5A5B0;
+}
+
+.add-point-score::-webkit-inner-spin-button,
+.add-point-score::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.add-point-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #202024;
+  padding: 10px;
+  transition: color 0.2s ease;
+  width: fit-content;
+  align-self: center;
+}
+
+.add-point-btn svg path {
+  fill: #202024;
+  transition: fill 0.2s ease;
+}
+
+.add-point-btn:hover {
+  color: #A5A5B0;
+}
+
+.add-point-btn:hover svg path {
+  fill: #A5A5B0;
+}
+
+/* Скролл для таблицы КТ */
+.table-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.table-body::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.table-body::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.table-body::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+/* Адаптив */
+@media (max-width: 900px) {
+  .control-points-modal {
+    width: 90%;
+    max-width: 600px;
+  }
+  
+  .table-header span:first-child,
+  .point-name-input,
+  .add-point-name {
+    flex: 1;
+  }
+  
+  .add-point-fields {
+    flex-direction: column;
+  }
+  
+  .add-point-score {
+    width: 100%;
+  }
+}
+/* Модальные окна */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-container {
+  background: #fff;
+  border-radius: 40px;
+  width: 531px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  position: relative;
+  padding: 16px 20px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.modal-drag-handle {
+  width: 60px;
+  height: 4px;
+  background: #D9D9D9;
+  border-radius: 2px;
+  margin: 0 auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+/* Текстовое поле для сообщения */
+.message-textarea {
+  width: 100%;
+  height: 200px;
+  padding: 15px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  border: 1px solid #E8E8E8;
+  border-radius: 20px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.message-textarea:focus {
+  border-color: #4E85FC;
+}
+
+/* Список кураторов */
+.curator-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.curator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #F4F4F4;
+  transition: opacity 0.2s ease;
+}
+
+.curator-item:hover {
+  opacity: 0.7;
+}
+
+.curator-item span {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.curator-item .custom-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.curator-item .custom-checkbox svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.curator-item.selected .custom-checkbox {
+  background: #D0DFB9;
+  border: none;
+}
+
+.curator-item.selected .custom-checkbox svg {
+  opacity: 1;
+}
+
+/* Добавление куратора */
+.add-new-curator-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 1px dashed #4E85FC;
+  border-radius: 40px;
+  padding: 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #4E85FC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-new-curator-btn svg path {
+  fill: #4E85FC;
+}
+
+.add-new-curator-btn:hover {
+  border-color: #3563C6;
+  background: #F4F8FF;
+  color: #3563C6;
+}
+
+.add-new-curator-btn:hover svg path {
+  fill: #3563C6;
+}
+
+.add-curator-form {
+  margin-top: 10px;
+}
+
+.curator-input {
+  width: 100%;
+  padding: 12px 15px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  border: 1px solid #E8E8E8;
+  border-radius: 20px;
+  outline: none;
+  margin-bottom: 10px;
+}
+
+.curator-input:focus {
+  border-color: #4E85FC;
+}
+
+.add-curator-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.cancel-add-btn {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  cursor: pointer;
+}
+
+.confirm-add-btn {
+  background: #4E85FC;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+}
+
+.confirm-add-btn:hover {
+  background: #3563C6;
+}
+
+/* Футер модалки */
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #F4F4F4;
+  justify-content: flex-end;
+}
+
+.modal-send-btn,
+.modal-apply-btn {
+  background: #4E85FC;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 30px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-send-btn:hover,
+.modal-apply-btn:hover {
+  background: #3563C6;
+}
+
+.modal-reset-btn {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #A5A5B0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.modal-reset-btn:hover {
+  color: #202024;
+}
+
+.modal-header-bar,
+.schedule-modal-header,
+.control-points-header {
+  background: #A5A5B0;
+  padding: 20px;
+  display: flex;
+  justify-content: flex-end;
+  border: none;
+}
+
+.modal-close-circle {
+  width: 24px;
+  height: 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+}
+
+.modal-close-circle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-close-circle svg path {
+  fill: #202024;
+}
+
+.modal-close-circle:hover {
+  background: #E0E0E0;
+}
