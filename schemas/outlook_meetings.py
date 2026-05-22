@@ -1,0 +1,38 @@
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+
+class MeetingResponse(BaseModel):
+    id: str
+    title: str
+    location: Optional[str] = 'Контур.Толк'
+    team_case_history_id: Optional[str] = None  # TODO: сделать обязательным в финальной booking-схеме
+    start_at: datetime
+    end_at: datetime
+    outlook_event_id: str
+    event_link: str
+    notes: Optional[str] = None
+    timezone: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MeetingCreate(BaseModel):
+    title: str
+    start_at: datetime
+    location: Optional[str] = 'Контур.Толк'
+    end_at: datetime
+    event_link: str
+    notes: Optional[str] = None
+    timezone: Optional[int] = None
+
+
+class MeetingUpdate(BaseModel):
+    title: Optional[str] = None
+    start_at: Optional[datetime] = None
+    location: Optional[str] = None
+    end_at: Optional[datetime] = None
+    event_link: Optional[str] = None
+    notes: Optional[str] = None

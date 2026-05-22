@@ -6,6 +6,8 @@ from models import MicrosoftOAuth
 from datetime import datetime, timedelta, UTC
 from utils import encryption
 import uuid
+import redis.asyncio as aioredis
+import json
 
 
 class MicrosoftOAuthService:
@@ -13,18 +15,48 @@ class MicrosoftOAuthService:
     def __init__(
             self, rep: MicrosoftOAuthRepository,
             oauth_client: OAuthClient,
-            graph_client: GraphClient
+            graph_client: GraphClient,
+            redis_session: aioredis.Redis
         ):
 
         self.rep = rep
         self.oauth_client = oauth_client
         self.graph_client = graph_client
+        self.redis = redis_session
 
 
-    async def start_connection(self) -> ConnectResponse:
-        uri = self.oauth_client.generate_microsoft_oauth_redirect_uri()
+    async def start_connection(self, user_id: str) -> ConnectResponse:
+        state = await self.create_state(user_id)
+
+        uri = self.oauth_client.generate_microsoft_oauth_redirect_uri(state)
 
         return ConnectResponse(authorize_url=uri)
+
+
+    async def create_state(self, user_id: str) -> str:
+        state_key = f'oauth:microsoft:state:{str(uuid.uuid4())}'
+        await self.redis.setex(
+            f'{state_key}',
+            600,
+            json.dumps({
+                'user_id': user_id,
+                'provider': 'microsoft'
+            })
+        )
+
+        return state_key
+
+
+    async def consume_state(self, state_input: str) -> dict | None:
+        data = await self.redis.getdel(state_input)
+
+        if data is None:
+            return None
+
+        try:
+            return json.loads(data)
+        except json.JSONDecodeError:
+            return None
 
 
     async def update_oauth(
@@ -163,12 +195,23 @@ class MicrosoftOAuthService:
     async def ensure_actual_tokens(self, oauth: MicrosoftOAuth) -> MicrosoftOAuth:
 
         if oauth.access_token_expires_at <= datetime.now(UTC) + timedelta(minutes=3):
-            await self.refresh_tokens(oauth)
+            oauth = await self.refresh_tokens(oauth)
 
         return oauth
 
 
+    async def get_actual_access_token(self, user_id: str) -> str:
+        oauth = await self.rep.get_oauth_by_user_id(user_id)
 
+        if not oauth:
+            raise ValueError('This OAuth connection does not exist')
 
+        if not oauth.is_active:
+            raise ValueError('This OAuth connection is inactive')
 
+        oauth_with_updated_tokens = await self.ensure_actual_tokens(oauth)
 
+        encrypted_access_token = oauth_with_updated_tokens.encrypted_access_token
+
+        decrypted_access_token = encryption.decrypt_token(encrypted_access_token)
+        return decrypted_access_token

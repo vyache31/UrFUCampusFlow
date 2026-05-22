@@ -39,6 +39,7 @@ dependencies = [
     "pydantic-settings==2.13.1",
     "pyjwt==2.12.1",
     "python-dotenv==1.2.2",
+    "redis>=7.4.0",
     "requests==2.33.0",
     "sqlalchemy==2.0.48",
     "starlette==1.0.0",
