@@ -1,0 +1,56 @@
+.team-action-cards-buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.team-card-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.team-card-action-btn.delete {
+  background: #F4F4F4;
+  color: #202024;
+}
+
+.team-card-action-btn.delete svg path {
+  fill: #202024;
+}
+
+.team-card-action-btn.delete:hover {
+  background: #A5A5B0;
+  color: #FFFFFF;
+}
+
+.team-card-action-btn.delete:hover svg path {
+  fill: #FFFFFF;
+}
+
+.team-card-action-btn.create {
+  background: #4E85FC;
+  color: #FFFFFF;
+}
+
+.team-card-action-btn.create svg path {
+  fill: #FFFFFF;
+}
+
+.team-card-action-btn.create:hover {
+  background: #3563C6;
+}
+
+@media (max-width: 768px) {
+  .team-action-cards-buttons {
+    flex-wrap: wrap;
+  }
+}

@@ -9,6 +9,7 @@ from auth.utils_jwt import (
     TOKEN_TYPE_FIELD, TOKEN_TYPE_REFRESH,
     TOKEN_TYPE_ACCESS,
 )
+from jwt.exceptions import ExpiredSignatureError
 
 security = HTTPBearer(auto_error=False)
 
@@ -56,14 +57,23 @@ class UserGetterFromToken:
                        credentials=Depends(security),
                        user_service: UserService = Depends(get_user_service),
                        ):
-        token = credentials.credentials
-
         try:
+            token = credentials.credentials
             payload = auth_utils.decode_jwt(token)
-        except Exception:
+        except AttributeError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="invalid token"
+                detail="request must include a token"
+            )
+        except ExpiredSignatureError as err:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"token was expired"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"invalid token"
             )
         get_validate_token_type(payload, self.token_type)
         return await get_user_by_token_type(

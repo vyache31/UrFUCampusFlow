@@ -1,0 +1,203 @@
+.bot-accordion-item {
+  margin-bottom: 10px;
+}
+
+.bot-accordion-card {
+  background: #fff;
+  border-radius: 40px;
+  overflow: hidden;
+}
+
+.bot-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30px 43px;
+  gap: 20px;
+}
+
+.bot-accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bot-accordion-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.bot-accordion-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #A5A5B0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.bot-accordion-toggle svg {
+  width: 24px;
+  height: 24px;
+}
+
+.bot-accordion-item.open .bot-accordion-toggle svg {
+  transform: rotate(180deg);
+}
+
+.bot-accordion-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #202024;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-curator-btn {
+  background: #fff;
+  border: 1px solid #A5A5B0;
+  border-radius: 40px;
+  padding: 10px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.add-curator-btn:hover {
+  background: #F4F4F4;
+  border-color: #F6CF22;
+}
+
+.remove-curator-btn {
+  width: 41px;
+  height: 41px;
+  background: #fff;
+  border: 1px solid #A5A5B0;
+  border-radius: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-curator-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.remove-curator-btn svg path {
+  stroke: #A5A5B0;
+  transition: stroke 0.2s ease;
+}
+
+.remove-curator-btn:hover {
+  background: #FFE4E4;
+  border-color: #F6CF22;
+}
+
+.remove-curator-btn:hover svg path {
+  stroke: #F6CF22;
+}
+
+.bot-accordion-body {
+  display: none;
+  padding: 10px 43px 30px;
+}
+
+.bot-accordion-item.open .bot-accordion-body {
+  display: block;
+}
+
+.bot-accordion-description {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.assigned-curators {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.curators-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  margin-bottom: 10px;
+}
+
+.curators-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.curator-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F4F4F4;
+  border-radius: 40px;
+  padding: 8px 12px 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.remove-curator-tag {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+}
+
+.remove-curator-tag svg {
+  width: 14px;
+  height: 14px;
+}
+
+.remove-curator-tag svg path {
+  stroke: #A5A5B0;
+  transition: stroke 0.2s ease;
+}
+
+.remove-curator-tag:hover svg path {
+  stroke: #F6CF22;
+}
+
+@media (max-width: 768px) {
+  .bot-accordion-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  
+  .bot-accordion-header-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .bot-accordion-body {
+    padding: 10px 20px 20px;
+  }
+}

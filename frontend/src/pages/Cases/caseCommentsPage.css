@@ -1,0 +1,241 @@
+.case-comments-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+.page-title {
+  color: #202024;
+  font-size: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 60px;
+  margin: 0;
+}
+
+.comments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.case-title-section {
+  margin-bottom: 90px;
+}
+
+.case-title {
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.comments-list {
+  width: 886px;
+  margin-left: 227px;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  margin-bottom: 60px;
+}
+
+.comment-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  width: 100%;
+}
+
+.comment-author {
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.comment-text {
+  color: #202024;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.comment-date {
+  text-align: right;
+  color: #A5A5B0;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  width: 100%;
+}
+
+.new-comment-section {
+  width: 886px;
+  margin-left: 227px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-bottom: 60px;
+}
+
+.new-comment-label {
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.new-comment-input {
+  width: 100%;
+  padding: 15px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+  cursor: text;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  min-height: 120px;
+  overflow-y: auto;
+}
+
+.new-comment-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.new-comment-input:hover {
+  background: #EBEBEB;
+}
+
+.new-comment-input.empty:before {
+  content: attr(data-placeholder);
+  color: #A5A5B0;
+}
+
+.new-comment-input:focus.empty:before {
+  content: none;
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #4E85FC;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+  align-self: center;
+}
+
+.send-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.send-btn svg path {
+  fill: white;
+}
+
+.send-btn:hover {
+  background: #3563C6;
+}
+
+.send-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.send-btn:active span {
+  color: #4E85FC;
+}
+
+.send-btn:active svg path {
+  fill: #4E85FC;
+}
+
+.new-comment-input::-webkit-scrollbar {
+  width: 6px;
+}
+
+.new-comment-input::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.new-comment-input::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.new-comment-input::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.not-found {
+  background: #fff;
+  border-radius: 40px;
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+  color: #A5A5B0;
+  margin-top: 40px;
+}
+
+@media (max-width: 1200px) {
+  .comments-list,
+  .new-comment-section {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .page-title {
+    font-size: 32px;
+    line-height: 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .comments-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .page-title {
+    font-size: 28px;
+    line-height: 42px;
+  }
+  
+  .comments-list {
+    gap: 30px;
+  }
+  
+  .send-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

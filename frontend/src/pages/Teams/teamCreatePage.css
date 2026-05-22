@@ -1,0 +1,405 @@
+.team-create-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+.create-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.page-title {
+  color: #202024;
+  font-size: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 60px;
+  margin: 0;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #4E85FC;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.save-btn svg path {
+  fill: white;
+}
+
+.save-btn:hover {
+  background: #3563C6;
+}
+
+.save-btn:active {
+  background: transparent;
+  color: #3563C6;
+  outline: 1px solid #3563C6;
+  outline-offset: -1px;
+}
+
+.save-btn:active span {
+  color: #3563C6;
+}
+
+.save-btn:active svg path {
+  fill: #3563C6;
+}
+
+.create-form {
+  width: 886px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 40px;
+  padding: 60px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.form-label {
+  color: #202024;
+  font-size: 18px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 27px;
+}
+
+.editable-box {
+  width: 100%;
+  min-width: 100%;
+  padding: 15px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+  cursor: text;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-y: visible;
+  box-sizing: border-box;
+}
+
+.editable-box.empty:before {
+  content: attr(data-placeholder);
+  color: #A5A5B0;
+}
+
+.editable-box:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.editable-box:focus.empty:before {
+  content: none;
+}
+
+.editable-box:hover {
+  background: #EBEBEB;
+}
+
+.description-box {
+  min-height: 250px;
+  max-height: 250px;
+}
+
+.notes-box {
+  min-height: 250px;
+  max-height: 250px;
+}
+
+/* Скролл */
+.editable-box.with-scroll {
+  overflow-y: auto !important;
+}
+
+.editable-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.editable-box::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.editable-box::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.editable-box::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: #202024;
+  transition: color 0.2s ease;
+}
+
+.add-btn svg path {
+  fill: #202024;
+  transition: fill 0.2s ease;
+}
+
+.add-btn:hover {
+  color: #A5A5B0;
+}
+
+.add-btn:hover svg path {
+  fill: #A5A5B0;
+}
+
+.add-btn:active {
+  color: #F9E27D;
+}
+
+.add-btn:active svg path {
+  fill: #F9E27D;
+}
+
+/* Участники */
+.members-list,
+.cases-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-item,
+.case-item {
+  width: 100%;
+}
+
+.member-input,
+.case-input {
+  width: 100%;
+  padding: 12px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.member-input:focus,
+.case-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.member-input:hover,
+.case-input:hover {
+  background: #EBEBEB;
+}
+
+.member-input::placeholder,
+.case-input::placeholder {
+  color: #A5A5B0;
+}
+
+/* Состояние команды */
+.status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.status-option .status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #D9D9D9;
+  transition: background 0.2s ease;
+}
+
+.status-option.active .status-dot {
+  background: #F9E27D;
+}
+
+.status-option.active {
+  color: #202024;
+}
+
+.status-option:hover {
+  color: #A5A5B0;
+}
+
+.status-option:hover .status-dot {
+  background: #A5A5B0;
+}
+
+.status-option.active:hover {
+  color: #A5A5B0;
+}
+
+.status-option.active:hover .status-dot {
+  background: #F9E27D;
+}
+
+.error-message {
+  color: #F63333;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  margin-top: 5px;
+  margin-left: 15px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .create-form {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .page-title {
+    font-size: 32px;
+    line-height: 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .create-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-title {
+    font-size: 28px;
+    line-height: 42px;
+  }
+
+  .field-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.member-item,
+.case-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 20px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  gap: 10px;
+}
+
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.member-name {
+  font-weight: 600;
+  color: #202024;
+  font-size: 14px;
+}
+
+.member-role,
+.member-university {
+  color: #A5A5B0;
+  font-size: 12px;
+}
+
+.case-title {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+}
+
+.remove-btn {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  color: #F63333;
+}

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from api.v1.endpoints import (
     user,
@@ -14,18 +15,33 @@ from api.v1.endpoints import (
     microsoft_oauth
 )
 import httpx
+import redis.asyncio as aioredis
+from config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.http_client = httpx.AsyncClient(timeout=30)
+    app.state.redis = aioredis.from_url(
+        url=settings.REDIS_URL,
+        decode_responses=True
+    )
     try:
         yield
     finally:
         await app.state.http_client.aclose()
+        await app.state.redis.aclose()
 
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth.router)
 app.include_router(user.router)

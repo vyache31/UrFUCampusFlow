@@ -10,7 +10,7 @@ class OAuthClient:
 
 
     @staticmethod
-    def generate_microsoft_oauth_redirect_uri():
+    def generate_microsoft_oauth_redirect_uri(state: str):
         query_params = {
             'tenant': 'common',
             'client_id': settings.OAUTH_MICROSOFT_CLIENT_ID,
@@ -22,7 +22,8 @@ class OAuthClient:
                 'Calendars.ReadWrite.Shared',
                 'email',
                 'User.Read',
-            ])
+            ]),
+            'state': state
         }
 
         params_string = urllib.parse.urlencode(query_params, quote_via=urllib.parse.quote)
@@ -78,7 +79,3 @@ class OAuthClient:
             return payload.json()
 
         return payload.raise_for_status()
-
-
-
-
