@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from services.team_service import TeamService
 from schemas.team import TeamCreate, TeamUpdate, TeamResponse
 from dependies.team_case_history_depends import get_current_team_case_history_by_team_id
-from schemas.outlook_meetings import MeetingResponse, MeetingCreate
+from schemas.outlook_meetings import MeetingResponse, MeetingCreate, MeetingUpdate
 from services.meetings_service import MeetingsService
 from dependies.meetings_depends import get_meetings_service
 from schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
@@ -221,3 +221,48 @@ async def get_team_meetings(
     return await service.get_by_team_case_history_id(
         team_case_history_id=current_team_case_history.id
     )
+
+
+@router.patch('/{team_id}/meetings/{meeting_id}', response_model=MeetingResponse)
+async def update_team_meeting(
+    team_id: str,
+    meeting_id: str,
+    schema: MeetingUpdate,
+    user=Depends(get_current_auth_user),
+    current_team_case_history = Depends(get_current_team_case_history_by_team_id),
+    service: MeetingsService = Depends(get_meetings_service),
+):
+    try:
+        meeting = await service.update_meeting(
+            user_id=user.id,
+            current_team_case_history_id=current_team_case_history.id,
+            meeting_id=meeting_id,
+            meeting_data=schema
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+    if not meeting:
+        raise HTTPException(status_code=404, detail='Meeting not found')
+
+    return meeting
+
+
+@router.delete('/{team_id}/meetings/{meeting_id}')
+async def delete_team_meeting(
+    team_id: str,
+    meeting_id: str,
+    user=Depends(get_current_auth_user),
+    current_team_case_history = Depends(get_current_team_case_history_by_team_id),
+    service: MeetingsService = Depends(get_meetings_service),
+):
+    result = await service.delete_meeting(
+        user_id=user.id,
+        current_team_case_history_id=current_team_case_history.id,
+        meeting_id=meeting_id
+    )
+
+    if not result:
+        raise HTTPException(status_code=404, detail='Meeting not found')
+
+    return {'status': 'deleted'}
