@@ -3,10 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
-import { testTeamMeetings, type TeamMeeting } from '../../data/teamMeetings';
+import { getTeamMembers, addTeamMember, type TeamMember } from '../../services/teamMembers';
+import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
+import { getTeamMeetings, createTeamMeeting, type TeamMeeting } from '../../services/teamMeetings';
 import { EditIcon, FlagIcon, ChevronDownIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
+import AddMemberModal from '../../components/Modals/AddMemberModal';
 import './teamViewPage.css';
 
 interface ControlPoint {
@@ -15,99 +18,142 @@ interface ControlPoint {
   score: number | null;
 }
 
-interface TeamMember {
-  name: string;
-  role: string;
-  university: string;
-  group: string;
-}
-
-// тестовые данные для демонстрации
-const TEST_TEAM_MEMBERS: TeamMember[] = [
-  { name: 'Абдыкеримов Бексултан Талантович', role: 'Аналитик', university: 'УрФУ', group: 'РИ-240932' },
-  { name: 'Попова Анна Михайловна', role: 'Дизайнер / Фронтендер', university: 'УрФУ', group: 'РИ-240932' },
-  { name: 'Семёнов Вячеслав Андреевич', role: 'Бэкендер', university: 'УрФУ', group: 'РИ-240932' },
-  { name: 'Соловьев Даниил Сергеевич', role: 'Бэкендер', university: 'УрФУ', group: 'РИ-240932' },
-  { name: 'Хамитова Ксения Андреевна', role: 'Дизайнер / Фронтендер', university: 'УрФУ', group: 'РИ-240932' },
-];
-
-const TEST_TEAM_CASES = [
-  { id: 'test1', title: 'Разработка мобильного приложения для оценки кредитного риска МСБ' },
-  { id: 'test2', title: 'Веб-приложение для автоматизации учета работы с ВУЗами' },
-];
-
 const TeamViewPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
   const [team, setTeam] = useState<Team | null>(null);
-  const [members, setMembers] = useState<TeamMember[]>(TEST_TEAM_MEMBERS);
-  const [teamCases, setTeamCases] = useState<{ id: string; title: string }[]>(TEST_TEAM_CASES);
-  const [notes, setNotes] = useState('Не определено');
-  const [meetings] = useState<TeamMeeting[]>(testTeamMeetings);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [teamHistory, setTeamHistory] = useState<TeamCaseHistory[]>([]);
+  const [meetings, setMeetings] = useState<TeamMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isControlPointsModalOpen, setIsControlPointsModalOpen] = useState(false);
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState('');
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [controlPointsMap, setControlPointsMap] = useState<Map<string, ControlPoint[]>>(new Map());
 
   useEffect(() => {
-    const fetchTeam = async () => {
+    const fetchTeamData = async () => {
+      if (!id) return;
+      
       try {
         setLoading(true);
         
-        // пытаюсь получить из API
-        const apiTeam = await getTeamById(id!);
+        const [teamData, membersData, historyData, meetingsData] = await Promise.all([
+          getTeamById(id),
+          getTeamMembers(id).catch(() => []),
+          getTeamHistory(id).catch(() => []),
+          getTeamMeetings(id).catch(() => []),
+        ]);
         
-        if (apiTeam) {
-          setTeam(apiTeam);
-          // если API вернул участников, использую их
-          if (apiTeam.members && apiTeam.members.length > 0) {
-            setMembers(apiTeam.members);
-          }
-          if (apiTeam.notes) {
-            setNotes(apiTeam.notes);
-          }
-          if (apiTeam.caseName) {
-            setTeamCases([{ id: apiTeam.caseId || id!, title: apiTeam.caseName }]);
-          }
-        } else {
-          // если данных нет, беру тестовые
-          setTeam({
-            id: id!,
-            name: 'Скомпилированные гении',
-            description: 'Команда полного цикла разработки и сопровождения продуктов.',
-            status: 'Работает над кейсом',
-            createdAt: new Date().toISOString(),
-          });
-        }
+        setTeam(teamData);
+        setMembers(membersData);
+        setTeamHistory(historyData);
+        setMeetings(meetingsData);
+        
       } catch (err) {
-        console.error('Ошибка загрузки команды:', err);
-        setTeam({
-          id: id!,
-          name: 'Скомпилированные гении',
-          description: 'Команда полного цикла разработки и сопровождения продуктов.',
-          status: 'Работает над кейсом',
-          createdAt: new Date().toISOString(),
-        });
+        console.error('Ошибка загрузки данных команды:', err);
       } finally {
         setLoading(false);
       }
     };
-    if (id) fetchTeam();
+    
+    fetchTeamData();
   }, [id]);
+
+  const currentCase = teamHistory.find(h => h.is_current);
+  const pastCases = teamHistory.filter(h => !h.is_current && h.ended_at);
 
   const handleEdit = () => {
     navigate(`/teams/${id}/edit`);
   };
 
-  const handleScheduleMeeting = (data: {
+  const handleAddMember = async (memberData: {
+    studentId: string;
+    name: string;
+    role: string;
+    group: string;
+    universityId: number;
+  }) => {
+    if (!id) return;
+    
+    try {      
+      const newMember = await addTeamMember(id, {
+        student_id: memberData.studentId,
+        position: memberData.role,
+        joined_at: new Date().toISOString()
+      });
+      
+      setMembers(prev => [...prev, { ...newMember, group: memberData.group }]);
+      alert(`Участник ${memberData.name} успешно добавлен в команду`);
+    } catch (err) {
+      console.error('Ошибка добавления участника:', err);
+      alert('Не удалось добавить участника в команду');
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const formatMeetingDateTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return {
+      date: date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+      time: date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    };
+  };
+
+  const handleScheduleMeeting = async (data: {
     date: string;
     time: string;
     repeatDays: string[];
     weekly: boolean;
   }) => {
-    console.log('Создать встречу:', data);
+    if (!id || !currentCase) {
+      alert('Нет активного кейса для назначения встречи');
+      return;
+    }
+    
+    const [day, month, year] = data.date.split('.');
+    const [hours, minutes] = data.time.split(':');
+    
+    const startDateTime = new Date(
+      parseInt(year), 
+      parseInt(month) - 1, 
+      parseInt(day), 
+      parseInt(hours), 
+      parseInt(minutes)
+    );
+    
+    const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+    
+    if (isNaN(startDateTime.getTime())) {
+      alert('Пожалуйста, выберите корректную дату и время');
+      return;
+    }
+    
+    try {
+      const repeatText = data.weekly 
+        ? `Еженедельно по ${data.repeatDays.join(', ')}` 
+        : 'Разовое мероприятие';
+      
+      const newMeeting = await createTeamMeeting(id, {
+        title: `Встреча команды "${team?.name}"`,
+        start_at: startDateTime.toISOString(),
+        end_at: endDateTime.toISOString(),
+        notes: repeatText,
+        location: 'Онлайн',
+      });
+      
+      setMeetings(prev => [...prev, newMeeting]);
+      alert('Встреча успешно создана и добавлена в календарь Outlook!');
+    } catch (err: unknown) {
+      console.error('Ошибка создания встречи:', err);
+      const error = err as { response?: { data?: { detail?: string } } };
+      const errorMessage = error.response?.data?.detail || 'Не удалось создать встречу';
+      alert(`Ошибка: ${errorMessage}`);
+    }
   };
 
   const handleOpenControlPoints = (caseId: string, caseTitle: string) => {
@@ -118,7 +164,6 @@ const TeamViewPage = () => {
 
   const handleControlPointsChange = (points: ControlPoint[]) => {
     setControlPointsMap(prev => new Map(prev).set(selectedCaseId, points));
-    console.log(`Изменены контрольные точки для кейса ${selectedCaseId}:`, points);
   };
 
   const breadcrumbItems = [
@@ -153,10 +198,12 @@ const TeamViewPage = () => {
       <div className="team-view-header">
         <h1 className="page-title">Просмотр команды</h1>
         <div className="header-buttons">
-          <button className="schedule-btn" onClick={() => setIsScheduleModalOpen(true)}>
-            <FlagIcon />
-            <span>Назначить встречу</span>
-          </button>
+          {currentCase && (
+            <button className="schedule-btn" onClick={() => setIsScheduleModalOpen(true)}>
+              <FlagIcon />
+              <span>Назначить встречу</span>
+            </button>
+          )}
           <button className="edit-btn" onClick={handleEdit}>
             <EditIcon />
             <span>Редактировать</span>
@@ -182,15 +229,13 @@ const TeamViewPage = () => {
               <div className="members-header">
                 <span>ФИО</span>
                 <span>Роль</span>
-                <span>ВУЗ</span>
                 <span>Группа</span>
               </div>
-              {members.map((member, index) => (
-                <div key={index} className="member-row">
-                  <div className="member-name">{member.name}</div>
-                  <div className="member-role">{member.role}</div>
-                  <div className="member-university">{member.university}</div>
-                  <div className="member-group">{member.group}</div>
+              {members.map((member) => (
+                <div key={member.id} className="member-row">
+                  <div className="member-name">{member.student_name}</div>
+                  <div className="member-role">{member.position}</div>
+                  <div className="member-group">{(member as { group?: string }).group || '—'}</div>
                 </div>
               ))}
             </div>
@@ -201,34 +246,54 @@ const TeamViewPage = () => {
 
         <div className="info-block">
           <div className="info-label">Заметки</div>
-          <div className="info-value">{notes}</div>
+          <div className="info-value">{team.notes || 'Нет заметок'}</div>
         </div>
 
-        <div className="info-block">
-          <div className="info-label">Кейсы</div>
-          {teamCases.length > 0 ? (
+        {currentCase && (
+          <div className="info-block">
+            <div className="info-label">Текущий кейс</div>
             <div className="cases-list-view">
-              {teamCases.map((teamCase) => (
-                <div key={teamCase.id} className="case-item-view">
+              <div className="case-item-view">
+                <div className="case-header">
+                  <span className="case-title">{currentCase.case_title}</span>
+                  <div 
+                    className="case-right" 
+                    onClick={() => handleOpenControlPoints(currentCase.case_id, currentCase.case_title)}
+                  >
+                    <span className="control-points-label">Контрольные точки</span>
+                    <button className="case-toggle-btn">
+                      <ChevronDownIcon />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {pastCases.length > 0 && (
+          <div className="info-block">
+            <div className="info-label">История кейсов</div>
+            <div className="cases-list-view">
+              {pastCases.map((historyCase) => (
+                <div key={historyCase.id} className="case-item-view">
                   <div className="case-header">
-                    <span className="case-title">{teamCase.title}</span>
-                    <div 
-                      className="case-right" 
-                      onClick={() => handleOpenControlPoints(teamCase.id, teamCase.title)}
-                    >
-                      <span className="control-points-label">Контрольные точки</span>
-                      <button className="case-toggle-btn">
-                        <ChevronDownIcon />
-                      </button>
+                    <span className="case-title">{historyCase.case_title}</span>
+                    <div className="case-semester">
+                      <span className="semester-badge">{historyCase.semester_name}</span>
+                    </div>
+                    <div className="case-dates">
+                      <span>{new Date(historyCase.started_at).toLocaleDateString('ru-RU')}</span>
+                      {historyCase.ended_at && (
+                        <span> → {new Date(historyCase.ended_at).toLocaleDateString('ru-RU')}</span>
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="info-value">Нет привязанных кейсов</div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="info-block">
           <div className="info-label">Состояние команды</div>
@@ -239,18 +304,29 @@ const TeamViewPage = () => {
           <div className="info-label">Запланированные встречи</div>
           <div className="meetings-scroll-container">
             <div className="meetings-header-row">
-              <span>Проект</span>
-              <span>день</span>
-              <span>время</span>
+              <span>Название встречи</span>
+              <span>Дата</span>
+              <span>Время</span>
             </div>
             <div className="meetings-list">
-              {meetings.map((meeting) => (
-                <div key={meeting.id} className="meeting-row-view">
-                  <span className="meeting-project">{meeting.project}</span>
-                  <span className="meeting-date">{meeting.date}</span>
-                  <span className="meeting-time">{meeting.time}</span>
+              {meetings.length > 0 ? (
+                meetings.map((meeting) => {
+                  const { date, time } = formatMeetingDateTime(meeting.start_at);
+                  return (
+                    <div key={meeting.id} className="meeting-row-view">
+                      <span className="meeting-project">{meeting.title}</span>
+                      <span className="meeting-date">{date}</span>
+                      <span className="meeting-time">{time}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="empty-meetings">
+                  {currentCase 
+                    ? 'Нет запланированных встреч. Нажмите "Назначить встречу" чтобы создать.'
+                    : 'Нет активного кейса для назначения встреч'}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -268,6 +344,12 @@ const TeamViewPage = () => {
         caseTitle={selectedCaseTitle}
         initialPoints={controlPointsMap.get(selectedCaseId) || []}
         onPointsChange={handleControlPointsChange}
+      />
+
+      <AddMemberModal
+        isOpen={isMemberModalOpen}
+        onClose={() => setIsMemberModalOpen(false)}
+        onAdd={handleAddMember}
       />
     </div>
   );

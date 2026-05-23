@@ -19,7 +19,7 @@ const TeamsPage = () => {
     const fetchTeams = async () => {
       try {
         setLoading(true);
-        const data = await getTeams();
+        const data = await getTeams(10000);
         setTeams(data);
       } catch (error) {
         console.error('Ошибка загрузки команд:', error);

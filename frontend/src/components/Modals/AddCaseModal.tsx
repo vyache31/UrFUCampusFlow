@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
 import { getCases, type Case } from '../../services/cases';
 import './Modal.css';
@@ -6,7 +6,7 @@ import './Modal.css';
 interface AddCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (caseId: string, caseTitle: string) => void;
+  onAdd: (caseSemesterId: string, caseTitle: string) => void;
   existingCaseIds?: string[];
 }
 
@@ -14,29 +14,35 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const hasFetched = useRef(false);
+  const fetchCases = useCallback(async () => {
+    if (!isOpen || hasFetched.current) return;
+    
+    try {
+      setLoading(true);
+      hasFetched.current = true;
+      const data = await getCases(100);
+      const availableCases = data.filter(c => 
+        c.status_id === 3 && !existingCaseIds.includes(c.id)
+      );
+      
+      setCases(availableCases);
+    } catch (error) {
+      console.error('Ошибка загрузки кейсов:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isOpen, existingCaseIds]);
 
   useEffect(() => {
     if (isOpen) {
-      const fetchCases = async () => {
-        try {
-          setLoading(true);
-          const data = await getCases(100);
-          const availableCases = data.filter(c => 
-            c.status_id === 3 && !existingCaseIds.includes(c.id)
-          );
-          setCases(availableCases);
-        } catch (error) {
-          console.error('Ошибка загрузки кейсов:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
       fetchCases();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchCases]);
   useEffect(() => {
     if (!isOpen) {
       setSelectedCaseId(null);
+      hasFetched.current = false;
     }
   }, [isOpen]);
 
@@ -49,10 +55,13 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
   const handleSubmit = () => {
     if (selectedCaseId) {
       const foundCase = cases.find(c => c.id === selectedCaseId);
-      if (foundCase) {
-        onAdd(selectedCaseId, foundCase.title);
+      
+      if (foundCase && foundCase.case_semesters_id) {
+        onAdd(foundCase.case_semesters_id, foundCase.title);
         setSelectedCaseId(null);
         onClose();
+      } else {
+        alert('Ошибка: не найден ID семестра для этого кейса');
       }
     }
   };
@@ -94,7 +103,6 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
             className="modal-add-btn" 
             onClick={handleSubmit}
             disabled={!selectedCaseId || cases.length === 0}
-            style={{ opacity: !selectedCaseId || cases.length === 0 ? 0.5 : 1 }}
           >
             <CheckIcon />
             <span>Добавить</span>
