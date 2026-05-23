@@ -47,6 +47,6 @@ docker-data/
 
 uv.lock
 
-auth/certs
+backend/auth/certs
 
 AGENTS.md
