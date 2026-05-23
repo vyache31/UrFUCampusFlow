@@ -2,9 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from services.team_service import TeamService
 from schemas.team import TeamCreate, TeamUpdate, TeamResponse
 from dependies.team_case_history_depends import get_current_team_case_history_by_team_id
-from schemas.outlook_meetings import MeetingResponse, MeetingCreate, MeetingUpdate
+from schemas.outlook_meetings import (
+    MeetingResponse,
+    MeetingCreate,
+    MeetingUpdate,
+    MeetingTaskCreate,
+    MeetingTaskUpdate,
+    MeetingTaskResponse
+)
 from services.meetings_service import MeetingsService
 from dependies.meetings_depends import get_meetings_service
+from services.meeting_tasks_service import MeetingTasksService
+from dependies.meeting_task_depends import get_meeting_tasks_service
 from schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
 from schemas.team_members import TeamMemberCreate, TeamMemberResponse
 from dependies.team_depends import get_team_service
@@ -265,5 +274,85 @@ async def delete_team_meeting(
 
     if not result:
         raise HTTPException(status_code=404, detail='Meeting not found')
+
+    return {'status': 'deleted'}
+
+
+@router.post('/{team_id}/meetings/{meeting_id}/tasks', response_model=MeetingTaskResponse)
+async def create_meeting_task(
+        team_id: str,
+        meeting_id: str,
+        schema: MeetingTaskCreate,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        return await service.create_task(
+            schema=schema,
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+
+
+@router.get('/{team_id}/meetings/{meeting_id}/tasks', response_model=list[MeetingTaskResponse])
+async def get_meeting_tasks(
+        team_id: str,
+        meeting_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        return await service.get_all_meeting_tasks(
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+
+
+@router.patch('/{team_id}/meetings/{meeting_id}/tasks/{task_id}', response_model=MeetingTaskResponse)
+async def update_meeting_task(
+        team_id: str,
+        meeting_id: str,
+        task_id: str,
+        schema: MeetingTaskUpdate,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        return await service.update_task(
+            schema=schema,
+            meeting_id=meeting_id,
+            task_id=task_id,
+            current_team_case_history_id=current_team_case_history.id
+        )
+    except ValueError as err:
+        detail = str(err)
+        status_code = 404 if 'does not exist' in detail else 409
+        raise HTTPException(status_code=status_code, detail=detail)
+
+
+@router.delete('/{team_id}/meetings/{meeting_id}/tasks/{task_id}')
+async def delete_meeting_task(
+        team_id: str,
+        meeting_id: str,
+        task_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        await service.delete_task(
+            meeting_id=meeting_id,
+            task_id=task_id,
+            current_team_case_history_id=current_team_case_history.id
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
 
     return {'status': 'deleted'}

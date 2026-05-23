@@ -40,6 +40,8 @@ class Meetings(Base):
     notes: Mapped[Optional[str]] = mapped_column(nullable=True)
     timezone: Mapped[Optional[int]] = mapped_column(nullable=True)
 
+    tasks = relationship('MeetingTask', back_populates='meeting', cascade='all, delete-orphan')
+
     @property
     def tz(self) -> TZ:
         if self.timezone is None:
@@ -47,3 +49,15 @@ class Meetings(Base):
         return TZ(timedelta(hours=self.timezone))
 
     team_case_history = relationship('TeamCaseHistory', back_populates='meetings')
+
+
+class MeetingTask(Base):
+    __tablename__ = 'meeting_tasks'
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    title: Mapped[str]
+    description: Mapped[Optional[str]] = mapped_column(nullable=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey('meetings.id'))
+    is_completed: Mapped[bool]
+
+    meeting = relationship('Meetings', back_populates='tasks')
