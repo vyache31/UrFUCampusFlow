@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+import httpx
+from pydantic import ValidationError
 from services.case_service import CaseService
 from schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from dependies.case_depends import get_case_service
 from dependies.auth_depends import get_current_auth_user
+from schemas.ai_case_schemas import AIGeneratedCaseResponse
+from services.ai_service import AIService
+from dependies.ai_depends import get_ai_service
 
 
 def _case_not_found(case_id: str) -> HTTPException:
@@ -153,3 +158,23 @@ async def archive_case(
 
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.post('/{case_id}/generate-with-ai', response_model=AIGeneratedCaseResponse)
+async def generate_case_with_ai(
+    case_id: str,
+    user=Depends(get_current_auth_user),
+    service: AIService = Depends(get_ai_service)
+):
+    try:
+        response = await service.generate_case()
+
+        return response
+
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status_code=502,
+            detail=f'AI provider error: {err.response.status_code} {err.response.text}'
+        )
+    except (KeyError, IndexError, ValidationError) as err:
+        raise HTTPException(status_code=502, detail=f'Invalid AI response: {err}')
