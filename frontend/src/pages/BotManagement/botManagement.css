@@ -1,0 +1,375 @@
+.bot-management-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-wrapper {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 50px;
+}
+
+/* Заголовок страницы */
+
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  color: #202024;
+  margin: 0;
+}
+
+/* Переключатель Набор / Стоп набор */
+.bot-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E8E8E8;
+  border-radius: 41px;
+  height: 44px;
+  padding: 0;
+}
+
+.toggle-option {
+  height: 44px;
+  border-radius: 41px;
+  border: none;
+  background: transparent;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #202024;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 10px 15px;
+  text-align: center;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-option:first-child {
+  width: 84px;
+}
+
+.toggle-option:last-child {
+  width: 127px;
+}
+
+.toggle-option.active {
+  background: #F9E27D;
+  color: #202024;
+}
+.toggle-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.bot-toggle {
+  display: flex;
+  align-items: center;
+  background: #E8E8E8;
+  border-radius: 41px;
+  height: 44px;
+  padding: 0;
+}
+.bot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.page-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  color: #202024;
+  margin: 0;
+  flex: 1;
+  text-align: left;
+}
+.bot-toggle {
+  display: flex;
+  align-items: center;
+  background: #E8E8E8;
+  border-radius: 41px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.send-message-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+  background: #4E85FC;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  flex: 1;
+  justify-content: flex-end;
+  max-width: fit-content;
+  margin-left: auto;
+}
+/* Кнопка отправки сообщения */
+.send-message-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+  background: #4E85FC;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.send-message-btn span {
+  color: white;
+}
+
+.send-message-btn svg path {
+  fill: white;
+}
+
+.send-message-btn:hover {
+  background: #3563C6;
+}
+
+.send-message-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.send-message-btn:active span {
+  color: #4E85FC;
+}
+
+.send-message-btn:active svg path {
+  fill: #4E85FC;
+}
+
+/* Список кейсов */
+.bot-management-page .cases-wrapper {
+  background: #F4F4F4;
+  padding: 30px 50px 30px 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 40px 40px 0 0;
+}
+
+/* Кнопка добавления кейса */
+.add-case-section {
+  background: #F4F4F4;
+  padding: 15px 50px 30px 50px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-case-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  padding: 8px 0;
+  transition: color 0.2s ease;
+}
+
+.add-case-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.add-case-btn svg path {
+  fill: #202024;
+  transition: fill 0.2s ease;
+}
+
+.add-case-btn:hover {
+  color: #A5A5B0;
+}
+
+.add-case-btn:hover svg path {
+  fill: #A5A5B0;
+}
+
+.add-case-btn:active {
+  color: #F9E27D;
+}
+
+.add-case-btn:active svg path {
+  fill: #F9E27D;
+}
+
+/* Кнопка удаления кейса */
+.remove-curator-btn {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.remove-curator-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.remove-curator-btn svg path {
+  fill: #A5A5B0;
+  transition: fill 0.2s ease;
+}
+
+.remove-curator-btn:hover svg path {
+  fill: #A5A5B0;
+}
+
+.remove-curator-btn:active svg path {
+  fill: #F9E27D;
+}
+
+/* Карточка кейса с действиями */
+.case-with-actions {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.case-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-left: 43px;
+  padding-right: 43px;
+  margin-bottom: 10px;
+}
+
+/* Кнопка добавить куратора */
+.add-curator-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #A5A5B0;
+  border-radius: 40px;
+  padding: 10px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-curator-btn:hover {
+  background: #F4F4F4;
+  border-color: #4E85FC;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .page-wrapper {
+    padding: 0 20px;
+  }
+  
+  .bot-management-page .cases-wrapper {
+    padding: 20px;
+  }
+  
+  .bot-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .case-actions {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  .add-case-section {
+    padding: 15px 20px 20px 20px;
+  }
+}
+
+.bot-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 30px;
+  gap: 20px;
+}
+
+.page-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  color: #202024;
+  margin: 0;
+  justify-self: start;
+}
+
+.bot-toggle {
+  display: flex;
+  align-items: center;
+  background: #F4F4F4;
+  border-radius: 41px;
+  height: 44px;
+  padding: 0;
+  justify-self: center;
+}
+
+.send-message-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+  background: #4E85FC;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  justify-self: end;
+}

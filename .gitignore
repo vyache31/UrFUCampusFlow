@@ -44,3 +44,9 @@ dist/
 
 # Docker related
 docker-data/
+
+uv.lock
+
+backend/auth/certs
+
+AGENTS.md

@@ -1,0 +1,99 @@
+.sso-page {
+  min-height: 100vh;
+  background: #F4F4F4; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Montserrat', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Белая карточка */
+.sso-content {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  background: #FFFFFF;
+  border-radius: 40px;
+  padding: 60px 50px;
+  margin: 40px;
+  box-sizing: border-box;
+}
+
+/* Иконка */
+.sso-icon {
+  font-size: 80px;
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+/* Заголовок */
+.sso-title {
+  font-size: 32px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  color: #202024;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.5px;
+}
+
+/* Описание */
+.sso-description {
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  color: #5B6E8C;
+  line-height: 1.5;
+  margin: 0 0 40px 0;
+}
+
+/* Синяя кнопка */
+.sso-back-btn {
+  background: none;
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #4E85FC; 
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.2s ease;
+  padding: 0;
+}
+
+.sso-back-btn:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+.sso-back-btn:active {
+  opacity: 0.5;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .sso-content {
+    padding: 40px 30px;
+    margin: 20px;
+  }
+
+  .sso-title {
+    font-size: 28px;
+  }
+
+  .sso-icon {
+    font-size: 64px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sso-content {
+    padding: 30px 20px;
+  }
+
+  .sso-title {
+    font-size: 24px;
+  }
+}

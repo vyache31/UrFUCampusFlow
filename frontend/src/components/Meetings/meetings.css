@@ -1,0 +1,135 @@
+.section {
+  margin-bottom: 50px;
+}
+
+.section-title {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.meetings-card {
+  background: #fff;
+  border-radius: 25px;
+  padding: 30px 30px 30px 30px;
+}
+
+.meetings-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 70px 90px 120px;
+  padding-bottom: 0;
+  margin-bottom: 20px;
+}
+
+.meetings-header span:first-child {
+  text-align: left;
+}
+
+.meetings-header span:nth-child(2) {
+  text-align: left;
+}
+
+.meetings-header span:nth-child(3),
+.meetings-header span:nth-child(4),
+.meetings-header span:nth-child(5) {
+  text-align: center;
+}
+
+.meetings-header span {
+  font-size: 16px;
+  font-weight: 400;
+  color: #A5A5B0;
+}
+
+.meeting-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 70px 90px 120px;
+  padding: 14px 0;
+  align-items: center;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.meeting-row:last-child {
+  border-bottom: none;
+}
+
+.meeting-row span:first-child {
+  text-align: left;
+}
+
+.meeting-row span:nth-child(2) {
+  text-align: left;
+}
+
+.meeting-row span:nth-child(3),
+.meeting-row span:nth-child(4),
+.meeting-row span:nth-child(5) {
+  text-align: center;
+}
+
+.meeting-row span {
+  font-size: 16px;
+  font-weight: 400;
+  color: #202024;
+}
+
+.expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 40px;
+  margin-bottom: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  width: 100%;
+  transition: color 0.2s ease;
+}
+
+.expand-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.expand-btn svg path {
+  stroke: #202024;
+  transition: stroke 0.2s ease;
+}
+
+.expand-btn:hover {
+  color: #A5A5B0;
+}
+
+.expand-btn:hover svg path {
+  stroke: #A5A5B0;
+}
+
+.expand-btn:active {
+  color: #F9E27D;
+}
+
+.expand-btn:active svg path {
+  stroke: #F9E27D;
+}
+
+@media (max-width: 1200px) {
+  .meetings-header,
+  .meeting-row {
+    grid-template-columns: 1fr 1fr 80px 100px 120px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .meetings-header,
+  .meeting-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

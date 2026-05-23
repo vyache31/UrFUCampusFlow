@@ -1,0 +1,49 @@
+/* Стили для секции кейсов на дашборде */
+.section {
+  margin-bottom: 50px;
+}
+
+.section-title {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.view-all-btn {
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;
+  margin-top: 20px;
+  transition: color 0.2s ease;
+}
+
+.view-all-btn:hover {
+  color: #A5A5B0;
+}
+
+.view-all-btn:active {
+  color: #F9E27D;
+}
+
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 28px;
+  }
+}
