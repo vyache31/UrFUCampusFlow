@@ -1,6 +1,6 @@
 import asyncio
 from models import Roles
-from models.cases import CaseStatuses, DifficultyLevels
+from models import CaseStatuses, DifficultyLevels
 from models import Iterations
 from database import SessionLocal
 from sqlalchemy import select
