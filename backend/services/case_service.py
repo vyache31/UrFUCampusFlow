@@ -108,16 +108,23 @@ class CaseService:
         )
 
         await self.case_semester_repo.create(case_semester_connection)
+        case = await self.case_repo.get_by_id(case.id)
 
         return self._to_response(case)
 
-    async def get_case_by_id(self, case_id: str) -> Cases | None:
-        return await self.case_repo.get_by_id(case_id=case_id)
+    async def get_case_by_id(self, case_id: str) -> CaseResponse | None:
+        case = await self.case_repo.get_by_id(case_id=case_id)
 
-    async def get_all_cases(self, limit: int) -> list[Cases]:
-        return await self.case_repo.get_all(limit=limit)
+        if not case:
+            return None
 
-    async def update_case(self, case_id: str, schema: CaseUpdate) -> Cases | None:
+        return self._to_response(case)
+
+    async def get_all_cases(self, limit: int) -> list[CaseResponse]:
+        cases = await self.case_repo.get_all(limit=limit)
+        return [self._to_response(case) for case in cases]
+
+    async def update_case(self, case_id: str, schema: CaseUpdate) -> CaseResponse | None:
         case = await self.case_repo.get_by_id(case_id=case_id)
 
         if not case:
@@ -143,7 +150,7 @@ class CaseService:
 
         await self.case_repo.update()
 
-        return case
+        return self._to_response(case)
 
     async def delete_case(self, case_id: str) -> bool | None:
         case = await self.case_repo.get_by_id(case_id=case_id)
@@ -155,7 +162,29 @@ class CaseService:
 
         return True
 
+    def _get_case_semester(self, case: Cases) -> CaseSemesters | None:
+        if not case.case_semesters:
+            return None
+
+        return case.case_semesters[0]
+
+    @staticmethod
+    def _get_semester_name(semester) -> str | None:
+        if not semester:
+            return None
+
+        seasons = {
+            'FALL': 'Осенний',
+            'SPRING': 'Весенний',
+        }
+        season_name = seasons.get(semester.season, semester.season)
+
+        return f'{season_name} {semester.year}'
+
     def _to_response(self, case: Cases) -> CaseResponse:
+        case_semester = self._get_case_semester(case)
+        semester = case_semester.semester if case_semester else None
+
         return CaseResponse(
             id=case.id,
             title=case.title,
@@ -172,6 +201,11 @@ class CaseService:
             end_date=case.end_date,
             status_id=case.status_id,
             status_name=case.status.status_name if case.status else None,
+            case_semesters_id=case_semester.id if case_semester else None,
+            semester_id=semester.id if semester else None,
+            semester_season=semester.season if semester else None,
+            semester_year=semester.year if semester else None,
+            semester_name=self._get_semester_name(semester),
             creator_id=case.creator_id,
             creator_email=case.creator.email if case.creator else None,
             created_at=case.created_at,
@@ -180,7 +214,7 @@ class CaseService:
 
 
     #Работа с переходами статусов кейсов
-    async def _transit_case_status(self, case_id: str, new_status_code: str) -> Cases | None:
+    async def _transit_case_status(self, case_id: str, new_status_code: str) -> CaseResponse | None:
         case = await self.case_repo.get_by_id(case_id)
 
         if not case:
@@ -198,20 +232,20 @@ class CaseService:
 
         await self.case_repo.update()
 
-        return case
+        return self._to_response(case)
 
 
-    async def send_to_review(self, case_id: str) -> Cases | None:
+    async def send_to_review(self, case_id: str) -> CaseResponse | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='IN_REVIEW')
 
 
-    async def reject(self, case_id: str) -> Cases | None:
+    async def reject(self, case_id: str) -> CaseResponse | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
 
 
-    async def activate_after_submition(self, case_id: str) -> Cases | None:
+    async def activate_after_submition(self, case_id: str) -> CaseResponse | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='ACTIVE')
 
 
-    async def archive(self, case_id: str) -> Cases | None:
+    async def archive(self, case_id: str) -> CaseResponse | None:
         return await self._transit_case_status(case_id=case_id, new_status_code='ARCHIVED')

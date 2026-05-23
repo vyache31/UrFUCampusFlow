@@ -19,6 +19,11 @@ class CaseResponse(BaseModel):
     end_date: Optional[datetime] = None
     status_id: int
     status_name: Optional[str] = None
+    case_semesters_id: Optional[str] = None
+    semester_id: Optional[int] = None
+    semester_season: Optional[str] = None
+    semester_year: Optional[int] = None
+    semester_name: Optional[str] = None
     creator_id: str
     creator_email: Optional[str] = None
     created_at: datetime

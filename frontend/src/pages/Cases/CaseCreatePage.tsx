@@ -20,8 +20,7 @@ const CaseCreatePage = () => {
     shortTitle: '',
     description: '',
     expectedResult: '',
-    criteria: '',
-    semester: ''
+    criteria: ''
   });
 
   const [saving, setSaving] = useState(false);
@@ -93,13 +92,6 @@ const CaseCreatePage = () => {
     }
   };
 
-  const handleSemesterChange = (newSemester: string) => {
-    setFormData(prev => ({ ...prev, semester: newSemester }));
-    if (errors.semester) {
-      setErrors(prev => ({ ...prev, semester: '' }));
-    }
-  };
-
   const updateEmptyClass = (element: HTMLDivElement | null) => {
     if (!element) return;
     const isEmpty = element.innerText.trim() === '';
@@ -127,7 +119,6 @@ const CaseCreatePage = () => {
     if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
     if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
     if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
-    if (!formData.semester) newErrors.semester = 'Выберите семестр';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -146,7 +137,6 @@ const CaseCreatePage = () => {
         required_result: formData.expectedResult,
         grade_criteria: formData.criteria,
         difficulty_level_id: 1,
-        status_id: formData.semester === 'Осенний' ? 1 : 2,
         university_id: 1,
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -261,27 +251,6 @@ const CaseCreatePage = () => {
             data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
-        </div>
-
-        <div className="form-field form-field-row" data-field="semester">
-          <label className="form-label">Семестр</label>
-          <div className="semester-wrapper">
-            <div className="semester-toggle">
-              <button
-                className={`semester-option ${formData.semester === 'Осенний' ? 'active' : ''}`}
-                onClick={() => handleSemesterChange('Осенний')}
-              >
-                Осенний
-              </button>
-              <button
-                className={`semester-option ${formData.semester === 'Весенний' ? 'active' : ''}`}
-                onClick={() => handleSemesterChange('Весенний')}
-              >
-                Весенний
-              </button>
-            </div>
-            {errors.semester && <div className="error-message semester-error">{errors.semester}</div>}
-          </div>
         </div>
 
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}

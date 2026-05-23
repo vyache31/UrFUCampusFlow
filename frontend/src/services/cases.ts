@@ -12,6 +12,11 @@ export interface Case {
   difficulty_level_name?: string;
   status_id?: number;
   status_name?: string;
+  case_semesters_id?: string;
+  semester_id?: number;
+  semester_season?: string;
+  semester_year?: number;
+  semester_name?: string;
   university_id?: number;
   university_name?: string;
   start_date?: string;
@@ -46,6 +51,7 @@ export const getCases = async (limit?: number): Promise<Case[]> => {
     return {
       ...item,
       status: status,
+      semester: item.semester_name as string || '',
       description: item.project_goals as string || '',
       short_title: item.short_title as string || '',
     };
@@ -68,6 +74,7 @@ export const getCaseById = async (id: string): Promise<Case> => {
   return {
     ...item,
     status: status,
+    semester: item.semester_name || '',
     description: item.project_goals || '',
     short_title: item.short_title || '',
   };

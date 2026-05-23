@@ -1,13 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
-from models import Cases
+from models import Cases, CaseSemesters
 
 CASE_LOAD_OPTIONS = (
     selectinload(Cases.difficulty_level),
     selectinload(Cases.university),
     selectinload(Cases.status),
     selectinload(Cases.creator),
+    selectinload(Cases.case_semesters).selectinload(CaseSemesters.semester),
 )
 
 
@@ -42,12 +43,7 @@ class CaseRepository:
         stmt = (
             select(Cases)
             .where(Cases.id == case_id)
-            .options(
-                selectinload(Cases.university),
-                selectinload(Cases.status),
-                selectinload(Cases.creator),
-                selectinload(Cases.difficulty_level)
-            )
+            .options(*CASE_LOAD_OPTIONS)
         )
 
         result = await self.db.execute(stmt)
