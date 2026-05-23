@@ -1,4 +1,4 @@
-from models import Meetings
+from models import Meetings, MeetingTask
 from repositories.meetings_repository import MeetingsRepository
 from services.microsoft_oauth_service import MicrosoftOAuthService
 from integrations.microsoft_graph_client import GraphClient
@@ -84,7 +84,12 @@ class MeetingsService:
         return {"Authorization": f"Bearer {access_token}"}
 
 
-    async def create_meeting(self, user_id: str, current_team_case_history_id: str, meeting_data: MeetingCreate) -> MeetingResponse:
+    async def create_meeting(
+            self,
+            user_id: str,
+            current_team_case_history_id: str,
+            meeting_data: MeetingCreate
+        ) -> MeetingResponse:
         headers = await self._build_headers(user_id)
 
         correct_timeline = meeting_data.start_at < meeting_data.end_at
@@ -121,6 +126,16 @@ class MeetingsService:
             notes = meeting_data.notes,
             timezone = meeting_data.timezone
         )
+
+        created_meeting.tasks = [
+            MeetingTask(
+                id=str(uuid.uuid4()),
+                title=task.title,
+                description=task.description,
+                is_completed=False
+            )
+            for task in meeting_data.tasks
+        ]
 
         meeting = await self.meetings_repo.create(created_meeting)
 
@@ -242,5 +257,6 @@ class MeetingsService:
             outlook_event_id=meeting.outlook_event_id,
             event_link=meeting.event_link,
             notes=meeting.notes,
-            timezone=meeting.timezone
+            timezone=meeting.timezone,
+            tasks=meeting.tasks
         )
