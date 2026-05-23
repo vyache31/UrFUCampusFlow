@@ -7,16 +7,24 @@ interface TeamBulkActionsBarProps {
   onCreate: () => void;
 }
 
-const TeamBulkActionsBar = ({ selectedCount, onDelete, onCreate }: TeamBulkActionsBarProps) => {
+const TeamBulkActionsBar = ({ selectedCount, onDelete, onCreate }: TeamBulkActionsBarProps) => {  
+  const handleDeleteClick = () => {
+    onDelete();
+  };
+
+  const handleCreateClick = () => {
+    onCreate();
+  };
+
   return (
     <div className="team-action-cards-buttons">
       {selectedCount > 0 && (
-        <button className="team-card-action-btn delete" onClick={onDelete}>
+        <button className="team-card-action-btn delete" onClick={handleDeleteClick}>
           <DeleteIcon />
           Удалить выбранное
         </button>
       )}
-      <button className="team-card-action-btn create" onClick={onCreate}>
+      <button className="team-card-action-btn create" onClick={handleCreateClick}>
         <CreateIcon />
         Создать команду
       </button>
