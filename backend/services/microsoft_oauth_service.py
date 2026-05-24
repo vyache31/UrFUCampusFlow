@@ -94,8 +94,6 @@ class MicrosoftOAuthService:
         provider_oauth = await self.rep.get_oauth_by_provider_user_id(user_info['id'])
 
         if oauth := await self.rep.get_oauth_by_user_id(user_id):
-            if oauth.is_active:
-                raise ValueError('This user already has an active connection')
             if provider_oauth and provider_oauth.user_id != user_id:
                 raise ValueError('This connection already exists')
             await self.update_oauth(

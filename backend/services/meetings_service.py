@@ -37,7 +37,7 @@ class MeetingsService:
             start_at,
             end_at,
             location: str | None,
-            event_link: str
+            event_link: str | None
     ) -> dict:
         data = {
             "subject": title,
@@ -56,9 +56,11 @@ class MeetingsService:
             "location":{
                 "displayName": location or ""
             },
-            "onlineMeetingUrl": event_link,
             "isOnlineMeeting": False
         }
+
+        if event_link is not None:
+            data["onlineMeetingUrl"] = event_link
 
         return data
 
@@ -122,7 +124,7 @@ class MeetingsService:
             start_at = meeting_data.start_at,
             end_at = meeting_data.end_at,
             outlook_event_id = payload['id'],
-            event_link = meeting_data.event_link,
+            event_link = meeting_data.event_link or payload.get('webLink', ''),
             notes = meeting_data.notes,
             timezone = meeting_data.timezone
         )
@@ -159,7 +161,7 @@ class MeetingsService:
         if not update_data:
             return self.to_response(meeting)
 
-        for field in ('title', 'start_at', 'end_at', 'event_link'):
+        for field in ('title', 'start_at', 'end_at'):
             if field in update_data and update_data[field] is None:
                 raise ValueError(f'{field} can not be empty')
 
@@ -186,7 +188,7 @@ class MeetingsService:
 
         title = update_data.get('title', meeting.title)
         location = update_data.get('location', meeting.location)
-        event_link = update_data.get('event_link', meeting.event_link)
+        event_link = update_data.get('event_link') or meeting.event_link
         notes = update_data.get('notes', meeting.notes)
 
         await self.graph_client.update_event(
