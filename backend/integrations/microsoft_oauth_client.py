@@ -19,7 +19,7 @@ class OAuthClient:
             'scope': " ".join([
                 'offline_access',
                 'openid',
-                'Calendars.ReadWrite.Shared',
+                'Calendars.ReadWrite',
                 'email',
                 'User.Read',
             ]),
@@ -39,7 +39,7 @@ class OAuthClient:
             'scope': " ".join([
                 'offline_access',
                 'openid',
-                'Calendars.ReadWrite.Shared',
+                'Calendars.ReadWrite',
                 'email',
                 'User.Read',
             ]),
@@ -65,7 +65,7 @@ class OAuthClient:
             'scope': " ".join([
                 'offline_access',
                 'openid',
-                'Calendars.ReadWrite.Shared',
+                'Calendars.ReadWrite',
                 'email',
                 'User.Read',
             ]),

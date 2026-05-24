@@ -1,3 +1,4 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from services.team_service import TeamService
 from schemas.team import TeamCreate, TeamUpdate, TeamResponse
@@ -219,6 +220,11 @@ async def create_meeting_for_team(
         return meeting
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status_code=502,
+            detail=f'Microsoft Graph error: {err.response.status_code} {err.response.text}'
+        )
 
 
 @router.get('/{team_id}/meetings', response_model=list[MeetingResponse])
@@ -251,6 +257,11 @@ async def update_team_meeting(
         )
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status_code=502,
+            detail=f'Microsoft Graph error: {err.response.status_code} {err.response.text}'
+        )
 
     if not meeting:
         raise HTTPException(status_code=404, detail='Meeting not found')
@@ -266,11 +277,17 @@ async def delete_team_meeting(
         current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: MeetingsService = Depends(get_meetings_service),
 ):
-    result = await service.delete_meeting(
-        user_id=user.id,
-        current_team_case_history_id=current_team_case_history.id,
-        meeting_id=meeting_id
-    )
+    try:
+        result = await service.delete_meeting(
+            user_id=user.id,
+            current_team_case_history_id=current_team_case_history.id,
+            meeting_id=meeting_id
+        )
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status_code=502,
+            detail=f'Microsoft Graph error: {err.response.status_code} {err.response.text}'
+        )
 
     if not result:
         raise HTTPException(status_code=404, detail='Meeting not found')

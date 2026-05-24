@@ -47,7 +47,7 @@ class MeetingCreate(BaseModel):
     start_at: datetime
     location: Optional[str] = 'Контур.Толк'
     end_at: datetime
-    event_link: str
+    event_link: Optional[str] = None
     notes: Optional[str] = None
     timezone: Optional[int] = None
     tasks: list[MeetingTaskCreate] = Field(default_factory=list)
