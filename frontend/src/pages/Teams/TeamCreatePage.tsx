@@ -6,18 +6,20 @@ import { SaveIcon, PlusIcon } from '../../components/common/Icons/Icons';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
 import { createTeam } from '../../services/teams';
+import { addTeamMember } from '../../services/teamMembers';
+import { assignCaseToTeam } from '../../services/teamCaseHistory';
 import './teamCreatePage.css';
 
 interface TeamMember {
-  id: string;
+  tempId: string;
+  studentId: string;
   name: string;
   role: string;
-  university: string;
   group: string;
 }
 
 interface TeamCase {
-  id: string;
+  caseSemesterId: string;
   title: string;
 }
 
@@ -70,7 +72,6 @@ const TeamCreatePage = () => {
     setTimeout(checkHeight, 100);
   };
 
-  // Настройка скролла
   useEffect(() => {
     setupScrollableEditable(nameRef.current, 53);
     setupScrollableEditable(descriptionRef.current, 250);
@@ -127,26 +128,35 @@ const TeamCreatePage = () => {
     });
   }, []);
 
-  const handleAddMember = (member: { name: string; role: string; university: string; group: string }) => {
+  const handleAddMember = (member: { 
+    studentId: string; 
+    name: string; 
+    role: string; 
+    group: string;
+    universityId: number;
+  }) => {
     const newMember: TeamMember = {
-      id: Date.now().toString(),
-      ...member
+      tempId: Date.now().toString(),
+      studentId: member.studentId,
+      name: member.name,
+      role: member.role,
+      group: member.group
     };
     setMembers([...members, newMember]);
   };
 
-  const handleAddCase = (caseId: string, caseTitle: string) => {
-    if (!teamCases.some(c => c.id === caseId)) {
-      setTeamCases([...teamCases, { id: caseId, title: caseTitle }]);
+  const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
+    if (!teamCases.some(c => c.caseSemesterId === caseSemesterId)) {
+      setTeamCases([...teamCases, { caseSemesterId, title: caseTitle }]);
     }
   };
 
-  const handleRemoveMember = (id: string) => {
-    setMembers(members.filter(m => m.id !== id));
+  const handleRemoveMember = (tempId: string) => {
+    setMembers(members.filter(m => m.tempId !== tempId));
   };
 
-  const handleRemoveCase = (id: string) => {
-    setTeamCases(teamCases.filter(c => c.id !== id));
+  const handleRemoveCase = (caseSemesterId: string) => {
+    setTeamCases(teamCases.filter(c => c.caseSemesterId !== caseSemesterId));
   };
 
   const validateForm = (): boolean => {
@@ -173,46 +183,83 @@ const TeamCreatePage = () => {
   };
 
   const handleSave = async () => {
-  if (!validateForm()) {
-    const firstErrorField = Object.keys(errors)[0];
-    const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
-    if (errorElement) {
-      errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!validateForm()) {
+      const firstErrorField = Object.keys(errors)[0];
+      const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
     }
-    return;
-  }
-  
-  try {
-    setSaving(true);
     
-    const university_id = localStorage.getItem('university_id') 
-      ? Number(localStorage.getItem('university_id')) 
-      : 1; // временно ставим 1
-    
-    const teamForAPI = {
-      name: formData.name,
-      description: formData.description,
-      notes: formData.notes,  // заметки
-      university_id: university_id,
-      status: formData.status,
-    };
-    
-    console.log('Отправляем данные:', teamForAPI);
-    
-    const newTeam = await createTeam(teamForAPI);
-    console.log('Создана команда:', newTeam);
-    navigate('/teams');
-  } catch (error) {
-  console.error('Ошибка создания команды:', error);
-  const err = error as { response?: { data?: unknown } };
-  if (err.response?.data) {
-    console.log('Детали ошибки:', err.response.data);
-    setErrors({ submit: JSON.stringify(err.response.data) });
-  } else {
-    setErrors({ submit: 'Не удалось создать команду' });
-  }
-}
-};
+    try {
+      setSaving(true);
+      
+      const university_id = localStorage.getItem('university_id') 
+        ? Number(localStorage.getItem('university_id')) 
+        : 1;
+      
+      // Шаг 1: Создаем команду
+      const teamForAPI = {
+        name: formData.name,
+        description: formData.description,
+        notes: formData.notes,
+        university_id: university_id,
+        status: formData.status,
+      };
+      
+      console.log('Создаем команду:', teamForAPI);
+      const newTeam = await createTeam(teamForAPI);
+      console.log('Команда создана:', newTeam);
+      if (members.length > 0) {
+        console.log(`Добавляем ${members.length} участников...`);
+        
+        for (const member of members) {
+          try {
+            await addTeamMember(newTeam.id, {
+              student_id: member.studentId,
+              position: member.role,
+              joined_at: new Date().toISOString()
+            });
+            console.log(`Участник ${member.name} добавлен`);
+          } catch (err) {
+            console.error(`Ошибка добавления участника ${member.name}:`, err);
+          }
+        }
+      }
+      
+      if (teamCases.length > 0 && newTeam.id) {
+        console.log(`Добавляем ${teamCases.length} кейсов...`);
+        
+        for (let i = 0; i < teamCases.length; i++) {
+          const teamCase = teamCases[i];
+          try {
+            await assignCaseToTeam(newTeam.id, {
+              case_semesters_id: teamCase.caseSemesterId,
+              started_at: new Date().toISOString(),
+              is_current: i === 0 // первый кейс делаем текущим
+            });
+            console.log(`Кейс ${teamCase.title} добавлен`);
+          } catch (err) {
+            console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
+          }
+        }
+      }
+      
+      navigate('/teams');
+    } catch (error) {
+      console.error('Ошибка создания команды:', error);
+      const err = error as { response?: { data?: unknown } };
+      if (err.response?.data) {
+        console.log('Детали ошибки:', err.response.data);
+        setErrors({ submit: JSON.stringify(err.response.data) });
+      } else {
+        setErrors({ submit: 'Не удалось создать команду' });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
@@ -278,15 +325,15 @@ const TeamCreatePage = () => {
           {members.length > 0 && (
             <div className="members-list">
               {members.map((member) => (
-                <div key={member.id} className="member-item">
+                <div key={member.tempId} className="member-item">
                   <div className="member-info">
                     <span className="member-name">{member.name}</span>
                     <span className="member-role">{member.role}</span>
-                    <span className="member-university">{member.university}, {member.group}</span>
+                    <span className="member-group">{member.group}</span>
                   </div>
                   <button 
                     className="remove-btn"
-                    onClick={() => handleRemoveMember(member.id)}
+                    onClick={() => handleRemoveMember(member.tempId)}
                   >
                     ×
                   </button>
@@ -323,11 +370,11 @@ const TeamCreatePage = () => {
           {teamCases.length > 0 && (
             <div className="cases-list">
               {teamCases.map((teamCase) => (
-                <div key={teamCase.id} className="case-item">
+                <div key={teamCase.caseSemesterId} className="case-item">
                   <span className="case-title">{teamCase.title}</span>
                   <button 
                     className="remove-btn"
-                    onClick={() => handleRemoveCase(teamCase.id)}
+                    onClick={() => handleRemoveCase(teamCase.caseSemesterId)}
                   >
                     ×
                   </button>
@@ -369,6 +416,7 @@ const TeamCreatePage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
+        existingCaseIds={teamCases.map(c => c.caseSemesterId)}
       />
     </div>
   );
