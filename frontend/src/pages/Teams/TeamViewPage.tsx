@@ -5,8 +5,8 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
 import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
-import { getTeamMeetings, createTeamMeeting, type TeamMeeting } from '../../services/teamMeetings';
-import { EditIcon, FlagIcon, ChevronDownIcon } from '../../components/common/Icons/Icons';
+import { getTeamMeetings, createTeamMeeting, deleteTeamMeeting, type TeamMeeting } from '../../services/teamMeetings';
+import { EditIcon, FlagIcon, ChevronDownIcon, CloseIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
 import './teamViewPage.css';
@@ -26,6 +26,7 @@ const TeamViewPage = () => {
   const [teamHistory, setTeamHistory] = useState<TeamCaseHistory[]>([]);
   const [meetings, setMeetings] = useState<TeamMeeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isControlPointsModalOpen, setIsControlPointsModalOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState('');
@@ -66,6 +67,26 @@ const TeamViewPage = () => {
 
   const handleEdit = () => {
     navigate(`/teams/${id}/edit`);
+  };
+
+  const handleDeleteMeeting = async (meetingId: string) => {
+    if (!id) return;
+    
+    if (!window.confirm('Вы уверены, что хотите удалить эту встречу? Она также будет удалена из календаря Outlook.')) {
+      return;
+    }
+    
+    try {
+      setDeletingMeetingId(meetingId);
+      await deleteTeamMeeting(id, meetingId);
+      setMeetings(prev => prev.filter(m => m.id !== meetingId));
+      alert('Встреча успешно удалена');
+    } catch (error) {
+      console.error('Ошибка удаления встречи:', error);
+      alert('Не удалось удалить встречу');
+    } finally {
+      setDeletingMeetingId(null);
+    }
   };
 
   const formatMeetingDateTime = (dateStr: string) => {
@@ -111,7 +132,7 @@ const TeamViewPage = () => {
         : 'Разовое мероприятие';
       
       const newMeeting = await createTeamMeeting(id, {
-        title: `Встреча команды "${team?.name}"`,
+        title: currentCase.case_title,
         start_at: startDateTime.toISOString(),
         end_at: endDateTime.toISOString(),
         notes: repeatText,
@@ -276,9 +297,10 @@ const TeamViewPage = () => {
           <div className="info-label">Запланированные встречи</div>
           <div className="meetings-scroll-container">
             <div className="meetings-header-row">
-              <span>Название встречи</span>
+              <span>Проект</span>
               <span>Дата</span>
               <span>Время</span>
+              <span></span>
             </div>
             <div className="meetings-list">
               {meetings.length > 0 ? (
@@ -286,9 +308,16 @@ const TeamViewPage = () => {
                   const { date, time } = formatMeetingDateTime(meeting.start_at);
                   return (
                     <div key={meeting.id} className="meeting-row-view">
-                      <span className="meeting-project">{meeting.title}</span>
+                      <span className="meeting-project">{currentCase?.case_title || meeting.title}</span>
                       <span className="meeting-date">{date}</span>
                       <span className="meeting-time">{time}</span>
+                      <button 
+                        className="delete-meeting-btn"
+                        onClick={() => handleDeleteMeeting(meeting.id)}
+                        disabled={deletingMeetingId === meeting.id}
+                      >
+                        <CloseIcon />
+                      </button>
                     </div>
                   );
                 })

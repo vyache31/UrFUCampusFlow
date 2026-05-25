@@ -365,7 +365,7 @@
 
 .meetings-header-row {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
+  grid-template-columns: 1fr 100px 100px 40px;
   padding-bottom: 10px;
   margin-bottom: 10px;
   border-bottom: 1px solid rgba(165, 165, 176, 0.2);
@@ -399,7 +399,7 @@
 
 .meeting-row-view {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
+  grid-template-columns: 1fr 100px 100px 40px;
   align-items: center;
 }
 
@@ -428,6 +428,48 @@
   padding: 40px;
   font-size: 18px;
   color: #A5A5B0;
+}
+
+.delete-meeting-btn {
+  width: 32px;
+  height: 32px;
+  background: #F4F4F4;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.delete-meeting-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.delete-meeting-btn svg path {
+  fill: #A5A5B0;
+  transition: fill 0.2s ease;
+}
+
+.delete-meeting-btn:hover {
+  background: #FFE4E4;
+}
+
+.delete-meeting-btn:hover svg path {
+  fill: #F63333;
+}
+
+.delete-meeting-btn:active {
+  background: transparent;
+  outline: 1px solid #F63333;
+  outline-offset: -1px;
+}
+
+.delete-meeting-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Адаптив */

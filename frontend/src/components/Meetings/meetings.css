@@ -118,6 +118,26 @@
   stroke: #F9E27D;
 }
 
+.loading-meetings,
+.empty-meetings {
+  text-align: center;
+  padding: 40px;
+  color: #A5A5B0;
+  font-size: 16px;
+}
+
+.meeting-project-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
   .meetings-header,
   .meeting-row {
