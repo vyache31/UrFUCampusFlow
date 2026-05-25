@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 
-from models.bot import (
+from tg_bot.models.bot import (
     BotMode,
     BotCases,
     RecruitmentCurators,

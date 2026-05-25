@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from models.bot import BotMode, BotCases, RecruitmentCurators, Interviews
+from tg_bot.models.bot import BotMode, BotCases, RecruitmentCurators, Interviews
 
 
 class BotRepository:

@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
-from services.bot_service import BotService
-from schemas.bot import (
+from tg_bot.bot_service import BotService
+from tg_bot.bot_schemas import (
     BotModeUpdate,
     BotCaseCreate,
     RecruitmentCuratorCreate,
     InterviewCreate
 )
-from dependies.bot_depends import get_bot_service
+from tg_bot.bot_depends import get_bot_service
 from dependies.auth_depends import get_current_auth_user
-from models.bot import (
+from tg_bot.models.bot import (
     BotCases,
     RecruitmentCurators,
     Interviews

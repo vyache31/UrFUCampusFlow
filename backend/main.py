@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
     iteration, auth, case_status
+from tg_bot import bot_endpoints
 import httpx
 import redis.asyncio as aioredis
 from config import settings
@@ -32,6 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(bot_endpoints.router)
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(team.router)
