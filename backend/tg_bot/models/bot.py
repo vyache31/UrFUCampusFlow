@@ -17,7 +17,7 @@ class Interviews(Base):
     date_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    case = relationship('Cases', back_populates='interviews')
+    case = relationship('Cases')
 
 class BotMode(Base):
     __tablename__ = 'bot_mode'
@@ -34,7 +34,7 @@ class BotCases(Base):
     case_id: Mapped[str] = mapped_column(ForeignKey('cases.id'), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    case = relationship('Cases', back_populates='bot_cases')
+    case = relationship('Cases')
 
 
 class RecruitmentCurators(Base):
@@ -44,4 +44,4 @@ class RecruitmentCurators(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey('users.id'), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    user = relationship('Users', back_populates='recruitment_curators')
+    user = relationship('Users')

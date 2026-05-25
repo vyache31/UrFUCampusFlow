@@ -30,7 +30,7 @@ class BotService:
         current_mode.mode = mode
         current_mode.updated_at = datetime.now(UTC)
 
-        await self.bot_repo.update()
+        await self.bot_repo.change_current_mode()
 
         return current_mode
 
@@ -45,6 +45,9 @@ class BotService:
     async def get_all_bot_cases(self):
         return await self.bot_repo.get_all_bot_cases()
 
+    async def get_bot_case_by_id(self, bot_case_id: str):
+        return await self.bot_repo.get_bot_case_by_id(bot_case_id)
+
     async def add_bot_case(self, bot_case: BotCases):
         await self._check_stop_mode()
 
@@ -53,7 +56,7 @@ class BotService:
     async def delete_bot_case(self, bot_case_id: str):
         await self._check_stop_mode()
 
-        bot_case = self.bot_repo.get_bot_case_by_id(bot_case_id)
+        bot_case = await self.bot_repo.get_bot_case_by_id(bot_case_id)
         if not bot_case:
             return None
 
@@ -63,6 +66,9 @@ class BotService:
 
     async def get_all_recruitment_curators(self):
         return await self.bot_repo.get_all_recruitment_curators()
+
+    async def get_recruitment_curator_by_id(self, curator_id: str):
+        return await self.bot_repo.get_recruitment_curator_by_id(curator_id)
 
     async def add_recruitment_curator(
         self,
@@ -82,7 +88,7 @@ class BotService:
 
         await self._check_stop_mode()
 
-        curator = self.bot_repo.get_recruitment_curator_by_id(curator_id)
+        curator = await self.bot_repo.get_recruitment_curator_by_id(curator_id)
         if not curator:
             return None
 
@@ -95,11 +101,14 @@ class BotService:
     async def get_all_interviews(self):
         return await self.bot_repo.get_all_interviews()
 
+    async def get_interview_by_id(self, interview_id: str):
+        return await self.bot_repo.get_interview_by_id(interview_id)
+
     async def add_interview(self, interview: Interviews):
         return await self.bot_repo.add_interview(interview)
 
     async def delete_interview(self, interview_id: str):
-        interview = self.bot_repo.get_interview_by_id(interview_id)
+        interview = await self.bot_repo.get_interview_by_id(interview_id)
         if not interview:
             return None
 

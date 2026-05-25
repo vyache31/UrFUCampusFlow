@@ -3,3 +3,4 @@ from .cases import Cases, CaseStatuses, EvaluationForm, EvaluationFormComments, 
 from .grades import Grades, Iterations
 from .integrations import MicrosoftOAuth, Meetings, MeetingTask
 from .teams import Teams, TeamMembers, Semesters, Students, Universities, TeamCaseHistory
+from tg_bot.models.bot import Interviews, BotMode, BotCases, RecruitmentCurators
