@@ -1,7 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from sqlalchemy.orm import selectinload
-from models import Cases, CaseSemesters
 from models.bot import BotMode, BotCases, RecruitmentCurators, Interviews
 
 
@@ -10,7 +8,7 @@ class BotRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_current_mode(self):
+    async def get_current_mode(self) -> BotMode | None:
         mode = await self.db.execute(
             select(BotMode)
             .where(BotMode.id == 1)
