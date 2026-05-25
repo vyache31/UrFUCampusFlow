@@ -3,13 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
-import { getTeamMembers, addTeamMember, type TeamMember } from '../../services/teamMembers';
+import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
 import { getTeamMeetings, createTeamMeeting, type TeamMeeting } from '../../services/teamMeetings';
 import { EditIcon, FlagIcon, ChevronDownIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
-import AddMemberModal from '../../components/Modals/AddMemberModal';
 import './teamViewPage.css';
 
 interface ControlPoint {
@@ -29,7 +28,6 @@ const TeamViewPage = () => {
   const [loading, setLoading] = useState(true);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isControlPointsModalOpen, setIsControlPointsModalOpen] = useState(false);
-  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState('');
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [controlPointsMap, setControlPointsMap] = useState<Map<string, ControlPoint[]>>(new Map());
@@ -68,32 +66,6 @@ const TeamViewPage = () => {
 
   const handleEdit = () => {
     navigate(`/teams/${id}/edit`);
-  };
-
-  const handleAddMember = async (memberData: {
-    studentId: string;
-    name: string;
-    role: string;
-    group: string;
-    universityId: number;
-  }) => {
-    if (!id) return;
-    
-    try {      
-      const newMember = await addTeamMember(id, {
-        student_id: memberData.studentId,
-        position: memberData.role,
-        joined_at: new Date().toISOString()
-      });
-      
-      setMembers(prev => [...prev, { ...newMember, group: memberData.group }]);
-      alert(`Участник ${memberData.name} успешно добавлен в команду`);
-    } catch (err) {
-      console.error('Ошибка добавления участника:', err);
-      alert('Не удалось добавить участника в команду');
-    } finally {
-      setAddingMember(false);
-    }
   };
 
   const formatMeetingDateTime = (dateStr: string) => {
@@ -235,7 +207,7 @@ const TeamViewPage = () => {
                 <div key={member.id} className="member-row">
                   <div className="member-name">{member.student_name}</div>
                   <div className="member-role">{member.position}</div>
-                  <div className="member-group">{(member as { group?: string }).group || '—'}</div>
+                  <div className="member-group">—</div>
                 </div>
               ))}
             </div>
@@ -344,12 +316,6 @@ const TeamViewPage = () => {
         caseTitle={selectedCaseTitle}
         initialPoints={controlPointsMap.get(selectedCaseId) || []}
         onPointsChange={handleControlPointsChange}
-      />
-
-      <AddMemberModal
-        isOpen={isMemberModalOpen}
-        onClose={() => setIsMemberModalOpen(false)}
-        onAdd={handleAddMember}
       />
     </div>
   );

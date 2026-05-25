@@ -4,8 +4,9 @@ import html2canvas from 'html2canvas';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { DownloadIcon } from '../../components/common/Icons/Icons';
-import { getTeams, type Team, type TeamMember } from '../../services/teams';
-import { getCaseById } from '../../services/cases';
+import { getTeams, type Team } from '../../services/teams';
+import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
+import { getTeamHistory } from '../../services/teamCaseHistory';
 import './reportPage.css';
 
 interface ReportTeam {
@@ -25,29 +26,38 @@ const ReportPage = () => {
     const fetchReportData = async () => {
       try {
         setLoading(true);
-        const teams = await getTeams();
+        const teams = await getTeams(10000);
         
         const reportTeams = await Promise.all(
           teams.map(async (team: Team) => {
             let projectName = 'Не указан';
             
-            if (team.caseId) {
-              try {
-                const caseData = await getCaseById(team.caseId);
-                projectName = caseData.title;
-              } catch (err) {
-                console.error('Ошибка загрузки кейса для команды:', team.name, err);
+            try {
+              const history = await getTeamHistory(team.id);
+              const currentCase = history.find(h => h.is_current);
+              if (currentCase) {
+                projectName = currentCase.case_title;
               }
+            } catch (err) {
+              console.error('Ошибка загрузки кейса для команды:', team.name, err);
+            }
+            
+            let members: { name: string; group: string }[] = [];
+            try {
+              const teamMembers = await getTeamMembers(team.id);
+              members = teamMembers.map((member: TeamMember) => ({
+                name: member.student_name,
+                group: '' // Группа не приходит из API, пока пусть пустой будет
+              }));
+            } catch (err) {
+              console.error('Ошибка загрузки участников для команды:', team.name, err);
             }
             
             return {
               id: team.id,
               name: team.name,
               project: projectName,
-              members: team.members?.map((member: TeamMember) => ({
-                name: member.name,
-                group: member.group
-              })) || []
+              members: members
             };
           })
         );
@@ -65,54 +75,53 @@ const ReportPage = () => {
   }, []);
 
   const handleDownloadReport = async () => {
-  if (!reportContentRef.current) return;
-  
-  try {
-    const element = reportContentRef.current;
+    if (!reportContentRef.current) return;
     
-    // стили для печати с отступами
-    const originalPadding = element.style.padding;
-    element.style.padding = '40px';
-    
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      logging: false,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight
-    });
-    
-    element.style.padding = originalPadding;
-    
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    const imgWidth = 190;
-    const pageHeight = 277; 
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 10;
-    
-    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-    
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight - 10;
-      pdf.addPage();
+    try {
+      const element = reportContentRef.current;
+      
+      const originalPadding = element.style.padding;
+      element.style.padding = '40px';
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
+      });
+      
+      element.style.padding = originalPadding;
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 190;
+      const pageHeight = 277; 
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 10;
+      
       pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight - 10;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      pdf.save('report.pdf');
+    } catch (error) {
+      console.error('Ошибка при создании PDF:', error);
+      alert('Не удалось создать PDF');
     }
-    
-    pdf.save('report.pdf');
-  } catch (error) {
-    console.error('Ошибка при создании PDF:', error);
-    alert('Не удалось создать PDF');
-  }
-};
+  };
 
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
@@ -160,7 +169,7 @@ const ReportPage = () => {
                 team.members.map((member, index) => (
                   <div key={index} className="member-row">
                     <span className="member-name">{member.name}</span>
-                    <span className="member-group">{member.group}</span>
+                    <span className="member-group">{member.group || '—'}</span>
                   </div>
                 ))
               ) : (

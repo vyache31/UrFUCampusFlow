@@ -68,6 +68,7 @@
 .report-content {
   width: 886px;
   margin-left: 227px;
+  margin-bottom: 60px;
   display: flex;
   flex-direction: column;
   gap: 60px;
