@@ -1,0 +1,89 @@
+name: alpha-project
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: alpha-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alpha_db}
+      POSTGRES_USER: ${POSTGRES_USER:-alpha_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: alpha-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alpha-migrate
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-alpha_user}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-alpha_db}
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+    command: alembic upgrade head
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alpha-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-alpha_user}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-alpha_db}
+      REDIS_URL: redis://redis:6379/0
+      FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alpha-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
