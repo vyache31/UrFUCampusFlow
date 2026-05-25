@@ -6,7 +6,7 @@ import { getTeamById, type Team } from '../../services/teams';
 import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
 import { getTeamMeetings, createTeamMeeting, deleteTeamMeeting, type TeamMeeting } from '../../services/teamMeetings';
-import { EditIcon, FlagIcon, ChevronDownIcon, CloseIcon } from '../../components/common/Icons/Icons';
+import { EditIcon, FlagIcon, ChevronDownIcon, CloseIcon, HistoryIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
 import './teamViewPage.css';
@@ -62,8 +62,7 @@ const TeamViewPage = () => {
     fetchTeamData();
   }, [id]);
 
-  const currentCase = teamHistory.find(h => h.is_current);
-  const pastCases = teamHistory.filter(h => !h.is_current && h.ended_at);
+  const currentCase = teamHistory.find(h => h.is_current === true);
 
   const handleEdit = () => {
     navigate(`/teams/${id}/edit`);
@@ -97,6 +96,10 @@ const TeamViewPage = () => {
     };
   };
 
+  const handleHistory = () => {
+    navigate(`/teams/${id}/history`);
+  };
+  
   const handleScheduleMeeting = async (data: {
     date: string;
     time: string;
@@ -197,6 +200,10 @@ const TeamViewPage = () => {
               <span>Назначить встречу</span>
             </button>
           )}
+          <button className="history-btn" onClick={handleHistory}>
+            <HistoryIcon />
+            <span>История кейсов</span>
+          </button>
           <button className="edit-btn" onClick={handleEdit}>
             <EditIcon />
             <span>Редактировать</span>
@@ -228,7 +235,7 @@ const TeamViewPage = () => {
                 <div key={member.id} className="member-row">
                   <div className="member-name">{member.student_name}</div>
                   <div className="member-role">{member.position}</div>
-                  <div className="member-group">—</div>
+                  <div className="member-group">{member.group || '—'}</div>
                 </div>
               ))}
             </div>
@@ -260,30 +267,6 @@ const TeamViewPage = () => {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {pastCases.length > 0 && (
-          <div className="info-block">
-            <div className="info-label">История кейсов</div>
-            <div className="cases-list-view">
-              {pastCases.map((historyCase) => (
-                <div key={historyCase.id} className="case-item-view">
-                  <div className="case-header">
-                    <span className="case-title">{historyCase.case_title}</span>
-                    <div className="case-semester">
-                      <span className="semester-badge">{historyCase.semester_name}</span>
-                    </div>
-                    <div className="case-dates">
-                      <span>{new Date(historyCase.started_at).toLocaleDateString('ru-RU')}</span>
-                      {historyCase.ended_at && (
-                        <span> → {new Date(historyCase.ended_at).toLocaleDateString('ru-RU')}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}

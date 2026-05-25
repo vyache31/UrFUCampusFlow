@@ -7,10 +7,10 @@ interface AddCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (caseSemesterId: string, caseTitle: string) => void;
-  existingCaseIds?: string[];
+  usedCaseIds?: string[];
 }
 
-const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseModalProps) => {
+const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModalProps) => {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -23,7 +23,7 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
       hasFetched.current = true;
       const data = await getCases(100);
       const availableCases = data.filter(c => 
-        c.status_id === 3 && !existingCaseIds.includes(c.id)
+        c.status_id === 3 && !usedCaseIds.includes(c.id)
       );
       
       setCases(availableCases);
@@ -32,7 +32,7 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, existingCaseIds = [] }: AddCaseM
     } finally {
       setLoading(false);
     }
-  }, [isOpen, existingCaseIds]);
+  }, [isOpen, usedCaseIds]);
 
   useEffect(() => {
     if (isOpen) {

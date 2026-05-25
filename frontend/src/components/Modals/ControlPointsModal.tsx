@@ -27,7 +27,6 @@ const ControlPointsModal = ({
   const [newPointName, setNewPointName] = useState('');
   const [newPointScore, setNewPointScore] = useState('');
 
-  // сохранить при изменениях
   const handlePointsChange = useCallback((newPoints: ControlPoint[]) => {
     setControlPoints(newPoints);
     if (onPointsChange) {
@@ -44,9 +43,12 @@ const ControlPointsModal = ({
         name: newPointName.trim(),
         score: newPointScore ? Number(newPointScore) : null
       };
-      handlePointsChange([...controlPoints, newPoint]);
+      const updatedPoints = [...controlPoints, newPoint];
+      handlePointsChange(updatedPoints);
       setNewPointName('');
       setNewPointScore('');
+    } else {
+      alert('Введите название контрольной точки');
     }
   };
 
@@ -74,8 +76,8 @@ const ControlPointsModal = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="control-points-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="control-points-header">
-          <button className="control-points-close" onClick={onClose}>
+        <div className="modal-header-bar">
+          <button className="modal-close-circle" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>

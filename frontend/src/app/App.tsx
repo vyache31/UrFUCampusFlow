@@ -14,6 +14,7 @@ import TeamEditPage from '../pages/Teams/TeamEditPage';
 import BotManagementPage from '../pages/BotManagement/BotManagementPage';
 import OutlookCallbackPage from '../pages/OutlookCallback/OutlookCallbackPage';
 import SSOPage from '../pages/Login/SSOPage';
+import TeamCaseHistoryPage from '../pages/Teams/TeamCaseHistoryPage';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="/bot-management" element={<BotManagementPage />} />
         <Route path="/outlook/callback" element={<OutlookCallbackPage />} />
         <Route path="/sso" element={<SSOPage />} />
+        <Route path="/teams/:id/history" element={<TeamCaseHistoryPage />} />
       </Routes>
     </BrowserRouter>
   );

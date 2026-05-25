@@ -5,7 +5,7 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon, DeleteIcon } from '../../components/common/Icons/Icons';
 import { getTeamById, updateTeam, deleteTeam } from '../../services/teams';
 import { getTeamMembers, addTeamMember, type TeamMember } from '../../services/teamMembers';
-import { getTeamHistory, assignCaseToTeam, type TeamCaseHistory } from '../../services/teamCaseHistory';
+import { getTeamHistory, assignCaseToTeam, endCurrentCase, type TeamCaseHistory } from '../../services/teamCaseHistory';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
 import './teamEditPage.css';
@@ -24,7 +24,6 @@ interface LocalCase {
   tempId: string;
   caseSemesterId: string;
   title: string;
-  isCurrent: boolean;
   historyId?: string;
   isExisting: boolean;
 }
@@ -49,7 +48,8 @@ const TeamEditPage = () => {
   });
   
   const [members, setMembers] = useState<LocalMember[]>([]);
-  const [teamCases, setTeamCases] = useState<LocalCase[]>([]);
+  const [teamCase, setTeamCase] = useState<LocalCase | null>(null);
+  const [originalCaseId, setOriginalCaseId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
@@ -90,15 +90,21 @@ const TeamEditPage = () => {
         }));
         setMembers(existingMembers);
         
-        const existingCases: LocalCase[] = historyData.map((h: TeamCaseHistory) => ({
-          tempId: h.id,
-          caseSemesterId: h.case_semesters_id,
-          title: h.case_title,
-          isCurrent: h.is_current,
-          historyId: h.id,
-          isExisting: true
-        }));
-        setTeamCases(existingCases);
+        const currentActiveCase = historyData.find((h: TeamCaseHistory) => h.is_current === true);
+        
+        if (currentActiveCase) {
+          setTeamCase({
+            tempId: currentActiveCase.id,
+            caseSemesterId: currentActiveCase.case_semesters_id,
+            title: currentActiveCase.case_title,
+            historyId: currentActiveCase.id,
+            isExisting: true
+          });
+          setOriginalCaseId(currentActiveCase.case_semesters_id);
+        } else {
+          setTeamCase(null);
+          setOriginalCaseId(null);
+        }
         
       } catch (err) {
         console.error('Ошибка загрузки данных команды:', err);
@@ -170,31 +176,39 @@ const TeamEditPage = () => {
   };
 
   const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
-    if (!teamCases.some(c => c.caseSemesterId === caseSemesterId)) {
-      const newCase: LocalCase = {
-        tempId: Date.now().toString(),
-        caseSemesterId,
-        title: caseTitle,
-        isCurrent: teamCases.length === 0,
-        isExisting: false
-      };
-      setTeamCases([...teamCases, newCase]);
+    if (teamCase && teamCase.isExisting) {
+      alert('У команды уже есть активный кейс. Сначала завершите текущий кейс.');
+      return;
     }
+    
+    if (teamCase && !teamCase.isExisting) {
+      const confirmReplace = window.confirm('Заменить текущий выбранный кейс?');
+      if (!confirmReplace) return;
+    }
+    
+    const newCase: LocalCase = {
+      tempId: Date.now().toString(),
+      caseSemesterId,
+      title: caseTitle,
+      isExisting: false
+    };
+    setTeamCase(newCase);
   };
 
   const handleRemoveMember = (tempId: string) => {
     setMembers(members.filter(m => m.tempId !== tempId));
   };
 
-  const handleRemoveCase = (tempId: string) => {
-    setTeamCases(teamCases.filter(c => c.tempId !== tempId));
-  };
-
-  const handleSetCurrentCase = (tempId: string) => {
-    setTeamCases(prev => prev.map(c => ({
-      ...c,
-      isCurrent: c.tempId === tempId
-    })));
+  const handleRemoveCase = () => {
+    if (!teamCase) return;
+    
+    if (teamCase.isExisting) {
+      if (window.confirm('Вы уверены, что хотите завершить текущий кейс? Он переместится в историю команды.')) {
+        setTeamCase(null);
+      }
+    } else {
+      setTeamCase(null);
+    }
   };
 
   const handleSave = async () => {
@@ -229,16 +243,52 @@ const TeamEditPage = () => {
         }
       }
       
-      const newCases = teamCases.filter(c => !c.isExisting);
-      for (const teamCase of newCases) {
+      const hasExistingCase = originalCaseId !== null;
+      const hasNewCase = teamCase !== null;
+      
+      if (hasExistingCase && !hasNewCase) {
+        console.log('Завершаем текущий кейс...');
+        try {
+          await endCurrentCase(id);
+          console.log('Кейс успешно завершен');
+        } catch (err) {
+          console.error('Ошибка завершения кейса:', err);
+        }
+      }
+      
+      if (hasExistingCase && hasNewCase && !teamCase.isExisting) {
+        console.log('Завершаем старый кейс...');
+        try {
+          await endCurrentCase(id);
+          console.log('Старый кейс завершен');
+        } catch (err) {
+          console.error('Ошибка завершения старого кейса:', err);
+        }
+        
+        console.log('Добавляем новый кейс...');
         try {
           await assignCaseToTeam(id, {
             case_semesters_id: teamCase.caseSemesterId,
             started_at: new Date().toISOString(),
-            is_current: teamCase.isCurrent
+            is_current: true
           });
+          console.log(`Новый кейс ${teamCase.title} добавлен`);
         } catch (err) {
-          console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
+          console.error(`Ошибка добавления кейса:`, err);
+        }
+      }
+      
+      if (!hasExistingCase && hasNewCase && !teamCase.isExisting) {
+        console.log('Добавляем новый кейс...');
+        try {
+          await assignCaseToTeam(id, {
+            case_semesters_id: teamCase.caseSemesterId,
+            started_at: new Date().toISOString(),
+            is_current: true
+          });
+          console.log(`Кейс ${teamCase.title} добавлен`);
+        } catch (err) {
+          console.error(`Ошибка добавления кейса:`, err);
         }
       }
       
@@ -383,42 +433,36 @@ const TeamEditPage = () => {
         {/* Кейсы */}
         <div className="form-field">
           <div className="field-header">
-            <label className="form-label">Кейсы</label>
-            <button className="add-btn" onClick={() => setIsCaseModalOpen(true)}>
-              <PlusIcon />
-              <span>Добавить кейс</span>
-            </button>
+            <label className="form-label">Текущий кейс</label>
+            {!teamCase && (
+              <button className="add-btn" onClick={() => setIsCaseModalOpen(true)}>
+                <PlusIcon />
+                <span>Добавить кейс</span>
+              </button>
+            )}
           </div>
-          {teamCases.length > 0 && (
-            <div className="cases-list">
-              {teamCases.map((teamCase) => (
-                <div key={teamCase.tempId} className="case-item">
-                  <div className="case-info">
-                    <span className="case-title">{teamCase.title}</span>
-                    {teamCase.isCurrent && (
-                      <span className="case-badge current">Текущий</span>
-                    )}
-                  </div>
-                  <div className="case-actions">
-                    {!teamCase.isCurrent && (
-                      <button 
-                        className="set-current-btn"
-                        onClick={() => handleSetCurrentCase(teamCase.tempId)}
-                      >
-                        Сделать текущим
-                      </button>
-                    )}
-                    <button 
-                      className="remove-btn"
-                      onClick={() => handleRemoveCase(teamCase.tempId)}
-                    >
-                      ×
-                    </button>
-                  </div>
+          <div className="cases-list">
+            {teamCase ? (
+              <div className="case-item">
+                <div className="case-info">
+                  <span className="case-title">{teamCase.title}</span>  
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="case-actions">
+                  <button 
+                    className="remove-btn"
+                    onClick={handleRemoveCase}
+                    title={teamCase.isExisting ? "Завершить кейс" : "Удалить"}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="empty-cases-placeholder">
+                Нет активного кейса. Нажмите "Добавить кейс" чтобы назначить.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Состояние команды */}
@@ -452,7 +496,7 @@ const TeamEditPage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        existingCaseIds={teamCases.map(c => c.caseSemesterId)}
+        usedCaseIds={teamCase ? [teamCase.caseSemesterId] : []}
       />
     </div>
   );
