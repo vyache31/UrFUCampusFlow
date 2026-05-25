@@ -50,10 +50,16 @@ class BotService:
 
         return await self.bot_repo.add_bot_case(bot_case)
 
-    async def delete_bot_case(self, bot_case: BotCases):
+    async def delete_bot_case(self, bot_case_id: str):
         await self._check_stop_mode()
 
+        bot_case = self.bot_repo.get_bot_case_by_id(bot_case_id)
+        if not bot_case:
+            return None
+
         await self.bot_repo.delete_bot_case(bot_case)
+
+        return True
 
     async def get_all_recruitment_curators(self):
         return await self.bot_repo.get_all_recruitment_curators()
@@ -71,14 +77,20 @@ class BotService:
 
     async def delete_recruitment_curator(
         self,
-        curator: RecruitmentCurators
+        curator_id: str
     ):
 
         await self._check_stop_mode()
 
+        curator = self.bot_repo.get_recruitment_curator_by_id(curator_id)
+        if not curator:
+            return None
+
         await self.bot_repo.delete_recruitment_curator(
             curator
         )
+
+        return True
 
     async def get_all_interviews(self):
         return await self.bot_repo.get_all_interviews()
@@ -86,5 +98,11 @@ class BotService:
     async def add_interview(self, interview: Interviews):
         return await self.bot_repo.add_interview(interview)
 
-    async def delete_interview(self, interview: Interviews):
+    async def delete_interview(self, interview_id: str):
+        interview = self.bot_repo.get_interview_by_id(interview_id)
+        if not interview:
+            return None
+
         await self.bot_repo.delete_interview(interview)
+
+        return True

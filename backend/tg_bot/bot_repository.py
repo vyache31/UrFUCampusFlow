@@ -29,6 +29,14 @@ class BotRepository:
         return bot_cases.scalars().all()
 
 
+    async def get_bot_case_by_id(self, case_id: str):
+        case = await self.db.execute(
+            select(BotCases)
+            .where(BotCases.id == case_id)
+        )
+
+        return case.scalar_one_or_none()
+
     async def add_bot_case(self, bot_case: BotCases):
         self.db.add(bot_case)
         await self.db.commit()
@@ -48,6 +56,13 @@ class BotRepository:
 
         return curators.scalars().all()
 
+    async def get_recruitment_curator_by_id(self, curator_id: str):
+        curator = await self.db.execute(
+            select(RecruitmentCurators)
+            .where(RecruitmentCurators.id == curator_id)
+        )
+
+        return curator.scalar_one_or_none()
 
     async def add_recruitment_curator(self, curator: RecruitmentCurators):
         self.db.add(curator)
@@ -67,6 +82,15 @@ class BotRepository:
         )
 
         return interviews.scalars().all()
+
+    async def get_interview_by_id(self, interview_id: str):
+        interview = await self.db.execute(
+            select(Interviews)
+            .where(Interviews.id == interview_id)
+        )
+
+        return interview.scalar_one_or_none()
+
 
     async def add_interview(self, interview: Interviews):
         self.db.add(interview)
