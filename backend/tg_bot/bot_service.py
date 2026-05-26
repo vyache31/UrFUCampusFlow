@@ -1,10 +1,15 @@
 from datetime import datetime, UTC
-
+import uuid
 from tg_bot.models.bot import (
     BotMode,
     BotCases,
     RecruitmentCurators,
     Interviews
+)
+from tg_bot.bot_schemas import (
+    BotCaseCreate,
+    RecruitmentCuratorCreate,
+    InterviewCreate
 )
 
 
@@ -48,9 +53,14 @@ class BotService:
     async def get_bot_case_by_id(self, bot_case_id: str):
         return await self.bot_repo.get_bot_case_by_id(bot_case_id)
 
-    async def add_bot_case(self, bot_case: BotCases):
+    async def add_bot_case(self, schema: BotCaseCreate):
         await self._check_stop_mode()
 
+        bot_case = BotCases(
+            id=str(uuid.uuid4()),
+            case_id=schema.case_id,
+            created_at=datetime.now(UTC)
+        )
         return await self.bot_repo.add_bot_case(bot_case)
 
     async def delete_bot_case(self, bot_case_id: str):
@@ -72,11 +82,16 @@ class BotService:
 
     async def add_recruitment_curator(
         self,
-        curator: RecruitmentCurators
+        schema: RecruitmentCuratorCreate
     ):
 
         await self._check_stop_mode()
 
+        curator = RecruitmentCurators(
+            id=str(uuid.uuid4()),
+            user_id=schema.curator_id,
+            created_at=datetime.now(UTC)
+        )
         return await self.bot_repo.add_recruitment_curator(
             curator
         )
@@ -104,7 +119,18 @@ class BotService:
     async def get_interview_by_id(self, interview_id: str):
         return await self.bot_repo.get_interview_by_id(interview_id)
 
-    async def add_interview(self, interview: Interviews):
+    async def add_interview(self, schema: InterviewCreate):
+        case = await self.bot_repo.get_bot_case_by_id(schema.case_id)
+        if not case:
+            raise ValueError("данного кейса нет в списке набора!")
+        interview = Interviews(
+            id=str(uuid.uuid4()),
+            tg_user_id=schema.tg_user_id,
+            case_id=schema.case_id,
+            team_name=schema.team_name,
+            date_time=schema.date_time,
+            created_at=datetime.now(UTC)
+        )
         return await self.bot_repo.add_interview(interview)
 
     async def delete_interview(self, interview_id: str):

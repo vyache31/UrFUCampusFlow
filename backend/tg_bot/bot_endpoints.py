@@ -95,7 +95,7 @@ async def delete_bot_case(
                 status_code=404,
                 detail='Case not found'
             )
-        await service.delete_bot_case(bot_case)
+        await service.delete_bot_case(bot_case.id)
         return {
             'status': 'deleted'
         }
@@ -125,7 +125,7 @@ async def add_recruitment_curator(
             user_id=schema.curator_id
         )
         return await service.add_recruitment_curator(
-            curator
+            schema
         )
     except PermissionError as err:
         raise HTTPException(
@@ -163,14 +163,13 @@ async def add_interview(
     user=Depends(get_current_auth_user),
     service: BotService = Depends(get_bot_service)
 ):
-
-    interview = Interviews(
-        tg_user_id=schema.tg_user_id,
-        case_id=schema.case_id,
-        date_time=schema.date_time
-    )
-
-    return await service.add_interview(interview)
+    try:
+        return await service.add_interview(schema)
+    except ValueError as err:
+        raise HTTPException(
+            status_code=404,
+            detail=str(err)
+        )
 
 
 @router.delete('/interviews')

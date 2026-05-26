@@ -21,4 +21,5 @@ class RecruitmentCuratorCreate(BaseModel):
 class InterviewCreate(BaseModel):
     tg_user_id: int
     case_id: str
+    team_name: str
     date_time: datetime
