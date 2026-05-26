@@ -1,11 +1,25 @@
 import api from './api';
 
+export interface MeetingTask {
+  id: string;
+  title: string;
+  description: string;
+  meeting_id: string;
+  is_completed: boolean;
+}
+
+export interface CreateTaskData {
+  title: string;
+  description?: string;
+}
+
 export interface Meeting {
   id: string;
   title: string;
   location: string | null;
   team_case_history_id: string;
   team_name?: string;
+  team_id?: string;
   case_title?: string;
   start_at: string;
   end_at: string;
@@ -13,6 +27,7 @@ export interface Meeting {
   event_link: string | null;
   notes: string | null;
   timezone: number | null;
+  tasks?: MeetingTask[];
 }
 
 export interface CreateMeetingData {
@@ -25,20 +40,13 @@ export interface CreateMeetingData {
   timezone?: number | null;
 }
 
-interface AxiosError {
-  response?: {
-    status?: number;
-    data?: unknown;
-  };
-  message?: string;
-}
-
+// Получить встречи команды
 export const getTeamMeetings = async (teamId: string): Promise<Meeting[]> => {
   try {
     const response = await api.get(`/teams/${teamId}/meetings`);
     return response.data;
   } catch (error) {
-    const axiosError = error as AxiosError;
+    const axiosError = error as { response?: { status?: number } };
     if (axiosError.response?.status === 409) {
       console.log(`Команда ${teamId} не имеет активной истории кейсов`);
       return [];
@@ -47,6 +55,7 @@ export const getTeamMeetings = async (teamId: string): Promise<Meeting[]> => {
   }
 };
 
+// Получить все предстоящие встречи (для дашборда)
 export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
   try {
     const teamsResponse = await api.get('/teams/?limit=100');
@@ -66,6 +75,7 @@ export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
           allMeetings.push({
             ...meeting,
             team_name: team.name,
+            team_id: team.id,
             case_title: currentCase?.case_title || meeting.title
           });
         });
@@ -90,11 +100,13 @@ export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
   }
 };
 
+// Создать встречу
 export const createTeamMeeting = async (teamId: string, data: CreateMeetingData): Promise<Meeting> => {
   const response = await api.post(`/teams/${teamId}/meetings`, data);
   return response.data;
 };
 
+// Обновить встречу
 export const updateTeamMeeting = async (
   teamId: string,
   meetingId: string,
@@ -104,8 +116,36 @@ export const updateTeamMeeting = async (
   return response.data;
 };
 
+// Удалить встречу
 export const deleteTeamMeeting = async (teamId: string, meetingId: string): Promise<void> => {
   await api.delete(`/teams/${teamId}/meetings/${meetingId}`);
+};
+
+// ========== ПОРУЧЕНИЯ ==========
+
+// Получить задачи встречи
+export const getMeetingTasks = async (teamId: string, meetingId: string): Promise<MeetingTask[]> => {
+  const response = await api.get(`/teams/${teamId}/meetings/${meetingId}/tasks`);
+  return response.data;
+};
+
+// Создать задачу
+export const createMeetingTask = async (teamId: string, meetingId: string, data: CreateTaskData): Promise<MeetingTask> => {
+  const response = await api.post(`/teams/${teamId}/meetings/${meetingId}/tasks`, data);
+  return response.data;
+};
+
+// Обновить задачу
+export const updateMeetingTask = async (teamId: string, meetingId: string, taskId: string, isCompleted: boolean): Promise<MeetingTask> => {
+  const response = await api.patch(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`, {
+    is_completed: isCompleted
+  });
+  return response.data;
+};
+
+// Удалить задачу
+export const deleteMeetingTask = async (teamId: string, meetingId: string, taskId: string): Promise<void> => {
+  await api.delete(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`);
 };
 
 // Тип для истории команды
