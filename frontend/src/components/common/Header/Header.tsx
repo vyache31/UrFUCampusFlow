@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogoIcon, SearchIcon } from '../Icons/Icons';
 import { searchAll, type SearchResult } from '../../../services/search';
 import { connectOutlook, getOutlookStatus, disconnectOutlook } from '../../../services/outlook';
+import { logout, getTokenPayload } from '../../../services/auth';
 import { truncateWithTooltip } from '../../../utils/truncate';
 import './header.css';
 
@@ -18,7 +19,7 @@ const Header = () => {
   const [isOutlookConnected, setIsOutlookConnected] = useState(false);
   const [isCheckingOutlook, setIsCheckingOutlook] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   const [userEmail, setUserEmail] = useState<string>('');
   
   const searchRef = useRef<HTMLDivElement>(null);
@@ -31,15 +32,9 @@ const Header = () => {
     if (token) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthenticated(true);
-      try {
-        const payload = token.split('.')[1];
-        const decodedPayload = JSON.parse(atob(payload));
-        setUserEmail(decodedPayload.sub || decodedPayload.email || '');
-      } catch {
-        setUserEmail('');
-      }
+      const payload = getTokenPayload(token);
+      setUserEmail((payload?.sub as string) || (payload?.email as string) || '');
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthenticated(false);
       setUserEmail('');
     }
@@ -74,7 +69,7 @@ const Header = () => {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    localStorage.removeItem('access_token');
+    logout();
     setIsAuthenticated(false);
     setUserEmail('');
     navigate('/login');

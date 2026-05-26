@@ -14,7 +14,6 @@ export interface TeamCaseHistory {
   is_current: boolean;
   created_at: string;
   updated_at: string;
-  semester_name?: string;
 }
 
 export interface AssignCaseData {
@@ -25,10 +24,7 @@ export interface AssignCaseData {
 
 export const getTeamHistory = async (teamId: string): Promise<TeamCaseHistory[]> => {
   const response = await api.get(`/teams/${teamId}/history`);
-  return response.data.map((item: TeamCaseHistory) => ({
-    ...item,
-    semester_name: `${item.semester_season === 'FALL' ? 'Осенний' : 'Весенний'} ${item.semester_year}`
-  }));
+  return response.data;
 };
 
 export const assignCaseToTeam = async (teamId: string, data: AssignCaseData): Promise<TeamCaseHistory> => {
@@ -36,6 +32,7 @@ export const assignCaseToTeam = async (teamId: string, data: AssignCaseData): Pr
   return response.data;
 };
 
+// Завершаем текущий активный кейс
 export const endCurrentCase = async (teamId: string): Promise<TeamCaseHistory> => {
   const response = await api.post(`/teams/${teamId}/history/end-current`);
   return response.data;

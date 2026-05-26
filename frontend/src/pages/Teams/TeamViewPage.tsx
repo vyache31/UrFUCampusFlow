@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
-import { getTeamMembers, addTeamMember, type TeamMember } from '../../services/teamMembers';
+import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
-import { getTeamMeetings, createTeamMeeting, type TeamMeeting } from '../../services/teamMeetings';
-import { EditIcon, FlagIcon, ChevronDownIcon } from '../../components/common/Icons/Icons';
+import { getTeamMeetings, createTeamMeeting, deleteTeamMeeting, createMeetingTask, type Meeting } from '../../services/meetings';
+import { EditIcon, FlagIcon, ChevronDownIcon, CloseIcon, HistoryIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
-import AddMemberModal from '../../components/Modals/AddMemberModal';
+import MeetingDetailsModal from '../../components/Modals/MeetingDetailsModal';
 import './teamViewPage.css';
 
 interface ControlPoint {
@@ -25,11 +25,13 @@ const TeamViewPage = () => {
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [teamHistory, setTeamHistory] = useState<TeamCaseHistory[]>([]);
-  const [meetings, setMeetings] = useState<TeamMeeting[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingMeetingId, setDeletingMeetingId] = useState<string | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isControlPointsModalOpen, setIsControlPointsModalOpen] = useState(false);
-  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [isMeetingDetailsModalOpen, setIsMeetingDetailsModalOpen] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [selectedCaseId, setSelectedCaseId] = useState('');
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [controlPointsMap, setControlPointsMap] = useState<Map<string, ControlPoint[]>>(new Map());
@@ -51,7 +53,35 @@ const TeamViewPage = () => {
         setTeam(teamData);
         setMembers(membersData);
         setTeamHistory(historyData);
-        setMeetings(meetingsData);
+        
+        const currentCaseData = historyData.find(h => h.is_current === true);
+        
+        const enrichedMeetings = await Promise.all(
+          meetingsData.map(async (meeting) => {
+            let shortTitle = currentCaseData?.case_title || meeting.title;
+            if (currentCaseData?.case_id) {
+              try {
+                const caseResponse = await fetch(`http://localhost:8000/cases/${currentCaseData.case_id}`, {
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                  }
+                });
+                const caseData = await caseResponse.json();
+                shortTitle = caseData.short_title || currentCaseData.case_title;
+              } catch (error) {
+                console.error('Ошибка загрузки кейса:', error);
+                shortTitle = currentCaseData?.case_title || meeting.title;
+              }
+            }
+            return {
+              ...meeting,
+              team_name: teamData.name,
+              case_title: shortTitle,
+            };
+          })
+        );
+        
+        setMeetings(enrichedMeetings);
         
       } catch (err) {
         console.error('Ошибка загрузки данных команды:', err);
@@ -63,37 +93,37 @@ const TeamViewPage = () => {
     fetchTeamData();
   }, [id]);
 
-  const currentCase = teamHistory.find(h => h.is_current);
-  const pastCases = teamHistory.filter(h => !h.is_current && h.ended_at);
+  const currentCase = teamHistory.find(h => h.is_current === true);
 
   const handleEdit = () => {
     navigate(`/teams/${id}/edit`);
   };
 
-  const handleAddMember = async (memberData: {
-    studentId: string;
-    name: string;
-    role: string;
-    group: string;
-    universityId: number;
-  }) => {
+  const handleDeleteMeeting = async (meetingId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); 
+    
     if (!id) return;
     
-    try {      
-      const newMember = await addTeamMember(id, {
-        student_id: memberData.studentId,
-        position: memberData.role,
-        joined_at: new Date().toISOString()
-      });
-      
-      setMembers(prev => [...prev, { ...newMember, group: memberData.group }]);
-      alert(`Участник ${memberData.name} успешно добавлен в команду`);
-    } catch (err) {
-      console.error('Ошибка добавления участника:', err);
-      alert('Не удалось добавить участника в команду');
-    } finally {
-      setAddingMember(false);
+    if (!window.confirm('Вы уверены, что хотите удалить эту встречу? Она также будет удалена из календаря Outlook.')) {
+      return;
     }
+    
+    try {
+      setDeletingMeetingId(meetingId);
+      await deleteTeamMeeting(id, meetingId);
+      setMeetings(prev => prev.filter(m => m.id !== meetingId));
+      alert('Встреча успешно удалена');
+    } catch (error) {
+      console.error('Ошибка удаления встречи:', error);
+      alert('Не удалось удалить встречу');
+    } finally {
+      setDeletingMeetingId(null);
+    }
+  };
+
+  const handleMeetingClick = (meeting: Meeting) => {
+    setSelectedMeeting(meeting);
+    setIsMeetingDetailsModalOpen(true);
   };
 
   const formatMeetingDateTime = (dateStr: string) => {
@@ -104,11 +134,19 @@ const TeamViewPage = () => {
     };
   };
 
+  const handleHistory = () => {
+    navigate(`/teams/${id}/history`);
+  };
+  
   const handleScheduleMeeting = async (data: {
+    title: string;
     date: string;
     time: string;
-    repeatDays: string[];
-    weekly: boolean;
+    durationMinutes: number;
+    location: string;
+    event_link: string;
+    notes: string;
+    tasks: { title: string; description: string }[];
   }) => {
     if (!id || !currentCase) {
       alert('Нет активного кейса для назначения встречи');
@@ -126,7 +164,7 @@ const TeamViewPage = () => {
       parseInt(minutes)
     );
     
-    const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+    const endDateTime = new Date(startDateTime.getTime() + data.durationMinutes * 60 * 1000);
     
     if (isNaN(startDateTime.getTime())) {
       alert('Пожалуйста, выберите корректную дату и время');
@@ -134,20 +172,35 @@ const TeamViewPage = () => {
     }
     
     try {
-      const repeatText = data.weekly 
-        ? `Еженедельно по ${data.repeatDays.join(', ')}` 
-        : 'Разовое мероприятие';
-      
       const newMeeting = await createTeamMeeting(id, {
-        title: `Встреча команды "${team?.name}"`,
+        title: data.title,
         start_at: startDateTime.toISOString(),
         end_at: endDateTime.toISOString(),
-        notes: repeatText,
-        location: 'Онлайн',
+        notes: data.notes || '',
+        location: data.location || 'Онлайн',
+        event_link: data.event_link || null,
       });
       
-      setMeetings(prev => [...prev, newMeeting]);
-      alert('Встреча успешно создана и добавлена в календарь Outlook!');
+      if (data.tasks.length > 0) {
+        console.log(`Создаем ${data.tasks.length} поручений...`);
+        
+        for (const task of data.tasks) {
+          try {
+            await createMeetingTask(id, newMeeting.id, {
+              title: task.title,
+              description: task.description || ''
+            });
+            console.log(`Поручение "${task.title}" создано`);
+          } catch (taskError) {
+            console.error(`Ошибка создания поручения "${task.title}":`, taskError);
+          }
+        }
+      }
+      
+      const updatedMeetings = await getTeamMeetings(id);
+      setMeetings(updatedMeetings);
+      
+      alert(`Встреча успешно создана!${data.tasks.length > 0 ? ` Создано поручений: ${data.tasks.length}` : ''}`);
     } catch (err: unknown) {
       console.error('Ошибка создания встречи:', err);
       const error = err as { response?: { data?: { detail?: string } } };
@@ -204,6 +257,10 @@ const TeamViewPage = () => {
               <span>Назначить встречу</span>
             </button>
           )}
+          <button className="history-btn" onClick={handleHistory}>
+            <HistoryIcon />
+            <span>История кейсов</span>
+          </button>
           <button className="edit-btn" onClick={handleEdit}>
             <EditIcon />
             <span>Редактировать</span>
@@ -235,7 +292,7 @@ const TeamViewPage = () => {
                 <div key={member.id} className="member-row">
                   <div className="member-name">{member.student_name}</div>
                   <div className="member-role">{member.position}</div>
-                  <div className="member-group">{(member as { group?: string }).group || '—'}</div>
+                  <div className="member-group">{member.group || '—'}</div>
                 </div>
               ))}
             </div>
@@ -271,30 +328,6 @@ const TeamViewPage = () => {
           </div>
         )}
 
-        {pastCases.length > 0 && (
-          <div className="info-block">
-            <div className="info-label">История кейсов</div>
-            <div className="cases-list-view">
-              {pastCases.map((historyCase) => (
-                <div key={historyCase.id} className="case-item-view">
-                  <div className="case-header">
-                    <span className="case-title">{historyCase.case_title}</span>
-                    <div className="case-semester">
-                      <span className="semester-badge">{historyCase.semester_name}</span>
-                    </div>
-                    <div className="case-dates">
-                      <span>{new Date(historyCase.started_at).toLocaleDateString('ru-RU')}</span>
-                      {historyCase.ended_at && (
-                        <span> → {new Date(historyCase.ended_at).toLocaleDateString('ru-RU')}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="info-block">
           <div className="info-label">Состояние команды</div>
           <div className="info-value">{team.status}</div>
@@ -307,16 +340,28 @@ const TeamViewPage = () => {
               <span>Название встречи</span>
               <span>Дата</span>
               <span>Время</span>
+              <span></span>
             </div>
             <div className="meetings-list">
               {meetings.length > 0 ? (
                 meetings.map((meeting) => {
                   const { date, time } = formatMeetingDateTime(meeting.start_at);
                   return (
-                    <div key={meeting.id} className="meeting-row-view">
-                      <span className="meeting-project">{meeting.title}</span>
+                    <div 
+                      key={meeting.id} 
+                      className="meeting-row-view clickable"
+                      onClick={() => handleMeetingClick(meeting)}
+                    >
+                      <span className="meeting-project">{currentCase?.case_title || meeting.title}</span>
                       <span className="meeting-date">{date}</span>
                       <span className="meeting-time">{time}</span>
+                      <button 
+                        className="delete-meeting-btn"
+                        onClick={(e) => handleDeleteMeeting(meeting.id, e)}
+                        disabled={deletingMeetingId === meeting.id}
+                      >
+                        <CloseIcon />
+                      </button>
                     </div>
                   );
                 })
@@ -336,6 +381,7 @@ const TeamViewPage = () => {
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
         onSchedule={handleScheduleMeeting}
+        defaultTitle={currentCase?.case_title || ''}
       />
 
       <ControlPointsModal
@@ -346,11 +392,17 @@ const TeamViewPage = () => {
         onPointsChange={handleControlPointsChange}
       />
 
-      <AddMemberModal
-        isOpen={isMemberModalOpen}
-        onClose={() => setIsMemberModalOpen(false)}
-        onAdd={handleAddMember}
-      />
+      {selectedMeeting && (
+        <MeetingDetailsModal
+          isOpen={isMeetingDetailsModalOpen}
+          onClose={() => {
+            setIsMeetingDetailsModalOpen(false);
+            setSelectedMeeting(null);
+          }}
+          meeting={selectedMeeting}
+          teamId={id!}
+        />
+      )}
     </div>
   );
 };

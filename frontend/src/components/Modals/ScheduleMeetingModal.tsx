@@ -1,33 +1,42 @@
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { CloseIcon, CheckIcon, CalendarIcon } from '../common/Icons/Icons';
+import { CloseIcon, CheckIcon, CalendarIcon, PlusIcon } from '../common/Icons/Icons';
 import './Modal.css';
+
+interface MeetingTask {
+  title: string;
+  description: string;
+}
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSchedule: (data: {
+    title: string;
     date: string;
     time: string;
-    repeatDays: string[];
-    weekly: boolean;
+    durationMinutes: number;
+    location: string;
+    event_link: string;
+    notes: string;
+    tasks: MeetingTask[];
   }) => void;
+  defaultTitle?: string;
 }
 
-const weekDays = [
-  { value: 'пн', label: 'пн' },
-  { value: 'вт', label: 'вт' },
-  { value: 'ср', label: 'ср' },
-  { value: 'чт', label: 'чт' },
-  { value: 'пт', label: 'пт' },
-];
-
-const ScheduleMeetingModal = ({ isOpen, onClose, onSchedule }: ScheduleMeetingModalProps) => {
+const ScheduleMeetingModal = ({ isOpen, onClose, onSchedule, defaultTitle = '' }: ScheduleMeetingModalProps) => {
+  const [title, setTitle] = useState(defaultTitle);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [time, setTime] = useState('');
-  const [repeatDays, setRepeatDays] = useState<string[]>([]);
-  const [weekly, setWeekly] = useState(false);
+  const [durationMinutes, setDurationMinutes] = useState(30);
+  const [location, setLocation] = useState('');
+  const [eventLink, setEventLink] = useState('');
+  const [notes, setNotes] = useState('');
+  const [tasks, setTasks] = useState<MeetingTask[]>([]);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [showTaskInput, setShowTaskInput] = useState(false);
 
   const formatDate = (date: Date | null): string => {
     if (!date) return '';
@@ -53,25 +62,42 @@ const ScheduleMeetingModal = ({ isOpen, onClose, onSchedule }: ScheduleMeetingMo
     setSelectedDate(date);
   };
 
-  const handleToggleDay = (day: string) => {
-    setRepeatDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
+  const handleAddTask = () => {
+    if (newTaskTitle.trim()) {
+      setTasks([...tasks, { title: newTaskTitle.trim(), description: newTaskDesc.trim() }]);
+      setNewTaskTitle('');
+      setNewTaskDesc('');
+      setShowTaskInput(false);
+    }
+  };
+
+  const handleRemoveTask = (index: number) => {
+    setTasks(tasks.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
-    if (selectedDate && time) {
+    if (title.trim() && selectedDate && time) {
       onSchedule({ 
+        title: title.trim(),
         date: formatDate(selectedDate),
         time,
-        repeatDays, 
-        weekly 
+        durationMinutes,
+        location,
+        event_link: eventLink,
+        notes,
+        tasks,
       });
+      setTitle('');
       setSelectedDate(null);
       setTime('');
-      setRepeatDays([]);
-      setWeekly(false);
+      setDurationMinutes(30);
+      setLocation('');
+      setEventLink('');
+      setNotes('');
+      setTasks([]);
       onClose();
+    } else {
+      alert('Заполните название встречи, дату и время');
     }
   };
 
@@ -79,7 +105,7 @@ const ScheduleMeetingModal = ({ isOpen, onClose, onSchedule }: ScheduleMeetingMo
 
   return (
     <div className="schedule-modal-overlay" onClick={onClose}>
-      <div className="schedule-modal-container" onClick={(e) => e.stopPropagation()}>
+      <div className="schedule-modal-container schedule-modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="schedule-modal-header">
           <button className="schedule-modal-close" onClick={onClose}>
             <CloseIcon />
@@ -88,6 +114,17 @@ const ScheduleMeetingModal = ({ isOpen, onClose, onSchedule }: ScheduleMeetingMo
         
         <div className="schedule-modal-body">
           <div className="schedule-title">Параметры встречи</div>
+
+          <div className="schedule-field">
+            <label className="schedule-label">Название:</label>
+            <input
+              type="text"
+              className="schedule-input"
+              placeholder="Введите название встречи"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
 
           <div className="schedule-date-row-single">
             <label className="schedule-label">Дата и время:</label>
@@ -114,28 +151,105 @@ const ScheduleMeetingModal = ({ isOpen, onClose, onSchedule }: ScheduleMeetingMo
           </div>
 
           <div className="schedule-field">
-            <label className="schedule-label">Повторяемость:</label>
-            <div className="weekdays-row">
-              {weekDays.map((day) => (
-                <button
-                  key={day.value}
-                  className={`weekday-btn ${repeatDays.includes(day.value) ? 'active' : ''}`}
-                  onClick={() => handleToggleDay(day.value)}
-                >
-                  {day.label}
-                </button>
-              ))}
-            </div>
+            <label className="schedule-label">Длительность (мин):</label>
+            <input
+              type="number"
+              className="schedule-input duration-input"
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(Number(e.target.value))}
+              min={15}
+              step={15}
+            />
           </div>
 
-          <div className="weekly-checkbox">
-            <div 
-              className={`custom-checkbox ${weekly ? 'selected' : ''}`}
-              onClick={() => setWeekly(!weekly)}
-            >
-              {weekly && <CheckIcon />}
+          <div className="schedule-field">
+            <label className="schedule-label">Место:</label>
+            <input
+              type="text"
+              className="schedule-input"
+              placeholder="Введите место проведения"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <div className="schedule-field">
+            <label className="schedule-label">Ссылка:</label>
+            <input
+              type="text"
+              className="schedule-input"
+              placeholder="https://..."
+              value={eventLink}
+              onChange={(e) => setEventLink(e.target.value)}
+            />
+          </div>
+
+          <div className="schedule-field">
+            <label className="schedule-label">Заметки:</label>
+            <textarea
+              className="schedule-textarea"
+              placeholder="Дополнительные заметки"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+
+          {/* Поручения */}
+          <div className="schedule-field tasks-section">
+            <label className="schedule-label">Поручения:</label>
+            <div className="tasks-wrapper">
+              <div className="tasks-list">
+                {tasks.map((task, index) => (
+                  <div key={index} className="task-item">
+                    <div className="task-content">
+                      <div className="task-title">{task.title}</div>
+                      {task.description && <div className="task-description">{task.description}</div>}
+                    </div>
+                    <button 
+                      className="remove-task-btn"
+                      onClick={() => handleRemoveTask(index)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {showTaskInput ? (
+                <div className="add-task-form">
+                  <input
+                    type="text"
+                    className="task-title-input"
+                    placeholder="Название поручения"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    autoFocus
+                  />
+                  <input
+                    type="text"
+                    className="task-desc-input"
+                    placeholder="Описание (необязательно)"
+                    value={newTaskDesc}
+                    onChange={(e) => setNewTaskDesc(e.target.value)}
+                  />
+                  <div className="add-task-actions">
+                    <button className="cancel-add-task" onClick={() => setShowTaskInput(false)}>
+                      Отмена
+                    </button>
+                    <button className="confirm-add-task" onClick={handleAddTask}>
+                      <CheckIcon />
+                      <span>Добавить</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button className="add-task-button" onClick={() => setShowTaskInput(true)}>
+                  <PlusIcon />
+                  <span>Добавить поручение</span>
+                </button>
+              )}
             </div>
-            <span className="weekly-label" onClick={() => setWeekly(!weekly)}>Еженедельно</span>
           </div>
         </div>
         

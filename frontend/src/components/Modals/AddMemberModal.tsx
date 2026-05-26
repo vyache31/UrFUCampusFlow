@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
-import { createStudent } from '../../services/students';
+import { createStudent, updateStudent, type Student } from '../../services/students';
+import { endTeamMember } from '../../services/teamMembers';
+import StudentSearchInput from './StudentSearchInput';
 import './Modal.css';
+import api from '../../services/api';
 
 interface AddMemberModalProps {
   isOpen: boolean;
@@ -13,18 +16,61 @@ interface AddMemberModalProps {
     group: string;
     universityId: number;
   }) => void;
+  teamId?: string;
 }
 
-const AddMemberModal = ({ isOpen, onClose, onAdd }: AddMemberModalProps) => {
+const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     role: '',
     group: ''
   });
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (!isOpen) return null;
+
+  const handleSelectStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setFormData(prev => ({
+      ...prev,
+      name: student.name,
+      group: student.group
+    }));
+    setError('');
+  };
+
+  const handleNameChange = (value: string) => {
+    setFormData(prev => ({ ...prev, name: value }));
+    if (selectedStudent && value !== selectedStudent.name) {
+      setSelectedStudent(null);
+    }
+  };
+
+  const handleGroupChange = (value: string) => {
+    setFormData(prev => ({ ...prev, group: value }));
+  };
+
+  const getStudentActiveMembership = async (studentId: string) => {
+    try {
+      const teamsResponse = await api.get('/teams/?limit=100');
+      const teams = teamsResponse.data;
+      
+      for (const team of teams) {
+        const membersResponse = await api.get(`/teams/${team.id}/members?current_only=true`);
+        const members = membersResponse.data;
+        const member = members.find((m: { student_id: string }) => m.student_id === studentId);
+        if (member) {
+          return { teamId: team.id, memberId: member.id, teamName: team.name };
+        }
+      }
+      return null;
+    } catch (err) {
+      console.error('Ошибка проверки членства студента:', err);
+      return null;
+    }
+  };
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
@@ -47,25 +93,73 @@ const AddMemberModal = ({ isOpen, onClose, onAdd }: AddMemberModalProps) => {
       setError('');
       const universityId = 1;
       
-      const student = await createStudent({
-        name: formData.name,
-        group: formData.group,
-        university_id: universityId
-      });
+      let studentId: string;
+      let finalGroup = formData.group;
+      
+      if (selectedStudent) {
+        studentId = selectedStudent.id;
+        
+        const activeMembership = await getStudentActiveMembership(studentId);
+        
+        if (activeMembership && activeMembership.teamId !== teamId) {
+          const confirmEnd = window.confirm(
+            `Студент "${selectedStudent.name}" уже является участником команды "${activeMembership.teamName}".\n\n` +
+            `Хотите переместить его в текущую команду? Он будет исключен из предыдущей команды.`
+          );
+          
+          if (confirmEnd) {
+            try {
+              await endTeamMember(activeMembership.teamId, activeMembership.memberId);
+              console.log(`Студент исключен из команды ${activeMembership.teamName}`);
+            } catch (endErr) {
+              console.error('Ошибка исключения из команды:', endErr);
+              setError('Не удалось исключить студента из предыдущей команды');
+              setLoading(false);
+              return;
+            }
+          } else {
+            setError('Добавление отменено. Сначала исключите студента из другой команды.');
+            setLoading(false);
+            return;
+          }
+        }
+        
+        if (formData.group !== selectedStudent.group) {
+          try {
+            const updatedStudent = await updateStudent(studentId, { group: formData.group });
+            finalGroup = updatedStudent.group;
+          } catch (updateErr) {
+            console.error('Ошибка обновления группы студента:', updateErr);
+          }
+        }
+      } else {
+        const student = await createStudent({
+          name: formData.name,
+          group: formData.group,
+          university_id: universityId
+        });
+        studentId = student.id;
+        finalGroup = student.group;
+      }
       
       onAdd({
-        studentId: student.id,
+        studentId: studentId,
         name: formData.name,
         role: formData.role,
-        group: formData.group,
+        group: finalGroup,
         universityId: universityId
       });
       
       setFormData({ name: '', role: '', group: '' });
+      setSelectedStudent(null);
       onClose();
-    } catch (err) {
-      console.error('Ошибка создания студента:', err);
-      setError('Не удалось создать студента');
+    } catch (err: any) {
+      console.error('Ошибка добавления участника:', err);
+      if (err.response?.data?.detail?.includes('already a current member')) {
+        setError('Студент уже состоит в другой команде. Сначала исключите его оттуда.');
+      } else {
+        setError('Не удалось добавить участника');
+      }
     } finally {
       setLoading(false);
     }
@@ -85,12 +179,11 @@ const AddMemberModal = ({ isOpen, onClose, onAdd }: AddMemberModalProps) => {
           
           <div className="modal-field">
             <label className="modal-label">ФИО:</label>
-            <input
-              type="text"
-              className="modal-input"
-              placeholder="Введите ФИО"
+            <StudentSearchInput
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={handleNameChange}
+              onSelectStudent={handleSelectStudent}
+              placeholder="Введите ФИО"
               disabled={loading}
             />
           </div>
@@ -114,10 +207,20 @@ const AddMemberModal = ({ isOpen, onClose, onAdd }: AddMemberModalProps) => {
               className="modal-input"
               placeholder="Введите группу"
               value={formData.group}
-              onChange={(e) => setFormData({ ...formData, group: e.target.value })}
+              onChange={(e) => handleGroupChange(e.target.value)}
               disabled={loading}
             />
           </div>
+          {selectedStudent && formData.group !== selectedStudent.group && (
+            <div className="hint-text warning">
+              Группа будет обновлена для существующего студента
+            </div>
+          )}
+          {selectedStudent && formData.group === selectedStudent.group && (
+            <div className="hint-text success">
+              Используется существующий студент
+            </div>
+          )}
         </div>
         
         <div className="modal-footer">
