@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     AI_MODEL: str
     GROQ_API_KEY: str
     GROQ_REQUEST_URL: str
+    BACKEND_URL: str
+    BOT_TOKEN: str
+    BOT_JWT: str
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 
