@@ -226,7 +226,7 @@ const BotManagementPage = () => {
         isOpen={isAddCaseModalOpen}
         onClose={() => setIsAddCaseModalOpen(false)}
         onAdd={handleAddCase}
-        existingCaseIds={cases.map(c => c.id)}
+        usedCaseIds={cases.map(c => c.id)} 
       />
     </div>
   );
