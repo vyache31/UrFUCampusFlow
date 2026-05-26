@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     FRONTEND_URL: str
     OAUTH_MICROSOFT_EVENTS_URL: str
     OAUTH_MICROSOFT_CALENDAR_VIEW_URL: str
+    AI_MODEL: str
+    GROQ_API_KEY: str
+    GROQ_REQUEST_URL: str
+    BACKEND_URL: str
+    BOT_TOKEN: str
+    BOT_JWT: str
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 

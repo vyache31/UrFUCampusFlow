@@ -2,6 +2,12 @@ from models import Meetings
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from datetime import datetime
+from sqlalchemy.orm import selectinload
+
+
+MEETING_LOAD_OPTIONS = (
+    selectinload(Meetings.tasks),
+)
 
 
 class MeetingsRepository:
@@ -16,7 +22,7 @@ class MeetingsRepository:
         await self.db.commit()
         await self.db.refresh(meeting)
 
-        return meeting
+        return await self.get_by_id(meeting.id)
 
 
     async def update(self, meeting: Meetings) -> Meetings | None:
@@ -31,6 +37,7 @@ class MeetingsRepository:
 
         meeting = await self.db.execute(
             select(Meetings)
+            .options(*MEETING_LOAD_OPTIONS)
             .where(Meetings.id == meeting_id)
         )
 
@@ -41,6 +48,7 @@ class MeetingsRepository:
 
         meetings = await self.db.execute(
             select(Meetings)
+            .options(*MEETING_LOAD_OPTIONS)
             .where(Meetings.start_at == start_date)
         )
 
@@ -50,6 +58,7 @@ class MeetingsRepository:
     async def get_by_team_case_history_id(self, team_case_history_id: str) -> list[Meetings]:
         meetings = await self.db.execute(
             select(Meetings)
+            .options(*MEETING_LOAD_OPTIONS)
             .where(Meetings.team_case_history_id == team_case_history_id)
         )
 

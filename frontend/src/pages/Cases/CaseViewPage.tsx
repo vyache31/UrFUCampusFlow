@@ -43,10 +43,6 @@ const CaseViewPage = () => {
     { label: 'Просмотр кейса' },
   ];
 
-  const getSemesterName = (statusId?: number) => {
-    return statusId === 1 ? 'Осенний' : statusId === 2 ? 'Весенний' : 'Не указан';
-  };
-
   if (loading) {
     return (
       <div className="page-wrapper">
@@ -91,6 +87,21 @@ const CaseViewPage = () => {
         </div>
 
         <div className="info-block">
+          <div className="info-label">Университет</div>
+          <div className="info-value">{caseData.university_name || 'Не указан'}</div>
+        </div>
+
+        <div className="info-block">
+          <div className="info-label">Создатель</div>
+          <div className="info-value">{caseData.creator_email || 'Не указан'}</div>
+        </div>
+
+        <div className="info-block">
+          <div className="info-label">Семестр</div>
+          <div className="info-value">{caseData.semester_name || 'Не указан'}</div>
+        </div>
+
+        <div className="info-block">
           <div className="info-label">Описание кейса</div>
           <div className="info-value-description">{caseData.project_goals || 'Не указано'}</div>
         </div>
@@ -105,10 +116,6 @@ const CaseViewPage = () => {
           <div className="info-value-description">{caseData.grade_criteria || 'Не указаны'}</div>
         </div>
 
-        <div className="info-block">
-          <div className="info-label">Семестр</div>
-          <div className="info-value">{getSemesterName(caseData.status_id)}</div>
-        </div>
       </div>
     </div>
   );

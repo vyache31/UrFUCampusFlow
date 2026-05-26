@@ -37,15 +37,13 @@ const CaseEditPage = () => {
         setLoading(true);
         const data = await getCaseById(id);
         
-        const semesterValue = data.status_id === 1 ? 'Осенний' : data.status_id === 2 ? 'Весенний' : '';
-        
         const formValues = {
           title: data.title,
           shortTitle: data.short_title || '',
           description: data.project_goals || '',
           expectedResult: data.required_result || '',
           criteria: data.grade_criteria || '',
-          semester: semesterValue
+          semester: data.semester_name || ''
         };
         
         setFormData(formValues);
@@ -134,13 +132,6 @@ const CaseEditPage = () => {
     }
   };
 
-  const handleSemesterChange = (newSemester: string) => {
-    setFormData(prev => ({ ...prev, semester: newSemester }));
-    if (errors.semester) {
-      setErrors(prev => ({ ...prev, semester: '' }));
-    }
-  };
-
   const updateEmptyClass = (element: HTMLDivElement | null) => {
     if (!element) return;
       const text = element.innerText.trim();
@@ -180,7 +171,6 @@ const handleSave = async () => {
   if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
   if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
   if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
-  if (!formData.semester) newErrors.semester = 'Выберите семестр';
   
   if (Object.keys(newErrors).length > 0) {
     setErrors(newErrors);
@@ -198,7 +188,6 @@ const handleSave = async () => {
       project_goals: formData.description,
       required_result: formData.expectedResult,
       grade_criteria: formData.criteria,
-      status_id: formData.semester === 'Осенний' ? 1 : 2,
       university_id: currentCase.university_id || 1,
       start_date: currentCase.start_date,
       end_date: currentCase.end_date,
@@ -345,20 +334,10 @@ const handleSave = async () => {
           <label className="form-label">Семестр</label>
           <div className="semester-wrapper">
             <div className="semester-toggle">
-              <button
-                className={`semester-option ${formData.semester === 'Осенний' ? 'active' : ''}`}
-                onClick={() => handleSemesterChange('Осенний')}
-              >
-                Осенний
-              </button>
-              <button
-                className={`semester-option ${formData.semester === 'Весенний' ? 'active' : ''}`}
-                onClick={() => handleSemesterChange('Весенний')}
-              >
-                Весенний
+              <button className="semester-option active" disabled>
+                {formData.semester || 'Не указан'}
               </button>
             </div>
-            {errors.semester && <div className="error-message semester-error">{errors.semester}</div>}
           </div>
         </div>
 

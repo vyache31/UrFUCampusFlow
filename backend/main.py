@@ -3,9 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
     iteration, auth, case_status
+from tg_bot import bot_endpoints
 import httpx
 import redis.asyncio as aioredis
 from config import settings
+import asyncio
+
+from tg_bot import bot_endpoints
+from tg_bot.tg_routers import bot, dp
+from tg_bot.tg_routers import router as tg_router
 
 
 @asynccontextmanager
@@ -15,9 +21,15 @@ async def lifespan(app: FastAPI):
         url=settings.REDIS_URL,
         decode_responses=True
     )
+
+    dp.include_router(tg_router)
+    polling_task = asyncio.create_task(dp.start_polling(bot))
+
     try:
         yield
     finally:
+        polling_task.cancel()
+        await bot.session.close()
         await app.state.http_client.aclose()
         await app.state.redis.aclose()
 
@@ -32,6 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(bot_endpoints.router)
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(team.router)

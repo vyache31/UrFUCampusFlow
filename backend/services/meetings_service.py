@@ -1,4 +1,4 @@
-from models import Meetings
+from models import Meetings, MeetingTask
 from repositories.meetings_repository import MeetingsRepository
 from services.microsoft_oauth_service import MicrosoftOAuthService
 from integrations.microsoft_graph_client import GraphClient
@@ -37,7 +37,7 @@ class MeetingsService:
             start_at,
             end_at,
             location: str | None,
-            event_link: str
+            event_link: str | None
     ) -> dict:
         data = {
             "subject": title,
@@ -56,9 +56,11 @@ class MeetingsService:
             "location":{
                 "displayName": location or ""
             },
-            "onlineMeetingUrl": event_link,
             "isOnlineMeeting": False
         }
+
+        if event_link is not None:
+            data["onlineMeetingUrl"] = event_link
 
         return data
 
@@ -84,7 +86,12 @@ class MeetingsService:
         return {"Authorization": f"Bearer {access_token}"}
 
 
-    async def create_meeting(self, user_id: str, current_team_case_history_id: str, meeting_data: MeetingCreate) -> MeetingResponse:
+    async def create_meeting(
+            self,
+            user_id: str,
+            current_team_case_history_id: str,
+            meeting_data: MeetingCreate
+        ) -> MeetingResponse:
         headers = await self._build_headers(user_id)
 
         correct_timeline = meeting_data.start_at < meeting_data.end_at
@@ -117,10 +124,20 @@ class MeetingsService:
             start_at = meeting_data.start_at,
             end_at = meeting_data.end_at,
             outlook_event_id = payload['id'],
-            event_link = meeting_data.event_link,
+            event_link = meeting_data.event_link or payload.get('webLink', ''),
             notes = meeting_data.notes,
             timezone = meeting_data.timezone
         )
+
+        created_meeting.tasks = [
+            MeetingTask(
+                id=str(uuid.uuid4()),
+                title=task.title,
+                description=task.description,
+                is_completed=False
+            )
+            for task in meeting_data.tasks
+        ]
 
         meeting = await self.meetings_repo.create(created_meeting)
 
@@ -144,7 +161,7 @@ class MeetingsService:
         if not update_data:
             return self.to_response(meeting)
 
-        for field in ('title', 'start_at', 'end_at', 'event_link'):
+        for field in ('title', 'start_at', 'end_at'):
             if field in update_data and update_data[field] is None:
                 raise ValueError(f'{field} can not be empty')
 
@@ -171,7 +188,7 @@ class MeetingsService:
 
         title = update_data.get('title', meeting.title)
         location = update_data.get('location', meeting.location)
-        event_link = update_data.get('event_link', meeting.event_link)
+        event_link = update_data.get('event_link') or meeting.event_link
         notes = update_data.get('notes', meeting.notes)
 
         await self.graph_client.update_event(
@@ -242,5 +259,6 @@ class MeetingsService:
             outlook_event_id=meeting.outlook_event_id,
             event_link=meeting.event_link,
             notes=meeting.notes,
-            timezone=meeting.timezone
+            timezone=meeting.timezone,
+            tasks=meeting.tasks
         )
