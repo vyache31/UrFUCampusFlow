@@ -1,0 +1,84 @@
+.student-search-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.student-search-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.student-search-loading {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.student-suggestions {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.student-suggestions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.student-suggestions::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.student-suggestions::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.student-suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.student-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.student-suggestion-item:hover {
+  background: #F4F4F4;
+}
+
+.student-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.student-group {
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.student-suggestions.empty .student-suggestion-item {
+  justify-content: center;
+  cursor: default;
+  color: #A5A5B0;
+}
+
+.student-suggestions.empty .student-suggestion-item:hover {
+  background: transparent;
+}
