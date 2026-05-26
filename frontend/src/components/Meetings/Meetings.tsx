@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ExpandArrowIcon, CollapseArrowIcon } from '../common/Icons/Icons';
 import MeetingDetailsModal from '../Modals/MeetingDetailsModal';
 import type { Meeting } from '../../services/meetings';
@@ -15,7 +15,23 @@ const Meetings = ({ meetings, loading = false, onTaskUpdate }: MeetingsProps) =>
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  const displayedMeetings = isExpanded ? meetings : meetings.slice(0, 3);
+  const weeklyMeetings = useMemo(() => {
+    const now = new Date();
+    const sevenDaysLater = new Date();
+    sevenDaysLater.setDate(now.getDate() + 7);
+    
+    return meetings.filter(meeting => {
+      const meetingDate = new Date(meeting.start_at);
+      return meetingDate >= now && meetingDate <= sevenDaysLater;
+    });
+  }, [meetings]);
+  
+  const upcomingMeetings = useMemo(() => {
+    const now = new Date();
+    return meetings.filter(meeting => new Date(meeting.start_at) > now);
+  }, [meetings]);
+  
+  const displayedMeetings = isExpanded ? weeklyMeetings : upcomingMeetings.slice(0, 3);
 
   const handleMeetingClick = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
@@ -84,10 +100,18 @@ const Meetings = ({ meetings, loading = false, onTaskUpdate }: MeetingsProps) =>
             );
           })}
 
-          {meetings.length > 3 && (
+          {weeklyMeetings.length > 3 && (
             <button className="expand-btn" onClick={() => setIsExpanded(!isExpanded)}>
-              {isExpanded ? 'Свернуть' : 'Развернуть на неделю'}
+              {isExpanded ? 'Свернуть' : `Развернуть на неделю (${weeklyMeetings.length})`}
               {isExpanded ? <CollapseArrowIcon /> : <ExpandArrowIcon />}
+            </button>
+          )}
+          
+          {/* Если встреч на неделю меньше 3, но есть ещё будущие встречи */}
+          {weeklyMeetings.length <= 3 && upcomingMeetings.length > 3 && !isExpanded && (
+            <button className="expand-btn" onClick={() => setIsExpanded(!isExpanded)}>
+              Развернуть все встречи
+              <ExpandArrowIcon />
             </button>
           )}
         </div>

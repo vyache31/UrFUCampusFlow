@@ -55,11 +55,32 @@ const TeamViewPage = () => {
         setTeamHistory(historyData);
         
         const currentCaseData = historyData.find(h => h.is_current === true);
-        const enrichedMeetings = meetingsData.map(meeting => ({
-          ...meeting,
-          team_name: teamData.name,
-          case_title: currentCaseData?.case_title || meeting.title
-        }));
+        
+        const enrichedMeetings = await Promise.all(
+          meetingsData.map(async (meeting) => {
+            let shortTitle = currentCaseData?.case_title || meeting.title;
+            if (currentCaseData?.case_id) {
+              try {
+                const caseResponse = await fetch(`http://localhost:8000/cases/${currentCaseData.case_id}`, {
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                  }
+                });
+                const caseData = await caseResponse.json();
+                shortTitle = caseData.short_title || currentCaseData.case_title;
+              } catch (error) {
+                console.error('Ошибка загрузки кейса:', error);
+                shortTitle = currentCaseData?.case_title || meeting.title;
+              }
+            }
+            return {
+              ...meeting,
+              team_name: teamData.name,
+              case_title: shortTitle,
+            };
+          })
+        );
+        
         setMeetings(enrichedMeetings);
         
       } catch (err) {
@@ -316,7 +337,7 @@ const TeamViewPage = () => {
           <div className="info-label">Запланированные встречи</div>
           <div className="meetings-scroll-container">
             <div className="meetings-header-row">
-              <span>Проект</span>
+              <span>Название встречи</span>
               <span>Дата</span>
               <span>Время</span>
               <span></span>

@@ -21,6 +21,7 @@ export interface Meeting {
   team_name?: string;
   team_id?: string;
   case_title?: string;
+  case_short_title?: string;
   start_at: string;
   end_at: string;
   outlook_event_id: string | null;
@@ -55,7 +56,6 @@ export const getTeamMeetings = async (teamId: string): Promise<Meeting[]> => {
   }
 };
 
-// Получить все предстоящие встречи (для дашборда)
 export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
   try {
     const teamsResponse = await api.get('/teams/?limit=100');
@@ -69,6 +69,16 @@ export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
         const history = historyResponse.data;
         const currentCase = history.find((h: TeamCaseHistory) => h.is_current === true);
         
+        let shortTitle = currentCase?.case_title || '';
+        if (currentCase?.case_id) {
+          try {
+            const caseResponse = await api.get(`/cases/${currentCase.case_id}`);
+            shortTitle = caseResponse.data.short_title || currentCase.case_title;
+          } catch {
+            shortTitle = currentCase?.case_title || '';
+          }
+        }
+        
         const meetings = await getTeamMeetings(team.id);
         
         meetings.forEach((meeting: Meeting) => {
@@ -76,7 +86,8 @@ export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
             ...meeting,
             team_name: team.name,
             team_id: team.id,
-            case_title: currentCase?.case_title || meeting.title
+            case_title: shortTitle,
+            case_short_title: shortTitle
           });
         });
       } catch {
@@ -120,8 +131,6 @@ export const updateTeamMeeting = async (
 export const deleteTeamMeeting = async (teamId: string, meetingId: string): Promise<void> => {
   await api.delete(`/teams/${teamId}/meetings/${meetingId}`);
 };
-
-// ========== ПОРУЧЕНИЯ ==========
 
 // Получить задачи встречи
 export const getMeetingTasks = async (teamId: string, meetingId: string): Promise<MeetingTask[]> => {
