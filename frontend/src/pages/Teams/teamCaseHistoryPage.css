@@ -1,0 +1,371 @@
+.team-history-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+.history-header {
+  margin-bottom: 30px;
+}
+
+.page-title {
+  color: #202024;
+  font-size: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 60px;
+  margin: 0;
+}
+
+.history-content {
+  max-width: 886px;
+  margin-left: 227px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-bottom: 60px;
+}
+
+.cases-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.case-item-view {
+  background: #F4F4F4;
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.case-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.case-title {
+  flex: 2;
+  min-width: 200px;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 21px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.case-title:hover {
+  color: #A5A5B0;
+}
+
+.case-title:active {
+  color: #F9E27D;
+}
+
+.case-dates {
+  font-size: 12px;
+  color: #A5A5B0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.case-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.control-points-label {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  transition: color 0.2s ease;
+}
+
+.case-right:hover .control-points-label {
+  color: #A5A5B0;
+}
+
+.case-right:hover .case-toggle-btn svg path {
+  stroke: #A5A5B0;
+}
+
+.case-right:active .control-points-label {
+  color: #F9E27D;
+}
+
+.case-right:active .case-toggle-btn svg path {
+  stroke: #F9E27D;
+}
+
+.case-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  width: 24px;
+  height: 24px;
+}
+
+.case-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: stroke 0.2s ease;
+}
+
+.case-toggle-btn svg path {
+  stroke: #202024;
+  transition: stroke 0.2s ease;
+}
+
+.case-toggle-btn.expanded svg {
+  transform: rotate(180deg);
+}
+
+.case-body {
+  padding: 20px;
+  border-top: 1px solid rgba(165, 165, 176, 0.2);
+}
+
+.control-points-table {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.control-points-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+.control-points-header span {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.control-points-header span:first-child {
+  flex: 1;
+  text-align: left;
+}
+
+.control-points-header span:last-child {
+  width: 80px;
+  text-align: center;
+}
+
+.control-points-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.control-point-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.control-point-row:last-child {
+  border-bottom: none;
+}
+
+.point-name {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-align: left;
+}
+
+.point-score {
+  width: 80px;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 21px;
+  text-align: center;
+}
+
+.empty-control-points {
+  padding: 20px;
+  text-align: center;
+  background: #FFFFFF;
+  border-radius: 20px;
+  color: #A5A5B0;
+  font-size: 14px;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 40px;
+  background: #fff;
+  border-radius: 40px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  color: #A5A5B0;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #A5A5B0;
+}
+
+/* Секции в раскрытой карточке */
+.case-section {
+  margin-bottom: 20px;
+}
+
+.case-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title-2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #202024;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+}
+
+.empty-placeholder {
+  text-align: center;
+  padding: 16px;
+  background: #FFFFFF;
+  border-radius: 16px;
+  color: #A5A5B0;
+  font-size: 13px;
+}
+
+/* Таблица участников в истории */
+.members-table {
+  background: #FFFFFF;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.members-header {
+  display: flex;
+  padding: 10px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #E0E0E0;
+}
+.members-header span {
+  color: #202024;
+}
+.members-header span:first-child {
+  flex: 2;
+  text-align: left;
+}
+
+.members-header span:last-child {
+  flex: 1;
+  text-align: center;
+}
+
+.member-row {
+  display: flex;
+  padding: 10px 16px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.member-row:last-child {
+  border-bottom: none;
+}
+
+.member-name {
+  flex: 2;
+  font-size: 13px;
+  color: #202024;
+}
+
+.member-role {
+  flex: 1;
+  font-size: 13px;
+  color: #A5A5B0;
+  text-align: center;
+}
+
+.expand-label {
+  font-size: 13px;
+  color: #202024;
+}
+
+.case-right:hover .expand-label {
+  color: #A5A5B0;
+}
+
+@media (max-width: 1200px) {
+  .history-content {
+    margin-left: 0;
+    max-width: 100%;
+  }
+  
+  .page-title {
+    font-size: 32px;
+    line-height: 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 28px;
+    line-height: 42px;
+  }
+  
+  .case-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .case-dates {
+    white-space: normal;
+  }
+  
+  .case-right {
+    align-self: flex-end;
+  }
+  
+  .history-content {
+    gap: 20px;
+  }
+  
+  .control-points-header span:first-child,
+  .point-name {
+    flex: 1;
+  }
+  
+  .control-points-header span:last-child,
+  .point-score {
+    width: 60px;
+  }
+}

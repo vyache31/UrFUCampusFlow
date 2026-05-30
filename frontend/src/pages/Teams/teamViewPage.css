@@ -365,7 +365,7 @@
 
 .meetings-header-row {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
+  grid-template-columns: 1fr 100px 100px 40px;
   padding-bottom: 10px;
   margin-bottom: 10px;
   border-bottom: 1px solid rgba(165, 165, 176, 0.2);
@@ -399,7 +399,7 @@
 
 .meeting-row-view {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
+  grid-template-columns: 1fr 100px 100px 40px;
   align-items: center;
 }
 
@@ -428,6 +428,210 @@
   padding: 40px;
   font-size: 18px;
   color: #A5A5B0;
+}
+
+.delete-meeting-btn {
+  width: 32px;
+  height: 32px;
+  background: #F4F4F4;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.delete-meeting-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.delete-meeting-btn svg path {
+  fill: #A5A5B0;
+  transition: fill 0.2s ease;
+}
+
+.delete-meeting-btn:hover {
+  background: #FFE4E4;
+}
+
+.delete-meeting-btn:hover svg path {
+  fill: #F63333;
+}
+
+.delete-meeting-btn:active {
+  background: transparent;
+  outline: 1px solid #F63333;
+  outline-offset: -1px;
+}
+
+.delete-meeting-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Кнопка назначения встречи */
+.schedule-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #4E85FC;
+}
+
+.schedule-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.schedule-btn svg path {
+  stroke: white;
+}
+
+.schedule-btn:hover {
+  background: #3563C6;
+}
+
+.schedule-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.schedule-btn:active span {
+  color: #4E85FC;
+}
+
+.schedule-btn:active svg path {
+  stroke: #4E85FC;
+}
+
+/* Кнопка истории кейсов - теперь как остальные */
+.history-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #4E85FC;
+}
+
+.history-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.history-btn svg path {
+  fill: white;
+}
+
+.history-btn:hover {
+  background: #3563C6;
+}
+
+.history-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.history-btn:active span {
+  color: #4E85FC;
+}
+
+.history-btn:active svg path {
+  fill: #4E85FC;
+}
+
+/* Кнопка редактирования */
+.edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #4E85FC;
+}
+
+.edit-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.edit-btn svg path {
+  fill: white;
+}
+
+.edit-btn:hover {
+  background: #3563C6;
+}
+
+.edit-btn:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  outline-offset: -1px;
+}
+
+.edit-btn:active span {
+  color: #4E85FC;
+}
+
+.edit-btn:active svg path {
+  fill: #4E85FC;
+}
+
+.case-title {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 21px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.case-title:hover {
+  color: #F9E27D;
+}
+
+/* Контрольные точки - при наведении желтый */
+.control-points-label {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  transition: color 0.2s ease;
+}
+
+.case-right:hover .control-points-label {
+  color: #F9E27D;
+}
+
+.case-right:hover .case-toggle-btn svg path {
+  stroke: #F9E27D;
 }
 
 /* Адаптив */

@@ -416,7 +416,7 @@ const TeamCreatePage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        existingCaseIds={teamCases.map(c => c.caseSemesterId)}
+        usedCaseIds={teamCases.map(c => c.caseSemesterId)}
       />
     </div>
   );

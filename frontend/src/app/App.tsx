@@ -10,9 +10,11 @@ import TeamsPage from '../pages/Teams/TeamsPage';
 import LoginPage from '../pages/Login/LoginPage';
 import TeamCreatePage from '../pages/Teams/TeamCreatePage';
 import TeamViewPage from '../pages/Teams/TeamViewPage';
+import TeamEditPage from '../pages/Teams/TeamEditPage';
 import BotManagementPage from '../pages/BotManagement/BotManagementPage';
 import OutlookCallbackPage from '../pages/OutlookCallback/OutlookCallbackPage';
 import SSOPage from '../pages/Login/SSOPage';
+import TeamCaseHistoryPage from '../pages/Teams/TeamCaseHistoryPage';
 
 function App() {
   return (
@@ -29,9 +31,11 @@ function App() {
         <Route path="/teams" element={<TeamsPage />} />
         <Route path="/teams/create" element={<TeamCreatePage />} />
         <Route path="/teams/:id" element={<TeamViewPage />} />
+        <Route path="/teams/:id/edit" element={<TeamEditPage />} />
         <Route path="/bot-management" element={<BotManagementPage />} />
         <Route path="/outlook/callback" element={<OutlookCallbackPage />} />
         <Route path="/sso" element={<SSOPage />} />
+        <Route path="/teams/:id/history" element={<TeamCaseHistoryPage />} />
       </Routes>
     </BrowserRouter>
   );

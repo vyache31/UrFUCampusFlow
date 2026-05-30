@@ -19,7 +19,12 @@ const TeamsPage = () => {
     try {
       setLoading(true);
       const data = await getTeams(10000);
-      setTeams(data);
+      const sortedTeams = [...data].sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setTeams(sortedTeams);
     } catch (error) {
       console.error('Ошибка загрузки команд:', error);
     } finally {
@@ -58,8 +63,7 @@ const TeamsPage = () => {
         for (const teamId of selectedTeamIds) {
           await deleteTeam(teamId);
         }
-        const updatedTeams = await getTeams(10000);
-        setTeams(updatedTeams);
+        await fetchTeams();
         setSelectedTeamIds([]);
         alert('Команды успешно удалены');
       } catch (error) {
