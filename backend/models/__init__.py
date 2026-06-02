@@ -1,6 +1,22 @@
-from .auth import Users, Roles
-from .cases import Cases, CaseStatuses, EvaluationForm, EvaluationFormComments, EvaluationFormReactions, DifficultyLevels, CaseSemesters
+from tg_bot.models.bot import BotCases, BotMode, Interviews, RecruitmentCurators
+
+from .auth import Roles, Users
+from .cases import (
+    Cases,
+    CaseSemesters,
+    CaseStatuses,
+    DifficultyLevels,
+    EvaluationForm,
+    EvaluationFormComments,
+    EvaluationFormReactions,
+)
 from .grades import Grades, Iterations
-from .integrations import MicrosoftOAuth, Meetings, MeetingTask
-from .teams import Teams, TeamMembers, Semesters, Students, Universities, TeamCaseHistory
-from tg_bot.models.bot import Interviews, BotMode, BotCases, RecruitmentCurators
+from .integrations import Meetings, MeetingsSeries, MeetingTask, MicrosoftOAuth
+from .teams import (
+    Semesters,
+    Students,
+    TeamCaseHistory,
+    TeamMembers,
+    Teams,
+    Universities,
+)
