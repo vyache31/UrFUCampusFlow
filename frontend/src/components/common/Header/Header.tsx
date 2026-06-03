@@ -156,16 +156,6 @@ const Header = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const handleResultClick = (result: SearchResult) => {
-    setShowResults(false);
-    setSearchQuery('');
-    if (result.type === 'case') {
-      navigate(`/cases/${result.id}`);
-    } else {
-      navigate(`/teams/${result.id}`);
-    }
-  };
-
   const { displayText, fullText } = truncateWithTooltip(userEmail, USER_EMAIL_MAX_LENGTH);
   const displayName = isAuthenticated && userEmail ? displayText : 'Войти';
 
@@ -180,7 +170,7 @@ const Header = () => {
             <SearchIcon />
             <input 
               type="text" 
-              placeholder="Поиск кейсов и команд..." 
+              placeholder="Поиск кейсов, команд и участников..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchResults.length > 0 && setShowResults(true)}
@@ -189,20 +179,81 @@ const Header = () => {
               <div className="search-loading">загрузка...</div>
             )}
           </div>
+          
           {showResults && searchResults.length > 0 && (
             <div className="search-results">
-              {searchResults.map((result) => (
-                <div 
-                  key={`${result.type}-${result.id}`} 
-                  className="search-result-item" 
-                  onClick={() => handleResultClick(result)}
-                >
-                  <span className={`result-type ${result.type}`}>
-                    {result.type === 'case' ? 'Кейс' : 'Команда'}
-                  </span>
-                  <span className="result-title">{result.title}</span>
-                </div>
-              ))}
+              {searchResults.map((result) => {
+                if (result.type === 'student') {
+                  return (
+                    <div key={`student-${result.id}`} className="search-result-student-card">
+                      <div className="student-card-header">
+                        <span className="result-type student">Участник</span>
+                        <span className="student-name">{result.name} #{result.shortId}</span>
+                        <span className="student-group">{result.group}</span>
+                      </div>
+                      
+                      {result.cases && result.cases.length > 0 && (
+                        <div className="student-cases-list">
+                          <div className="student-section-title">Кейсы:</div>
+                          {[...result.cases]
+                            .sort((a, b) => (a.is_active === b.is_active ? 0 : a.is_active ? -1 : 1))
+                            .map((caseItem, idx) => (
+                              <div 
+                                key={`case-${idx}`}
+                                className="student-case-item clickable"
+                                onClick={() => navigate(`/cases/${caseItem.id}`)}
+                              >
+                                <span className="case-title">{caseItem.title}</span>
+                                <span className="case-semester">{caseItem.semester_name}</span>
+                                <span className={`case-status ${caseItem.is_active ? 'active' : 'archived'}`}>
+                                  {caseItem.is_active ? 'В работе' : 'Завершён'}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+
+                      {result.teams && result.teams.length > 0 && (
+                        <div className="student-teams-list">
+                          <div className="student-section-title">Команды:</div>
+                          {[...result.teams]
+                            .sort((a, b) => (a.is_active === b.is_active ? 0 : a.is_active ? -1 : 1))
+                            .map((teamItem, idx) => (
+                              <div 
+                                key={`team-${idx}`}
+                                className="student-team-item clickable"
+                                onClick={() => navigate(`/teams/${teamItem.id}`)}
+                              >
+                                <span className="team-name">{teamItem.name}</span>
+                                <span className={`team-status ${teamItem.is_active ? 'active' : 'archived'}`}>
+                                  {teamItem.is_active ? 'В команде' : 'Вышел'}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div 
+                    key={`${result.type}-${result.id}`}
+                    className="search-result-item"
+                    onClick={() => {
+                      if (result.type === 'case') navigate(`/cases/${result.id}`);
+                      else navigate(`/teams/${result.id}`);
+                    }}
+                  >
+                    <span className={`result-type ${result.type}`}>
+                      {result.type === 'case' ? 'Кейс' : 'Команда'}
+                    </span>
+                    <span className="result-title">{result.title}</span>
+                    {result.semester && <span className="result-subtitle">{result.semester}</span>}
+                    <span className="result-status">{result.status}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
           {showResults && searchQuery.trim().length >= 2 && searchResults.length === 0 && !isSearching && (
