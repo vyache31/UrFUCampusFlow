@@ -18,6 +18,7 @@ interface LocalMember {
   group: string;
   isExisting: boolean;
   memberId?: string;
+  shortId?: string;
 }
 
 interface LocalCase {
@@ -164,6 +165,7 @@ const TeamEditPage = () => {
     name: string;
     role: string;
     group: string;
+    shortId: string;
     universityId: number;
   }) => {
     const newMember: LocalMember = {
@@ -172,6 +174,7 @@ const TeamEditPage = () => {
       name: member.name,
       role: member.role,
       group: member.group,
+      shortId: member.shortId,
       isExisting: false
     };
     setMembers([...members, newMember]);
@@ -412,7 +415,10 @@ const TeamEditPage = () => {
               {members.map((member) => (
                 <div key={member.tempId} className="member-item">
                   <div className="member-info">
-                    <span className="member-name">{member.name}</span>
+                    <div className="member-name-wrapper">
+                      <span className="member-name">{member.name}</span>
+                      <span className="member-short-id">#{member.shortId || member.studentId?.slice(-4)}</span>
+                    </div>
                     <span className="member-role">{member.role}</span>
                     <span className="member-group">{member.group || '—'}</span>
                   </div>

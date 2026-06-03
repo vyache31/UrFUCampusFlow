@@ -228,11 +228,14 @@ const TeamCaseHistoryPage = () => {
                             </div>
                             {membersForCase.map((member) => (
                               <div key={member.id} className="member-row">
-                                <span className="member-name">{member.student_name}</span>
-                                <span className="member-role">{member.position}</span>
-                                <span className="member-status">
+                                <div className="member-name-wrapper">
+                                  <span className="member-name">{member.student_name}</span>
+                                  <span className="member-short-id">#{member.shortId}</span>
+                                </div>
+                                <div className="member-role">{member.position}</div>
+                                <div className="member-status">
                                   {member.is_current ? 'Активен' : 'Архив'}
-                                </span>
+                                </div>
                               </div>
                             ))}
                           </div>

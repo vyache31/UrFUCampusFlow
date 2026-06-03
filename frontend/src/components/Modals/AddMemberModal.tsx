@@ -14,9 +14,20 @@ interface AddMemberModalProps {
     name: string; 
     role: string; 
     group: string;
+    shortId: string;
     universityId: number;
   }) => void;
   teamId?: string;
+}
+
+interface TeamMemberResponse {
+  id: string;
+  student_id: string;
+}
+
+interface TeamResponse {
+  id: string;
+  name: string;
 }
 
 const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps) => {
@@ -55,12 +66,12 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
   const getStudentActiveMembership = async (studentId: string) => {
     try {
       const teamsResponse = await api.get('/teams/?limit=100');
-      const teams = teamsResponse.data;
+      const teams = teamsResponse.data as TeamResponse[];
       
       for (const team of teams) {
         const membersResponse = await api.get(`/teams/${team.id}/members?current_only=true`);
-        const members = membersResponse.data;
-        const member = members.find((m: { student_id: string }) => m.student_id === studentId);
+        const members = membersResponse.data as TeamMemberResponse[];
+        const member = members.find((m: TeamMemberResponse) => m.student_id === studentId);
         if (member) {
           return { teamId: team.id, memberId: member.id, teamName: team.name };
         }
@@ -95,9 +106,11 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
       
       let studentId: string;
       let finalGroup = formData.group;
+      let shortId = '';
       
       if (selectedStudent) {
         studentId = selectedStudent.id;
+        shortId = selectedStudent.id.slice(-4);
         
         const activeMembership = await getStudentActiveMembership(studentId);
         
@@ -140,6 +153,7 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
         });
         studentId = student.id;
         finalGroup = student.group;
+        shortId = student.id.slice(-4);
       }
       
       onAdd({
@@ -147,15 +161,17 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
         name: formData.name,
         role: formData.role,
         group: finalGroup,
+        shortId: shortId,
         universityId: universityId
       });
       
       setFormData({ name: '', role: '', group: '' });
       setSelectedStudent(null);
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Ошибка добавления участника:', err);
-      if (err.response?.data?.detail?.includes('already a current member')) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      if (error.response?.data?.detail?.includes('already a current member')) {
         setError('Студент уже состоит в другой команде. Сначала исключите его оттуда.');
       } else {
         setError('Не удалось добавить участника');

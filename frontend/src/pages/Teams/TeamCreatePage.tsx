@@ -16,6 +16,7 @@ interface TeamMember {
   name: string;
   role: string;
   group: string;
+  shortId?: string;
 }
 
 interface TeamCase {
@@ -38,7 +39,7 @@ const TeamCreatePage = () => {
   });
 
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [teamCases, setTeamCases] = useState<TeamCase[]>([]);
+  const [teamCase, setTeamCase] = useState<TeamCase | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   
@@ -133,6 +134,7 @@ const TeamCreatePage = () => {
     name: string; 
     role: string; 
     group: string;
+    shortId: string;
     universityId: number;
   }) => {
     const newMember: TeamMember = {
@@ -140,23 +142,26 @@ const TeamCreatePage = () => {
       studentId: member.studentId,
       name: member.name,
       role: member.role,
-      group: member.group
+      group: member.group,
+      shortId: member.shortId
     };
     setMembers([...members, newMember]);
   };
 
   const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
-    if (!teamCases.some(c => c.caseSemesterId === caseSemesterId)) {
-      setTeamCases([...teamCases, { caseSemesterId, title: caseTitle }]);
+    if (teamCase) {
+      alert('Можно выбрать только один кейс. Сначала удалите текущий кейс.');
+      return;
     }
+    setTeamCase({ caseSemesterId, title: caseTitle });
   };
 
   const handleRemoveMember = (tempId: string) => {
     setMembers(members.filter(m => m.tempId !== tempId));
   };
 
-  const handleRemoveCase = (caseSemesterId: string) => {
-    setTeamCases(teamCases.filter(c => c.caseSemesterId !== caseSemesterId));
+  const handleRemoveCase = () => {
+    setTeamCase(null);
   };
 
   const validateForm = (): boolean => {
@@ -199,7 +204,6 @@ const TeamCreatePage = () => {
         ? Number(localStorage.getItem('university_id')) 
         : 1;
       
-      // Шаг 1: Создаем команду
       const teamForAPI = {
         name: formData.name,
         description: formData.description,
@@ -211,6 +215,7 @@ const TeamCreatePage = () => {
       console.log('Создаем команду:', teamForAPI);
       const newTeam = await createTeam(teamForAPI);
       console.log('Команда создана:', newTeam);
+      
       if (members.length > 0) {
         console.log(`Добавляем ${members.length} участников...`);
         
@@ -228,21 +233,17 @@ const TeamCreatePage = () => {
         }
       }
       
-      if (teamCases.length > 0 && newTeam.id) {
-        console.log(`Добавляем ${teamCases.length} кейсов...`);
-        
-        for (let i = 0; i < teamCases.length; i++) {
-          const teamCase = teamCases[i];
-          try {
-            await assignCaseToTeam(newTeam.id, {
-              case_semesters_id: teamCase.caseSemesterId,
-              started_at: new Date().toISOString(),
-              is_current: i === 0 // первый кейс делаем текущим
-            });
-            console.log(`Кейс ${teamCase.title} добавлен`);
-          } catch (err) {
-            console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
-          }
+      if (teamCase && newTeam.id) {
+        console.log(`Добавляем кейс ${teamCase.title}...`);
+        try {
+          await assignCaseToTeam(newTeam.id, {
+            case_semesters_id: teamCase.caseSemesterId,
+            started_at: new Date().toISOString(),
+            is_current: true
+          });
+          console.log(`Кейс ${teamCase.title} добавлен`);
+        } catch (err) {
+          console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
         }
       }
       
@@ -330,6 +331,7 @@ const TeamCreatePage = () => {
                     <span className="member-name">{member.name}</span>
                     <span className="member-role">{member.role}</span>
                     <span className="member-group">{member.group}</span>
+                    {member.shortId && <span className="member-short-id">#{member.shortId}</span>}
                   </div>
                   <button 
                     className="remove-btn"
@@ -361,27 +363,34 @@ const TeamCreatePage = () => {
         {/* Кейсы */}
         <div className="form-field">
           <div className="field-header">
-            <label className="form-label">Кейсы</label>
-            <button className="add-btn" onClick={() => setIsCaseModalOpen(true)}>
+            <label className="form-label">Кейс</label>
+            <button 
+              className="add-btn" 
+              onClick={() => setIsCaseModalOpen(true)}
+              disabled={!!teamCase}
+              style={{ opacity: teamCase ? 0.5 : 1 }}
+            >
               <PlusIcon />
               <span>Добавить кейс</span>
             </button>
           </div>
-          {teamCases.length > 0 && (
-            <div className="cases-list">
-              {teamCases.map((teamCase) => (
-                <div key={teamCase.caseSemesterId} className="case-item">
-                  <span className="case-title">{teamCase.title}</span>
-                  <button 
-                    className="remove-btn"
-                    onClick={() => handleRemoveCase(teamCase.caseSemesterId)}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="cases-list">
+            {teamCase ? (
+              <div className="case-item">
+                <span className="case-title">{teamCase.title}</span>
+                <button 
+                  className="remove-btn"
+                  onClick={handleRemoveCase}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="empty-cases-placeholder">
+                Нет выбранного кейса. Нажмите "Добавить кейс" чтобы назначить.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Состояние команды */}
@@ -416,7 +425,7 @@ const TeamCreatePage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        usedCaseIds={teamCases.map(c => c.caseSemesterId)}
+        usedCaseIds={teamCase ? [teamCase.caseSemesterId] : []}
       />
     </div>
   );

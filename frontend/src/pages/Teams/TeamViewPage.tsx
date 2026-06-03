@@ -290,7 +290,10 @@ const TeamViewPage = () => {
               </div>
               {members.map((member) => (
                 <div key={member.id} className="member-row">
-                  <div className="member-name">{member.student_name}</div>
+                  <div className="member-name-wrapper">
+                    <span className="member-name">{member.student_name}</span>
+                    <span className="member-short-id">#{member.shortId}</span>
+                  </div>
                   <div className="member-role">{member.position}</div>
                   <div className="member-group">{member.group || '—'}</div>
                 </div>

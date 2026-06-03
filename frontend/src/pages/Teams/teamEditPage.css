@@ -305,7 +305,7 @@
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 30px;
   align-items: center;
 }
 
@@ -317,12 +317,18 @@
   font-family: 'Montserrat', sans-serif;
 }
 
-.member-role, .member-group{
+.member-role,
+.member-group {
   color: #A5A5B0;
   font-size: 12px;
   font-family: 'Montserrat', sans-serif;
+  padding: 0;
+  margin: 0;
 }
 
+.team-edit-page .member-group {
+  text-align: left;
+}
 
 .member-badge,
 .case-badge {

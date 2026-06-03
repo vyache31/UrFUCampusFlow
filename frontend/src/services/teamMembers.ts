@@ -10,6 +10,7 @@ export interface TeamMember {
   left_at: string | null;
   is_current: boolean;
   group?: string;
+  shortId?: string;
 }
 
 export interface AddTeamMemberData {
@@ -17,6 +18,10 @@ export interface AddTeamMemberData {
   position: string;
   joined_at: string;
 }
+
+const getShortId = (studentId: string): string => {
+  return studentId.slice(-4);
+};
 
 const getStudentById = async (studentId: string) => {
   const response = await api.get(`/students/${studentId}`);
@@ -33,13 +38,15 @@ export const getTeamMembers = async (teamId: string, currentOnly: boolean = true
         const student = await getStudentById(member.student_id);
         return {
           ...member,
-          group: student.group || '—'
+          group: student.group || '—',
+          shortId: getShortId(member.student_id)
         };
       } catch (err) {
         console.error(`Ошибка загрузки данных студента ${member.student_id}:`, err);
         return {
           ...member,
-          group: '—'
+          group: '—',
+          shortId: getShortId(member.student_id)
         };
       }
     })
@@ -56,17 +63,28 @@ export const addTeamMember = async (teamId: string, data: AddTeamMemberData): Pr
     const student = await getStudentById(newMember.student_id);
     return {
       ...newMember,
-      group: student.group || '—'
+      group: student.group || '—',
+      shortId: getShortId(newMember.student_id)
     };
   } catch {
     return {
       ...newMember,
-      group: '—'
+      group: '—',
+      shortId: getShortId(newMember.student_id)
     };
   }
 };
 
 export const endTeamMember = async (teamId: string, memberId: string): Promise<TeamMember> => {
-  const response = await api.post(`/teams/${teamId}/members/${memberId}/end`);
-  return response.data;
+  try {
+    const response = await api.post(`/teams/${teamId}/members/${memberId}/end`);
+    return response.data;
+  } catch (error) {
+    const axiosError = error as { response?: { status?: number; data?: { detail?: string } } };
+    if (axiosError.response?.status === 409) {
+      console.log(`Участник ${memberId} уже завершил членство или не может быть завершён`);
+      return {} as TeamMember;
+    }
+    throw error;
+  }
 };
