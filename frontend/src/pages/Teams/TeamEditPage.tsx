@@ -4,7 +4,7 @@ import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon, DeleteIcon } from '../../components/common/Icons/Icons';
 import { getTeamById, updateTeam, deleteTeam } from '../../services/teams';
-import { getTeamMembers, addTeamMember, type TeamMember } from '../../services/teamMembers';
+import { getTeamMembers, addTeamMember, endTeamMember, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, assignCaseToTeam, endCurrentCase, type TeamCaseHistory } from '../../services/teamCaseHistory';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
@@ -48,6 +48,7 @@ const TeamEditPage = () => {
   });
   
   const [members, setMembers] = useState<LocalMember[]>([]);
+  const [originalMembers, setOriginalMembers] = useState<LocalMember[]>([]);
   const [teamCase, setTeamCase] = useState<LocalCase | null>(null);
   const [originalCaseId, setOriginalCaseId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,16 +80,17 @@ const TeamEditPage = () => {
         if (descriptionRef.current) descriptionRef.current.innerText = teamData.description || '';
         if (notesRef.current) notesRef.current.innerText = teamData.notes || '';
         
-        const existingMembers: LocalMember[] = membersData.map((m: TeamMember) => ({
-          tempId: m.id,
-          studentId: m.student_id,
-          name: m.student_name,
-          role: m.position,
-          group: (m as { group?: string }).group || '',
+        const existingMembers: LocalMember[] = membersData.map((member: TeamMember) => ({
+          tempId: member.id,
+          studentId: member.student_id,
+          name: member.student_name,
+          role: member.position,
+          group: (member as { group?: string }).group || '',
           isExisting: true,
-          memberId: m.id
+          memberId: member.id
         }));
         setMembers(existingMembers);
+        setOriginalMembers(JSON.parse(JSON.stringify(existingMembers)));
         
         const currentActiveCase = historyData.find((h: TeamCaseHistory) => h.is_current === true);
         
@@ -230,6 +232,23 @@ const TeamEditPage = () => {
         university_id: 1
       });
       
+      const originalMemberIds = originalMembers.map(m => m.memberId).filter((id): id is string => !!id);
+      const currentMemberIds = members.filter(m => m.isExisting).map(m => m.memberId).filter((id): id is string => !!id);
+      const removedMemberIds = originalMemberIds.filter(id => !currentMemberIds.includes(id));
+      
+      console.log('Оригинальные участники:', originalMemberIds);
+      console.log('Текущие участники:', currentMemberIds);
+      console.log('Удалённые участники:', removedMemberIds);
+      
+      for (const memberId of removedMemberIds) {
+        try {
+          await endTeamMember(id, memberId);
+          console.log(`Участник ${memberId} завершил членство`);
+        } catch (err) {
+          console.error(`Ошибка завершения членства ${memberId}:`, err);
+        }
+      }
+      
       const newMembers = members.filter(m => !m.isExisting);
       for (const member of newMembers) {
         try {
@@ -238,6 +257,7 @@ const TeamEditPage = () => {
             position: member.role,
             joined_at: new Date().toISOString()
           });
+          console.log(`Участник ${member.name} добавлен`);
         } catch (err) {
           console.error(`Ошибка добавления участника ${member.name}:`, err);
         }
@@ -247,39 +267,15 @@ const TeamEditPage = () => {
       const hasNewCase = teamCase !== null;
       
       if (hasExistingCase && !hasNewCase) {
-        console.log('Завершаем текущий кейс...');
         try {
           await endCurrentCase(id);
-          console.log('Кейс успешно завершен');
+          console.log('Текущий кейс завершен');
         } catch (err) {
           console.error('Ошибка завершения кейса:', err);
         }
       }
       
-      if (hasExistingCase && hasNewCase && !teamCase.isExisting) {
-        console.log('Завершаем старый кейс...');
-        try {
-          await endCurrentCase(id);
-          console.log('Старый кейс завершен');
-        } catch (err) {
-          console.error('Ошибка завершения старого кейса:', err);
-        }
-        
-        console.log('Добавляем новый кейс...');
-        try {
-          await assignCaseToTeam(id, {
-            case_semesters_id: teamCase.caseSemesterId,
-            started_at: new Date().toISOString(),
-            is_current: true
-          });
-          console.log(`Новый кейс ${teamCase.title} добавлен`);
-        } catch (err) {
-          console.error(`Ошибка добавления кейса:`, err);
-        }
-      }
-      
       if (!hasExistingCase && hasNewCase && !teamCase.isExisting) {
-        console.log('Добавляем новый кейс...');
         try {
           await assignCaseToTeam(id, {
             case_semesters_id: teamCase.caseSemesterId,
@@ -289,6 +285,22 @@ const TeamEditPage = () => {
           console.log(`Кейс ${teamCase.title} добавлен`);
         } catch (err) {
           console.error(`Ошибка добавления кейса:`, err);
+        }
+      }
+      
+      if (hasExistingCase && hasNewCase && !teamCase.isExisting) {
+        try {
+          await endCurrentCase(id);
+          console.log('Старый кейс завершен');
+          
+          await assignCaseToTeam(id, {
+            case_semesters_id: teamCase.caseSemesterId,
+            started_at: new Date().toISOString(),
+            is_current: true
+          });
+          console.log(`Новый кейс ${teamCase.title} добавлен`);
+        } catch (err) {
+          console.error(`Ошибка замены кейса:`, err);
         }
       }
       
@@ -445,7 +457,7 @@ const TeamEditPage = () => {
             {teamCase ? (
               <div className="case-item">
                 <div className="case-info">
-                  <span className="case-title">{teamCase.title}</span>  
+                  <span className="case-title">{teamCase.title}</span>
                 </div>
                 <div className="case-actions">
                   <button 

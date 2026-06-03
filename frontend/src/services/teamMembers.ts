@@ -23,8 +23,8 @@ const getStudentById = async (studentId: string) => {
   return response.data;
 };
 
-export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
-  const response = await api.get(`/teams/${teamId}/members`);
+export const getTeamMembers = async (teamId: string, currentOnly: boolean = true): Promise<TeamMember[]> => {
+  const response = await api.get(`/teams/${teamId}/members?current_only=${currentOnly}`);
   const members = response.data;
   
   const membersWithDetails = await Promise.all(
@@ -33,14 +33,12 @@ export const getTeamMembers = async (teamId: string): Promise<TeamMember[]> => {
         const student = await getStudentById(member.student_id);
         return {
           ...member,
-          university_name: student.university_name || 'Не указан',
           group: student.group || '—'
         };
       } catch (err) {
         console.error(`Ошибка загрузки данных студента ${member.student_id}:`, err);
         return {
           ...member,
-          university_name: 'Не указан',
           group: '—'
         };
       }
@@ -58,13 +56,11 @@ export const addTeamMember = async (teamId: string, data: AddTeamMemberData): Pr
     const student = await getStudentById(newMember.student_id);
     return {
       ...newMember,
-      university_name: student.university_name || 'Не указан',
       group: student.group || '—'
     };
   } catch {
     return {
       ...newMember,
-      university_name: 'Не указан',
       group: '—'
     };
   }

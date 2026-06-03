@@ -17,17 +17,17 @@ interface ControlPoint {
 const getTestControlPoints = (caseTitle: string): ControlPoint[] => {
   if (caseTitle.includes('TaskFlow')) {
     return [
-      { id: '1', name: 'Анализ требований и проектирование архитектуры', score: 85 },
-      { id: '2', name: 'Разработка бэкенда (API, база данных)', score: 78 },
-      { id: '3', name: 'Разработка фронтенда (интерфейс)', score: 90 },
+      { id: '1', name: 'Анализ требований и проектирование', score: 85 },
+      { id: '2', name: 'Разработка бэкенда', score: 78 },
+      { id: '3', name: 'Разработка фронтенда', score: 90 },
       { id: '4', name: 'Интеграция и тестирование', score: 82 },
     ];
   }
-  if (caseTitle.includes('AI-помощник')) {
+  if (caseTitle.includes('AI') || caseTitle.includes('помощник')) {
     return [
       { id: '1', name: 'Сбор и подготовка данных', score: 88 },
       { id: '2', name: 'Обучение модели', score: 75 },
-      { id: '3', name: 'Разработка API для модели', score: 92 },
+      { id: '3', name: 'Разработка API', score: 92 },
       { id: '4', name: 'Интеграция с Telegram-ботом', score: 80 },
     ];
   }
@@ -36,15 +36,6 @@ const getTestControlPoints = (caseTitle: string): ControlPoint[] => {
     { id: '2', name: 'Контрольная точка 2', score: 82 },
     { id: '3', name: 'Контрольная точка 3', score: 91 },
   ];
-};
-
-const wasMemberDuringCase = (member: TeamMember, caseStartedAt: string, caseEndedAt: string | null): boolean => {
-  const joined = new Date(member.joined_at);
-  const left = member.left_at ? new Date(member.left_at) : new Date();
-  const caseStart = new Date(caseStartedAt);
-  const caseEnd = caseEndedAt ? new Date(caseEndedAt) : new Date();
-  
-  return joined <= caseEnd && left >= caseStart;
 };
 
 const TeamCaseHistoryPage = () => {
@@ -64,22 +55,29 @@ const TeamCaseHistoryPage = () => {
       
       try {
         setLoading(true);
+        
         const [teamData, historyData, membersData] = await Promise.all([
           getTeamById(id),
           getTeamHistory(id).catch(() => []),
-          getTeamMembers(id).catch(() => []),
+          getTeamMembers(id, false).catch(() => []),
         ]);
         
         setTeam(teamData);
-        const completedCases = historyData.filter(h => h.ended_at !== null);
-        setHistory(completedCases);
         setAllMembers(membersData);
         
+        const sortedHistory = [...historyData].sort((a, b) => {
+          if (a.is_current && !b.is_current) return -1;
+          if (!a.is_current && b.is_current) return 1;
+          return 0;
+        });
+        setHistory(sortedHistory);
+        
         const pointsMap = new Map<string, ControlPoint[]>();
-        completedCases.forEach(c => {
+        historyData.forEach(c => {
           pointsMap.set(c.case_id, getTestControlPoints(c.case_title));
         });
         setControlPointsMap(pointsMap);
+        
       } catch (err) {
         console.error('Ошибка загрузки данных:', err);
       } finally {
@@ -106,8 +104,31 @@ const TeamCaseHistoryPage = () => {
     return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+  const wasMemberDuringCase = (member: TeamMember, caseStartedAt: string, caseEndedAt: string | null): boolean => {
+    const joined = new Date(member.joined_at);
+    const left = member.left_at ? new Date(member.left_at) : new Date();
+    const caseStart = new Date(caseStartedAt);
+    const caseEnd = caseEndedAt ? new Date(caseEndedAt) : new Date();
+    
+    return joined <= caseEnd && left >= caseStart;
+  };
+
   const getMembersForCase = (caseStartedAt: string, caseEndedAt: string | null): TeamMember[] => {
-    return allMembers.filter(member => wasMemberDuringCase(member, caseStartedAt, caseEndedAt));
+    const activeMembers: TeamMember[] = [];
+    const archivedMembers: TeamMember[] = [];
+    
+    allMembers.forEach(member => {
+      const wasInTeam = wasMemberDuringCase(member, caseStartedAt, caseEndedAt);
+      if (wasInTeam) {
+        if (member.is_current) {
+          activeMembers.push(member);
+        } else {
+          archivedMembers.push(member);
+        }
+      }
+    });
+    
+    return [...activeMembers, ...archivedMembers];
   };
 
   const breadcrumbItems = [
@@ -143,6 +164,9 @@ const TeamCaseHistoryPage = () => {
               const isExpanded = expandedCaseId === historyCase.id;
               const membersForCase = getMembersForCase(historyCase.started_at, historyCase.ended_at);
               
+              const isCurrentCase = historyCase.is_current;
+              const caseStatus = isCurrentCase ? ' (Активный)' : ' (Архив)';
+              
               return (
                 <div key={historyCase.id} className="case-item-view">
                   <div className="case-header">
@@ -150,7 +174,7 @@ const TeamCaseHistoryPage = () => {
                       className="case-title"
                       onClick={(e) => handleCaseClick(historyCase.case_id, e)}
                     >
-                      {historyCase.case_title}
+                      {historyCase.case_title}{caseStatus}
                     </span>
                     <div className="case-dates">
                       <span>{formatDate(historyCase.started_at)}</span>
@@ -200,11 +224,15 @@ const TeamCaseHistoryPage = () => {
                             <div className="members-header">
                               <span>ФИО</span>
                               <span>Роль</span>
+                              <span>Статус</span>
                             </div>
                             {membersForCase.map((member) => (
                               <div key={member.id} className="member-row">
                                 <span className="member-name">{member.student_name}</span>
                                 <span className="member-role">{member.position}</span>
+                                <span className="member-status">
+                                  {member.is_current ? 'Активен' : 'Архив'}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -220,7 +248,7 @@ const TeamCaseHistoryPage = () => {
           </div>
         ) : (
           <div className="empty-history">
-            Нет завершенных кейсов в истории команды
+            Нет кейсов в истории команды
           </div>
         )}
       </div>
