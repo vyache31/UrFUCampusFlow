@@ -42,7 +42,7 @@ class Meetings(Base):
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     outlook_event_id: Mapped[str]
-    event_link: Mapped[str]
+    event_link: Mapped[str] = mapped_column(nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(nullable=True)
     timezone: Mapped[Optional[int]] = mapped_column(nullable=True)
     meetings_series_id: Mapped[Optional[str]] = mapped_column(
@@ -86,7 +86,7 @@ class MeetingsSeries(Base):
     location: Mapped[Optional[str]] = mapped_column(nullable=True)
     start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     end_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    event_link: Mapped[str]
+    event_link: Mapped[str] = mapped_column(nullable=True)
     recurrence_pattern: Mapped[dict] = mapped_column(JSONB)
     recurrence_range: Mapped[dict] = mapped_column(JSONB)
 

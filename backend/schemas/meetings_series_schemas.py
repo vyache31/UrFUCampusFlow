@@ -103,3 +103,10 @@ class MeetingsSeriesCreate(BaseModel):
     end_at: datetime
     event_link: Optional[str] = None
     recurrence: Recurrence
+
+
+class MeetingsSeriesResponse(MeetingsSeriesCreate):
+    class Config:
+        from_attributes = True
+
+    pass
