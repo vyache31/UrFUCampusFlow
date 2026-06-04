@@ -47,15 +47,19 @@ class MeetingsSeriesService:
             return pattern_dict
 
         elif pattern_data.type is PatternType.weekly:
-            pattern_dict["daysOfWeek"] = pattern_data.days_of_week
+            pattern_dict["daysOfWeek"] = [
+                day.value for day in pattern_data.days_of_week
+            ]
             if pattern_data.first_day_of_week is not None:
-                pattern_dict["firstDayOfWeek"] = pattern_data.first_day_of_week
+                pattern_dict["firstDayOfWeek"] = pattern_data.first_day_of_week.value
 
         elif pattern_data.type is PatternType.absolute_monthly:
             pattern_dict["dayOfMonth"] = pattern_data.day_of_month
 
         elif pattern_data.type is PatternType.relative_monthly:
-            pattern_dict["daysOfWeek"] = pattern_data.days_of_week
+            pattern_dict["daysOfWeek"] = [
+                day.value for day in pattern_data.days_of_week
+            ]
             pattern_dict["index"] = (
                 pattern_data.index.value if pattern_data.index else None
             )
@@ -65,7 +69,9 @@ class MeetingsSeriesService:
             pattern_dict["month"] = pattern_data.month
 
         elif pattern_data.type is PatternType.relative_yearly:
-            pattern_dict["daysOfWeek"] = pattern_data.days_of_week
+            pattern_dict["daysOfWeek"] = [
+                day.value for day in pattern_data.days_of_week
+            ]
             pattern_dict["index"] = (
                 pattern_data.index.value if pattern_data.index else None
             )
@@ -147,9 +153,6 @@ class MeetingsSeriesService:
                 raise ValueError("end_date обязателен для типа endDate")
 
             end_time = datetime.combine(end_date, schema.end_at.time())
-
-            if not end_time:
-                raise ValueError("end_date обязателен для типа endDate")
 
         else:
             team_case_history = await self.team_case_history_repo.get_by_id(
@@ -259,3 +262,30 @@ class MeetingsSeriesService:
         )
 
         return MeetingsSeriesService._to_response(created_series)
+
+    async def get_by_team_case_history_id(
+        self, team_case_history_id: str
+    ) -> list[MeetingsSeriesResponse]:
+        series = await self.repo.get_by_team_case_history_id(team_case_history_id)
+
+        return [MeetingsSeriesService._to_response(item) for item in series]
+
+    async def delete_meetings_series(
+        self, series_id: str, current_team_case_history_id: str, user_id: str
+    ) -> bool | None:
+
+        series = await self.repo.get_by_id(series_id)
+
+        if not series or series.team_case_history_id != current_team_case_history_id:
+            return None
+
+        await self.graph_client.delete_series(
+            headers=await self._build_headers(user_id),
+            series_id=series.outlook_series_master_id,
+        )
+
+        await self.meetings_repo.delete_by_series_id(series_id)
+
+        await self.repo.delete_by_id(series_id)
+
+        return True

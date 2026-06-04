@@ -3,7 +3,6 @@ from datetime import datetime
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from typing_extensions import List
 
 from models import Meetings
 
@@ -66,8 +65,24 @@ class MeetingsRepository:
 
         return meetings.scalars().all()
 
+    async def get_by_series_id(self, series_id: str) -> list[Meetings]:
+        meetings = await self.db.execute(
+            select(Meetings)
+            .options(*MEETING_LOAD_OPTIONS)
+            .where(Meetings.meetings_series_id == series_id)
+        )
+
+        return meetings.scalars().all()
+
     async def delete(self, meeting: Meetings) -> None:
         await self.db.delete(meeting)
+
+        await self.db.commit()
+
+    async def delete_by_series_id(self, series_id: str) -> None:
+        await self.db.execute(
+            delete(Meetings).where(Meetings.meetings_series_id == series_id)
+        )
 
         await self.db.commit()
 

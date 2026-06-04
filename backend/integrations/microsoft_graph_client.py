@@ -70,3 +70,13 @@ class GraphClient:
             return payload.json()
 
         return payload.raise_for_status()
+
+    async def delete_series(self, series_id: str, headers):
+        payload = await self.session.delete(
+            f"{settings.OAUTH_MICROSOFT_EVENTS_URL}/{series_id}", headers=headers
+        )
+
+        if payload.status_code == 204:
+            return None
+
+        return payload.raise_for_status()
