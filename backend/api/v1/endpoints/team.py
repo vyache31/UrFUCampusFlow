@@ -11,8 +11,11 @@ from schemas.outlook_meetings import (
     MeetingTaskUpdate,
     MeetingTaskResponse
 )
+from schemas.meetings_series_schemas import MeetingsSeriesCreate, MeetingsSeriesResponse
 from services.meetings_service import MeetingsService
+from services.meetings_series_service import MeetingsSeriesService
 from dependies.meetings_depends import get_meetings_service
+from dependies.meetings_series_depends import get_meetings_series_service
 from services.meeting_tasks_service import MeetingTasksService
 from dependies.meeting_task_depends import get_meeting_tasks_service
 from schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
@@ -291,6 +294,67 @@ async def delete_team_meeting(
 
     if not result:
         raise HTTPException(status_code=404, detail='Meeting not found')
+
+    return {'status': 'deleted'}
+
+
+@router.post('/{team_id}/meetings-series', response_model=MeetingsSeriesResponse)
+async def create_meetings_series_for_team(
+        team_id: str,
+        schema: MeetingsSeriesCreate,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingsSeriesService = Depends(get_meetings_series_service),
+):
+    try:
+        return await service.create_series(
+            user_id=user.id,
+            team_case_history_id=current_team_case_history.id,
+            schema=schema
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status_code=502,
+            detail=f'Microsoft Graph error: {err.response.status_code} {err.response.text}'
+        )
+
+
+@router.get('/{team_id}/meetings-series', response_model=list[MeetingsSeriesResponse])
+async def get_team_meetings_series(
+        team_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingsSeriesService = Depends(get_meetings_series_service),
+):
+    return await service.get_by_team_case_history_id(
+        team_case_history_id=current_team_case_history.id
+    )
+
+
+@router.delete('/{team_id}/meetings-series/{series_id}')
+async def delete_team_meetings_series(
+        team_id: str,
+        series_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingsSeriesService = Depends(get_meetings_series_service),
+):
+    try:
+        result = await service.delete_meetings_series(
+            series_id=series_id,
+            current_team_case_history_id=current_team_case_history.id,
+            user_id=user.id
+        )
+    except httpx.HTTPStatusError as err:
+        raise HTTPException(
+            status_code=502,
+            detail=f'Microsoft Graph error: {err.response.status_code} {err.response.text}'
+        )
+
+    if not result:
+        raise HTTPException(status_code=404, detail='Meetings series not found')
 
     return {'status': 'deleted'}
 
