@@ -12,11 +12,20 @@ from schemas.outlook_meetings import (
     MeetingTaskResponse
 )
 from schemas.meetings_series_schemas import MeetingsSeriesCreate, MeetingsSeriesResponse
-from schemas.curators_schemas import CuratorAssignmentCreate, CuratorAssignmentResponse
+from schemas.curators_schemas import (
+    CuratorAssignmentCreate,
+    CuratorAssignmentResponse,
+    CuratorMeetingAttendanceResponse,
+    CuratorMeetingAttendanceUpdate,
+)
 from services.meetings_service import MeetingsService
 from services.meetings_series_service import MeetingsSeriesService
 from services.curator_assignment_service import CuratorAssignmentService
-from dependies.meetings_depends import get_meetings_service
+from services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
+from dependies.meetings_depends import (
+    get_curator_meetings_attendance_service,
+    get_meetings_service,
+)
 from dependies.meetings_series_depends import get_meetings_series_service
 from dependies.curator_assignment_depends import get_curator_assignment_service
 from services.meeting_tasks_service import MeetingTasksService
@@ -349,6 +358,63 @@ async def delete_team_meeting(
         raise HTTPException(status_code=404, detail='Meeting not found')
 
     return {'status': 'deleted'}
+
+
+@router.get(
+    '/{team_id}/meetings/{meeting_id}/curator-attendance',
+    response_model=list[CuratorMeetingAttendanceResponse],
+)
+async def get_meeting_curator_attendance(
+        team_id: str,
+        meeting_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        meetings_service: MeetingsService = Depends(get_meetings_service),
+        attendance_service: CuratorMeetingAttendanceService = Depends(
+            get_curator_meetings_attendance_service
+        ),
+):
+    meeting = await meetings_service.get_by_id(meeting_id)
+
+    if not meeting or meeting.team_case_history_id != current_team_case_history.id:
+        raise HTTPException(status_code=404, detail='Meeting not found')
+
+    return await attendance_service.get_by_meeting_id(meeting_id)
+
+
+@router.patch(
+    '/{team_id}/meetings/{meeting_id}/curator-attendance/{attendance_id}',
+    response_model=CuratorMeetingAttendanceResponse,
+)
+async def update_meeting_curator_attendance(
+        team_id: str,
+        meeting_id: str,
+        attendance_id: str,
+        schema: CuratorMeetingAttendanceUpdate,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        meetings_service: MeetingsService = Depends(get_meetings_service),
+        attendance_service: CuratorMeetingAttendanceService = Depends(
+            get_curator_meetings_attendance_service
+        ),
+):
+    meeting = await meetings_service.get_by_id(meeting_id)
+
+    if not meeting or meeting.team_case_history_id != current_team_case_history.id:
+        raise HTTPException(status_code=404, detail='Meeting not found')
+
+    try:
+        attendance = await attendance_service.get_by_id(attendance_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail='Curator attendance not found')
+
+    if attendance.meeting_id != meeting_id:
+        raise HTTPException(status_code=404, detail='Curator attendance not found')
+
+    return await attendance_service.mark_attendance(
+        attendance_id=attendance_id,
+        schema=schema,
+    )
 
 
 @router.post('/{team_id}/meetings-series', response_model=MeetingsSeriesResponse)

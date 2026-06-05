@@ -2,7 +2,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from models import CuratorAssignment, TeamCaseHistory, Users
+from models import CuratorAssignment, Roles, TeamCaseHistory, Users
 
 
 CURATOR_ASSIGNMENT_LOAD_OPTIONS = (
@@ -25,6 +25,18 @@ class CuratorAssignmentsRepository:
     async def verify_user(self, user_id: str) -> bool:
         user = await self.db.execute(
             select(Users.id).where(Users.id == user_id)
+        )
+
+        return user.scalar_one_or_none() is not None
+
+    async def verify_curator_user(self, user_id: str) -> bool:
+        user = await self.db.execute(
+            select(Users.id)
+            .join(Roles)
+            .where(
+                Users.id == user_id,
+                Roles.code == "CURATOR",
+            )
         )
 
         return user.scalar_one_or_none() is not None

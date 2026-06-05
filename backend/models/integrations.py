@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from datetime import timezone as TZ
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -80,6 +80,13 @@ class MeetingTask(Base):
 
 class CuratorMeetingsAttendance(Base):
     __tablename__ = "curator_meetings_attendance"
+    __table_args__ = (
+        UniqueConstraint(
+            "meeting_id",
+            "curator_assignment_id",
+            name="uq_curator_meeting_attendance_meeting_assignment",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"))

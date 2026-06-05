@@ -4,7 +4,6 @@ from sqlalchemy.orm import selectinload
 
 from models import CuratorMeetingsAttendance
 
-
 CURATOR_MEETINGS_ATTENDANCE_LOAD_OPTIONS = (
     selectinload(CuratorMeetingsAttendance.meeting),
     selectinload(CuratorMeetingsAttendance.curator_assignment),
@@ -24,9 +23,16 @@ class CuratorMeetingsAttendanceRepository:
 
         return await self.get_by_id(attendance.id)
 
-    async def get_by_id(
-        self, attendance_id: str
-    ) -> CuratorMeetingsAttendance | None:
+    async def create_many(
+        self, attendances: list[CuratorMeetingsAttendance]
+    ) -> list[CuratorMeetingsAttendance]:
+        self.db.add_all(attendances)
+
+        await self.db.commit()
+
+        return attendances
+
+    async def get_by_id(self, attendance_id: str) -> CuratorMeetingsAttendance | None:
         attendance = await self.db.execute(
             select(CuratorMeetingsAttendance)
             .options(*CURATOR_MEETINGS_ATTENDANCE_LOAD_OPTIONS)
@@ -53,8 +59,7 @@ class CuratorMeetingsAttendanceRepository:
             select(CuratorMeetingsAttendance)
             .options(*CURATOR_MEETINGS_ATTENDANCE_LOAD_OPTIONS)
             .where(
-                CuratorMeetingsAttendance.curator_assignment_id
-                == curator_assignment_id
+                CuratorMeetingsAttendance.curator_assignment_id == curator_assignment_id
             )
         )
 

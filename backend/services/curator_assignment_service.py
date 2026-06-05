@@ -13,8 +13,8 @@ class CuratorAssignmentService:
     async def assign_curator(
         self, schema: CuratorAssignmentCreate
     ) -> CuratorAssignmentResponse:
-        if not await self.repo.verify_user(schema.user_id):
-            raise ValueError('User not found')
+        if not await self.repo.verify_curator_user(schema.user_id):
+            raise ValueError('Curator user not found')
 
         if not await self.repo.verify_team_case_history(schema.team_case_history_id):
             raise ValueError('Team case history not found')
