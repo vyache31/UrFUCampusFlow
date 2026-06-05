@@ -11,8 +11,15 @@ from .cases import (
     EvaluationFormReactions,
 )
 from .grades import Grades, Iterations
-from .integrations import Meetings, MeetingsSeries, MeetingTask, MicrosoftOAuth
+from .integrations import (
+    CuratorMeetingsAttendance,
+    Meetings,
+    MeetingsSeries,
+    MeetingTask,
+    MicrosoftOAuth,
+)
 from .teams import (
+    CuratorAssignment,
     Semesters,
     Students,
     TeamCaseHistory,

@@ -80,6 +80,32 @@ class TeamCaseHistory(Base):
     grades = relationship("Grades", back_populates="team_case_history")
     meetings = relationship("Meetings", back_populates="team_case_history")
     meetings_series = relationship("MeetingsSeries", back_populates="team_case_history")
+    curator_assignments = relationship(
+        "CuratorAssignment", back_populates="team_case_history"
+    )
+
+
+class CuratorAssignment(Base):
+    __tablename__ = "curator_assignments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    team_case_history_id: Mapped[str] = mapped_column(
+        ForeignKey("team_case_history.id")
+    )
+    assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    unassigned_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    is_current: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    user = relationship("Users", back_populates="curator_assignments")
+    team_case_history = relationship(
+        "TeamCaseHistory", back_populates="curator_assignments"
+    )
+    meetings_attendance = relationship(
+        "CuratorMeetingsAttendance", back_populates="curator_assignment"
+    )
 
 
 class Semesters(Base):
