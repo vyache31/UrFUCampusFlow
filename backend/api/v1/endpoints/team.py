@@ -12,10 +12,13 @@ from schemas.outlook_meetings import (
     MeetingTaskResponse
 )
 from schemas.meetings_series_schemas import MeetingsSeriesCreate, MeetingsSeriesResponse
+from schemas.curators_schemas import CuratorAssignmentCreate, CuratorAssignmentResponse
 from services.meetings_service import MeetingsService
 from services.meetings_series_service import MeetingsSeriesService
+from services.curator_assignment_service import CuratorAssignmentService
 from dependies.meetings_depends import get_meetings_service
 from dependies.meetings_series_depends import get_meetings_series_service
+from dependies.curator_assignment_depends import get_curator_assignment_service
 from services.meeting_tasks_service import MeetingTasksService
 from dependies.meeting_task_depends import get_meeting_tasks_service
 from schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
@@ -203,6 +206,56 @@ async def end_current_team_case_history(
         raise HTTPException(status_code=404, detail='Current team case history not found')
 
     return service.to_response(team_case_history)
+
+
+@router.post('/{team_id}/curators/{curator_id}', response_model=CuratorAssignmentResponse)
+async def assign_curator_to_team(
+        team_id: str,
+        curator_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: CuratorAssignmentService = Depends(get_curator_assignment_service)
+):
+    schema = CuratorAssignmentCreate(
+        user_id=curator_id,
+        team_case_history_id=current_team_case_history.id
+    )
+
+    try:
+        return await service.assign_curator(schema)
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.post('/{team_id}/curators/{assignment_id}/unassign', response_model=CuratorAssignmentResponse)
+async def unassign_curator_from_team(
+        team_id: str,
+        assignment_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: CuratorAssignmentService = Depends(get_curator_assignment_service)
+):
+    try:
+        assignment = await service.get_assignment_by_id(assignment_id)
+
+        if assignment.team_case_history_id != current_team_case_history.id:
+            raise HTTPException(status_code=404, detail='Curator assignment not found')
+
+        return await service.unassign_curator(assignment_id)
+    except ValueError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
+
+@router.get('/{team_id}/curators', response_model=list[CuratorAssignmentResponse])
+async def get_team_curators(
+        team_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: CuratorAssignmentService = Depends(get_curator_assignment_service)
+):
+    return await service.get_current_by_team_case_history_id(
+        team_case_history_id=current_team_case_history.id
+    )
 
 
 @router.post('/{team_id}/meetings', response_model=MeetingResponse)

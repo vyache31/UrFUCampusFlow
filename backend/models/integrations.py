@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from datetime import timezone as TZ
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -53,6 +53,9 @@ class Meetings(Base):
         "MeetingTask", back_populates="meeting", cascade="all, delete-orphan"
     )
     series = relationship("MeetingsSeries", back_populates="meetings")
+    curator_attendance = relationship(
+        "CuratorMeetingsAttendance", back_populates="meeting"
+    )
 
     @property
     def tz(self) -> TZ:
@@ -73,6 +76,22 @@ class MeetingTask(Base):
     is_completed: Mapped[bool]
 
     meeting = relationship("Meetings", back_populates="tasks")
+
+
+class CuratorMeetingsAttendance(Base):
+    __tablename__ = "curator_meetings_attendance"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"))
+    curator_assignment_id: Mapped[str] = mapped_column(
+        ForeignKey("curator_assignments.id")
+    )
+    is_present: Mapped[bool] = mapped_column(Boolean)
+
+    meeting = relationship("Meetings", back_populates="curator_attendance")
+    curator_assignment = relationship(
+        "CuratorAssignment", back_populates="meetings_attendance"
+    )
 
 
 class MeetingsSeries(Base):
