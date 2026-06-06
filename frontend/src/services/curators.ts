@@ -95,3 +95,71 @@ export const getAllMeetingAttendance = async (teamId: string): Promise<CuratorAt
   
   return allAttendance;
 };
+
+export const getAllTeamCurators = async (teamId: string): Promise<Curator[]> => {
+  const response = await api.get(`/teams/${teamId}/curators`);
+  const curators = response.data;
+  
+  const enrichedCurators = await Promise.all(
+    curators.map(async (curator: Curator) => {
+      try {
+        const userResponse = await api.get(`/users/${curator.user_id}`);
+        return {
+          ...curator,
+          email: userResponse.data.email,
+        };
+      } catch {
+        return curator;
+      }
+    })
+  );
+  
+  return enrichedCurators;
+};
+
+export interface CuratorWithStats extends Curator {
+  attendanceCount?: number;
+}
+
+export const getAllTeamCuratorsWithStats = async (teamId: string): Promise<CuratorWithStats[]> => {
+  const response = await api.get(`/teams/${teamId}/curators`);
+  const curators = response.data;
+  
+  const meetingsResponse = await api.get(`/teams/${teamId}/meetings`);
+  const meetings = meetingsResponse.data;
+  
+  const allAttendance: CuratorAttendance[] = [];
+  for (const meeting of meetings) {
+    try {
+      const attendance = await getMeetingAttendance(teamId, meeting.id);
+      allAttendance.push(...attendance);
+    } catch (error) {
+      console.error(`Ошибка загрузки посещаемости для встречи ${meeting.id}:`, error);
+    }
+  }
+  
+  const enrichedCurators = await Promise.all(
+    curators.map(async (curator: Curator) => {
+      try {
+        const userResponse = await api.get(`/users/${curator.user_id}`);
+        const attendanceCount = allAttendance.filter(a => 
+          a.curator_assignment_id === curator.id && a.is_present === true
+        ).length;
+        
+        return {
+          ...curator,
+          email: userResponse.data.email,
+          attendanceCount: attendanceCount
+        };
+      } catch {
+        return {
+          ...curator,
+          email: `Куратор ${curator.user_id?.slice(-4)}`,
+          attendanceCount: 0
+        };
+      }
+    })
+  );
+  
+  return enrichedCurators;
+};

@@ -5,9 +5,11 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon } from '../../components/common/Icons/Icons';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
+import AddCuratorModal from '../../components/Modals/AddCuratorModal';
 import { createTeam } from '../../services/teams';
 import { addTeamMember } from '../../services/teamMembers';
 import { assignCaseToTeam } from '../../services/teamCaseHistory';
+import { assignCuratorToTeam, getAllCurators } from '../../services/curators';
 import './teamCreatePage.css';
 
 interface TeamMember {
@@ -22,6 +24,12 @@ interface TeamMember {
 interface TeamCase {
   caseSemesterId: string;
   title: string;
+}
+
+interface AssignedCurator {
+  id: string;
+  curatorId: string;
+  email: string;
 }
 
 const TeamCreatePage = () => {
@@ -40,11 +48,22 @@ const TeamCreatePage = () => {
 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [teamCase, setTeamCase] = useState<TeamCase | null>(null);
+  const [curators, setCurators] = useState<AssignedCurator[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
+  const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
+  const [availableCurators, setAvailableCurators] = useState<{ id: string; email: string }[]>([]);
+
+  useEffect(() => {
+    const fetchCurators = async () => {
+      const curatorsList = await getAllCurators();
+      setAvailableCurators(curatorsList);
+    };
+    fetchCurators();
+  }, []);
 
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
@@ -156,6 +175,17 @@ const TeamCreatePage = () => {
     setTeamCase({ caseSemesterId, title: caseTitle });
   };
 
+  const handleAddCurator = (curatorId: string) => {
+    const curator = availableCurators.find(c => c.id === curatorId);
+    if (curator && !curators.some(c => c.curatorId === curatorId)) {
+      setCurators([...curators, { id: Date.now().toString(), curatorId: curator.id, email: curator.email }]);
+    }
+  };
+
+  const handleRemoveCurator = (tempId: string) => {
+    setCurators(curators.filter(c => c.id !== tempId));
+  };
+
   const handleRemoveMember = (tempId: string) => {
     setMembers(members.filter(m => m.tempId !== tempId));
   };
@@ -244,6 +274,19 @@ const TeamCreatePage = () => {
           console.log(`Кейс ${teamCase.title} добавлен`);
         } catch (err) {
           console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
+        }
+      }
+      
+      if (curators.length > 0 && teamCase) {
+        console.log(`Добавляем ${curators.length} кураторов...`);
+        
+        for (const curator of curators) {
+          try {
+            await assignCuratorToTeam(newTeam.id, curator.curatorId);
+            console.log(`Куратор ${curator.email} назначен команде`);
+          } catch (err) {
+            console.error(`Ошибка назначения куратора ${curator.email}:`, err);
+          }
         }
       }
       
@@ -393,6 +436,33 @@ const TeamCreatePage = () => {
           </div>
         </div>
 
+        <div className="form-field">
+          <div className="field-header">
+            <label className="form-label">Кураторы</label>
+            <button className="add-btn" onClick={() => setIsCuratorModalOpen(true)}>
+              <PlusIcon />
+              <span>Добавить куратора</span>
+            </button>
+          </div>
+          {curators.length > 0 ? (
+            <div className="curators-list">
+              {curators.map((curator) => (
+                <div key={curator.id} className="curator-item">
+                  <span className="curator-name">{curator.email}</span>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => handleRemoveCurator(curator.id)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-curators">Нет назначенных кураторов</div>
+          )}
+        </div>
+
         {/* Состояние команды */}
         <div className="form-field" data-field="status">
           <label className="form-label">Состояние команды</label>
@@ -426,6 +496,12 @@ const TeamCreatePage = () => {
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
         usedCaseIds={teamCase ? [teamCase.caseSemesterId] : []}
+      />
+
+      <AddCuratorModal
+        isOpen={isCuratorModalOpen}
+        onClose={() => setIsCuratorModalOpen(false)}
+        onAssign={handleAddCurator}
       />
     </div>
   );

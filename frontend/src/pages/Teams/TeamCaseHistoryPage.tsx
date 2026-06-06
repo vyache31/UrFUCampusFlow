@@ -5,6 +5,7 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
 import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
+import { getAllTeamCuratorsWithStats, type CuratorWithStats } from '../../services/curators';
 import { ChevronDownIcon } from '../../components/common/Icons/Icons';
 import './teamCaseHistoryPage.css';
 
@@ -38,6 +39,24 @@ const getTestControlPoints = (caseTitle: string): ControlPoint[] => {
   ];
 };
 
+const wasMemberDuringCase = (member: TeamMember, caseStartedAt: string, caseEndedAt: string | null): boolean => {
+  const joined = new Date(member.joined_at);
+  const left = member.left_at ? new Date(member.left_at) : new Date();
+  const caseStart = new Date(caseStartedAt);
+  const caseEnd = caseEndedAt ? new Date(caseEndedAt) : new Date();
+  
+  return joined <= caseEnd && left >= caseStart;
+};
+
+const wasCuratorAssignedDuringCase = (curator: CuratorWithStats, caseStartedAt: string, caseEndedAt: string | null): boolean => {
+  const assignedAt = new Date(curator.assigned_at);
+  const unassignedAt = curator.unassigned_at ? new Date(curator.unassigned_at) : new Date();
+  const caseStart = new Date(caseStartedAt);
+  const caseEnd = caseEndedAt ? new Date(caseEndedAt) : new Date();
+  
+  return assignedAt <= caseEnd && unassignedAt >= caseStart;
+};
+
 const TeamCaseHistoryPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,6 +64,7 @@ const TeamCaseHistoryPage = () => {
   const [team, setTeam] = useState<Team | null>(null);
   const [history, setHistory] = useState<TeamCaseHistory[]>([]);
   const [allMembers, setAllMembers] = useState<TeamMember[]>([]);
+  const [allCurators, setAllCurators] = useState<CuratorWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
   const [controlPointsMap, setControlPointsMap] = useState<Map<string, ControlPoint[]>>(new Map());
@@ -55,29 +75,23 @@ const TeamCaseHistoryPage = () => {
       
       try {
         setLoading(true);
-        
-        const [teamData, historyData, membersData] = await Promise.all([
+        const [teamData, historyData, membersData, curatorsData] = await Promise.all([
           getTeamById(id),
           getTeamHistory(id).catch(() => []),
           getTeamMembers(id, false).catch(() => []),
+          getAllTeamCuratorsWithStats(id).catch(() => []),
         ]);
         
         setTeam(teamData);
+        setHistory(historyData);
         setAllMembers(membersData);
-        
-        const sortedHistory = [...historyData].sort((a, b) => {
-          if (a.is_current && !b.is_current) return -1;
-          if (!a.is_current && b.is_current) return 1;
-          return 0;
-        });
-        setHistory(sortedHistory);
+        setAllCurators(curatorsData);
         
         const pointsMap = new Map<string, ControlPoint[]>();
         historyData.forEach(c => {
           pointsMap.set(c.case_id, getTestControlPoints(c.case_title));
         });
         setControlPointsMap(pointsMap);
-        
       } catch (err) {
         console.error('Ошибка загрузки данных:', err);
       } finally {
@@ -104,31 +118,12 @@ const TeamCaseHistoryPage = () => {
     return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const wasMemberDuringCase = (member: TeamMember, caseStartedAt: string, caseEndedAt: string | null): boolean => {
-    const joined = new Date(member.joined_at);
-    const left = member.left_at ? new Date(member.left_at) : new Date();
-    const caseStart = new Date(caseStartedAt);
-    const caseEnd = caseEndedAt ? new Date(caseEndedAt) : new Date();
-    
-    return joined <= caseEnd && left >= caseStart;
+  const getMembersForCase = (caseStartedAt: string, caseEndedAt: string | null): TeamMember[] => {
+    return allMembers.filter(member => wasMemberDuringCase(member, caseStartedAt, caseEndedAt));
   };
 
-  const getMembersForCase = (caseStartedAt: string, caseEndedAt: string | null): TeamMember[] => {
-    const activeMembers: TeamMember[] = [];
-    const archivedMembers: TeamMember[] = [];
-    
-    allMembers.forEach(member => {
-      const wasInTeam = wasMemberDuringCase(member, caseStartedAt, caseEndedAt);
-      if (wasInTeam) {
-        if (member.is_current) {
-          activeMembers.push(member);
-        } else {
-          archivedMembers.push(member);
-        }
-      }
-    });
-    
-    return [...activeMembers, ...archivedMembers];
+  const getCuratorsForCase = (caseStartedAt: string, caseEndedAt: string | null): CuratorWithStats[] => {
+    return allCurators.filter(curator => wasCuratorAssignedDuringCase(curator, caseStartedAt, caseEndedAt));
   };
 
   const breadcrumbItems = [
@@ -163,9 +158,11 @@ const TeamCaseHistoryPage = () => {
               const controlPoints = controlPointsMap.get(historyCase.case_id) || [];
               const isExpanded = expandedCaseId === historyCase.id;
               const membersForCase = getMembersForCase(historyCase.started_at, historyCase.ended_at);
+              const curatorsForCase = getCuratorsForCase(historyCase.started_at, historyCase.ended_at);
               
-              const isCurrentCase = historyCase.is_current;
-              const caseStatus = isCurrentCase ? ' (Активный)' : ' (Архив)';
+              const caseStatus = historyCase.is_current 
+                ? 'Активный' 
+                : (historyCase.ended_at ? 'Завершен' : 'В процессе');
               
               return (
                 <div key={historyCase.id} className="case-item-view">
@@ -174,8 +171,13 @@ const TeamCaseHistoryPage = () => {
                       className="case-title"
                       onClick={(e) => handleCaseClick(historyCase.case_id, e)}
                     >
-                      {historyCase.case_title}{caseStatus}
+                      {historyCase.case_title}
                     </span>
+                    <div className="case-status">
+                      <span className={`status-badge ${historyCase.is_current ? 'active' : 'completed'}`}>
+                        {caseStatus}
+                      </span>
+                    </div>
                     <div className="case-dates">
                       <span>{formatDate(historyCase.started_at)}</span>
                       {historyCase.ended_at && (
@@ -228,19 +230,44 @@ const TeamCaseHistoryPage = () => {
                             </div>
                             {membersForCase.map((member) => (
                               <div key={member.id} className="member-row">
-                                <div className="member-name-wrapper">
+                                <div className="member-info-wrapper">
                                   <span className="member-name">{member.student_name}</span>
-                                  <span className="member-short-id">#{member.shortId}</span>
+                                  <span className="member-short-id">#{member.shortId || member.student_id?.slice(-4)}</span>
                                 </div>
-                                <div className="member-role">{member.position}</div>
-                                <div className="member-status">
+                                <span className="member-role">{member.position}</span>
+                                <span className="member-status">
                                   {member.is_current ? 'Активен' : 'Архив'}
-                                </div>
+                                </span>
                               </div>
                             ))}
                           </div>
                         ) : (
                           <div className="empty-placeholder">Нет участников</div>
+                        )}
+                      </div>
+
+                      {/* Кураторы */}
+                      <div className="case-section">
+                        <div className="section-title-2">Кураторы</div>
+                        {curatorsForCase.length > 0 ? (
+                          <div className="curators-table">
+                            <div className="curators-header">
+                              <span>Куратор</span>
+                              <span>Посещения</span>
+                              <span>Статус</span>
+                            </div>
+                            {curatorsForCase.map((curator) => (
+                              <div key={curator.id} className="curator-row">
+                                <span className="curator-name">{curator.email}</span>
+                                <span className="curator-attendance-count">{curator.attendanceCount || 0}</span>
+                                <span className={`curator-status ${curator.is_current ? 'active' : 'archived'}`}>
+                                  {curator.is_current ? 'Активен' : 'Архив'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="empty-placeholder">Нет назначенных кураторов</div>
                         )}
                       </div>
                     </div>

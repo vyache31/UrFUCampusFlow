@@ -1,43 +1,38 @@
-import { useState } from 'react';
-import { CloseIcon, CheckIcon, PlusIcon } from '../common/Icons/Icons';
+import { useState, useEffect } from 'react';
+import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
+import { getAllCurators } from '../../services/curators';
 import './Modal.css';
-
-interface Curator {
-  id: string;
-  name: string;
-}
 
 interface AddCuratorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  curators: Curator[];
-  selectedCurators: string[];
-  onToggleCurator: (id: string) => void;
-  onAddCurator: (name: string) => void;
-  onReset: () => void;
-  onApply: () => void;
+  onAssign: (curatorId: string) => void;
 }
 
-const AddCuratorModal = ({
-  isOpen,
-  onClose,
-  curators,
-  selectedCurators,
-  onToggleCurator,
-  onAddCurator,
-  onReset,
-  onApply,
-}: AddCuratorModalProps) => {
-  const [newCuratorName, setNewCuratorName] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
+const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) => {
+  const [curators, setCurators] = useState<{ id: string; email: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedCuratorId, setSelectedCuratorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCurators = async () => {
+        setLoading(true);
+        const allCurators = await getAllCurators();
+        setCurators(allCurators);
+        setLoading(false);
+      };
+      fetchCurators();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleAddCurator = () => {
-    if (newCuratorName.trim()) {
-      onAddCurator(newCuratorName.trim());
-      setNewCuratorName('');
-      setShowAddForm(false);
+  const handleSubmit = () => {
+    if (selectedCuratorId) {
+      onAssign(selectedCuratorId);
+      setSelectedCuratorId(null);
+      onClose();
     }
   };
 
@@ -52,53 +47,39 @@ const AddCuratorModal = ({
         
         <div className="modal-body">
           <div className="curator-list">
-            {curators.map((curator) => (
-              <div
-                key={curator.id}
-                className={`curator-item ${selectedCurators.includes(curator.id) ? 'selected' : ''}`}
-                onClick={() => onToggleCurator(curator.id)}
-              >
-                <span>{curator.name}</span>
-                <div className="custom-checkbox">
-                  <CheckIcon />
+            {loading ? (
+              <div className="loading-curators">Загрузка...</div>
+            ) : curators.length === 0 ? (
+              <div className="empty-curators-modal">
+                Нет доступных кураторов. Сначала создайте куратора через Swagger (POST /users/ с role_id=3)
+              </div>
+            ) : (
+              curators.map((curator) => (
+                <div
+                  key={curator.id}
+                  className={`curator-item ${selectedCuratorId === curator.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedCuratorId(curator.id)}
+                >
+                  <div>
+                    <div className="curator-email">{curator.email}</div>
+                  </div>
+                  <div className="custom-checkbox">
+                    {selectedCuratorId === curator.id && <CheckIcon />}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-
-          {showAddForm ? (
-            <div className="add-curator-form">
-              <input
-                type="text"
-                className="curator-input"
-                placeholder="Введите имя куратора"
-                value={newCuratorName}
-                onChange={(e) => setNewCuratorName(e.target.value)}
-                autoFocus
-              />
-              <div className="add-curator-actions">
-                <button className="cancel-add-btn" onClick={() => setShowAddForm(false)}>
-                  Отмена
-                </button>
-                <button className="confirm-add-btn" onClick={handleAddCurator}>
-                  Добавить
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button className="add-new-curator-btn" onClick={() => setShowAddForm(true)}>
-              <PlusIcon />
-              <span>Добавить куратора</span>
-            </button>
-          )}
         </div>
         
         <div className="modal-footer">
-          <button className="modal-reset-btn" onClick={onReset}>
-            Сбросить
-          </button>
-          <button className="modal-apply-btn" onClick={onApply}>
-            Применить
+          <button 
+            className="modal-add-btn" 
+            onClick={handleSubmit}
+            disabled={!selectedCuratorId || curators.length === 0}
+          >
+            <CheckIcon />
+            <span>Назначить</span>
           </button>
         </div>
       </div>
