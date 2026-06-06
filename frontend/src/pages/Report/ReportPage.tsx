@@ -7,13 +7,15 @@ import { DownloadIcon } from '../../components/common/Icons/Icons';
 import { getTeams, type Team } from '../../services/teams';
 import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory } from '../../services/teamCaseHistory';
+import { getTeamCurators, getAllMeetingAttendance } from '../../services/curators';
 import './reportPage.css';
 
 interface ReportTeam {
   id: string;
   name: string;
   project: string;
-  members: { name: string; group: string }[];
+  members: { name: string; role: string; group: string; shortId: string }[];
+  curators: { email: string; attendanceCount: number }[];
 }
 
 const ReportPage = () => {
@@ -42,22 +44,50 @@ const ReportPage = () => {
               console.error('Ошибка загрузки кейса для команды:', team.name, err);
             }
             
-            let members: { name: string; group: string }[] = [];
+            let members: { name: string; role: string; group: string; shortId: string }[] = [];
             try {
               const teamMembers = await getTeamMembers(team.id);
               members = teamMembers.map((member: TeamMember) => ({
                 name: member.student_name,
-                group: '' // Группа не приходит из API, пока пусть пустой будет
+                role: member.position,
+                group: member.group || '—',
+                shortId: member.shortId || member.student_id?.slice(-4) || '—'
               }));
             } catch (err) {
               console.error('Ошибка загрузки участников для команды:', team.name, err);
+            }
+            
+            const curators: { email: string; attendanceCount: number }[] = [];
+            try {
+              const teamCurators = await getTeamCurators(team.id);
+              const activeCurators = teamCurators.filter(c => c.is_current);
+              
+              const allAttendance = await getAllMeetingAttendance(team.id);
+              
+              for (const curator of activeCurators) {
+                const assignment = teamCurators.find(c => c.user_id === curator.user_id);
+                
+                if (assignment) {
+                  const attendanceCount = allAttendance.filter(a => 
+                    a.curator_assignment_id === assignment.id && a.is_present === true
+                  ).length;
+                  
+                  curators.push({
+                    email: curator.email || `Куратор ${curator.user_id?.slice(-4)}`,
+                    attendanceCount
+                  });
+                }
+              }
+            } catch (err) {
+              console.error('Ошибка загрузки кураторов для команды:', team.name, err);
             }
             
             return {
               id: team.id,
               name: team.name,
               project: projectName,
-              members: members
+              members: members,
+              curators: curators
             };
           })
         );
@@ -164,17 +194,39 @@ const ReportPage = () => {
           <div key={team.id} className="team-report-card">
             <div className="team-name">{team.name}</div>
             <div className="team-project">{team.project}</div>
+            
             <div className="team-members">
+              <div className="section-subtitle">Участники:</div>
               {team.members.length > 0 ? (
                 team.members.map((member, index) => (
                   <div key={index} className="member-row">
-                    <span className="member-name">{member.name}</span>
+                    <div className="member-info-wrapper">
+                      <span className="member-name">{member.name}</span>
+                      <span className="member-short-id">#{member.shortId}</span>
+                    </div>
+                    <span className="member-role">{member.role}</span>
                     <span className="member-group">{member.group || '—'}</span>
                   </div>
                 ))
               ) : (
                 <div className="member-row">
                   <span className="member-name">Нет участников</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="team-curators">
+              <div className="section-subtitle">Кураторы и посещаемость:</div>
+              {team.curators.length > 0 ? (
+                team.curators.map((curator, index) => (
+                  <div key={index} className="curator-row">
+                    <span className="curator-name">{curator.email}</span>
+                    <span className="curator-attendance">Посетил встреч: {curator.attendanceCount}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="curator-row">
+                  <span className="curator-name">Нет назначенных кураторов</span>
                 </div>
               )}
             </div>

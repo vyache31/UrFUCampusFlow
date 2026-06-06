@@ -55,13 +55,11 @@ export const getTeamCurators = async (teamId: string): Promise<Curator[]> => {
   return enrichedCurators;
 };
 
-// Назначить куратора команде
 export const assignCuratorToTeam = async (teamId: string, curatorId: string): Promise<Curator> => {
   const response = await api.post(`/teams/${teamId}/curators/${curatorId}`);
   return response.data;
 };
 
-// Открепить куратора от команды
 export const unassignCuratorFromTeam = async (teamId: string, assignmentId: string): Promise<Curator> => {
   const response = await api.post(`/teams/${teamId}/curators/${assignmentId}/unassign`);
   return response.data;
@@ -73,10 +71,27 @@ export const getMeetingAttendance = async (teamId: string, meetingId: string): P
   return response.data;
 };
 
-// Обновить отметку присутствия куратора
 export const updateMeetingAttendance = async (teamId: string, meetingId: string, attendanceId: string, isPresent: boolean): Promise<CuratorAttendance> => {
   const response = await api.patch(`/teams/${teamId}/meetings/${meetingId}/curator-attendance/${attendanceId}`, {
     is_present: isPresent
   });
   return response.data;
+};
+
+export const getAllMeetingAttendance = async (teamId: string): Promise<CuratorAttendance[]> => {
+  const meetings = await api.get(`/teams/${teamId}/meetings`);
+  const meetingsData = meetings.data;
+  
+  const allAttendance: CuratorAttendance[] = [];
+  
+  for (const meeting of meetingsData) {
+    try {
+      const attendance = await getMeetingAttendance(teamId, meeting.id);
+      allAttendance.push(...attendance);
+    } catch (error) {
+      console.error(`Ошибка загрузки посещаемости для встречи ${meeting.id}:`, error);
+    }
+  }
+  
+  return allAttendance;
 };
