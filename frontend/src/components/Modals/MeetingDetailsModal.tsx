@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CloseIcon } from '../common/Icons/Icons';
 import { getMeetingTasks, updateMeetingTask, type MeetingTask } from '../../services/meetings';
+import { getMeetingAttendance, updateMeetingAttendance, type CuratorAttendance, getTeamCurators, type Curator } from '../../services/curators';
 import './Modal.css';
 
 interface MeetingDetailsModalProps {
@@ -23,7 +24,10 @@ interface MeetingDetailsModalProps {
 
 const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }: MeetingDetailsModalProps) => {
   const [tasks, setTasks] = useState<MeetingTask[]>([]);
+  const [attendance, setAttendance] = useState<CuratorAttendance[]>([]);
+  const [curators, setCurators] = useState<Curator[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     if (!meeting.id || !teamId) return;
@@ -38,11 +42,48 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
     }
   }, [meeting.id, teamId]);
 
-  useEffect(() => {
-    if (isOpen && meeting.id && teamId) {
-      fetchTasks();
+  const fetchAttendance = useCallback(async () => {
+    if (!meeting.id || !teamId) return;
+    try {
+      setLoadingAttendance(true);
+      const data = await getMeetingAttendance(teamId, meeting.id);
+      setAttendance(data);
+    } catch (error) {
+      console.error('Ошибка загрузки посещаемости:', error);
+    } finally {
+      setLoadingAttendance(false);
     }
-  }, [isOpen, meeting.id, teamId, fetchTasks]);
+  }, [meeting.id, teamId]);
+
+  const fetchCurators = useCallback(async () => {
+    if (!teamId) return;
+    try {
+      const data = await getTeamCurators(teamId);
+      setCurators(data.filter(c => c.is_current === true));
+    } catch (error) {
+      console.error('Ошибка загрузки кураторов:', error);
+    }
+  }, [teamId]);
+
+    useEffect(() => {
+  if (isOpen && meeting.id && teamId) {
+    const loadData = async () => {
+      await Promise.all([
+        fetchTasks(),
+        fetchAttendance(),
+        fetchCurators()
+      ]);
+    };
+    loadData();
+  }
+}, [isOpen, meeting.id, teamId]);
+
+  const getCuratorEmail = (assignmentId: string): string => {
+    const curator = curators.find(c => c.id === assignmentId);
+    if (curator?.email) return curator.email;
+    if (curator?.user_id) return `Куратор ${curator.user_id.slice(-4)}`;
+    return `Куратор ${assignmentId.slice(-4)}`;
+  };
 
   const handleTaskToggle = async (taskId: string, currentStatus: boolean) => {
     try {
@@ -54,6 +95,18 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
     } catch (error) {
       console.error('Ошибка обновления задачи:', error);
       alert('Не удалось обновить статус поручения');
+    }
+  };
+
+  const handleAttendanceToggle = async (attendanceId: string, currentStatus: boolean) => {
+    try {
+      await updateMeetingAttendance(teamId, meeting.id, attendanceId, !currentStatus);
+      setAttendance(prev => prev.map(a =>
+        a.id === attendanceId ? { ...a, is_present: !currentStatus } : a
+      ));
+    } catch (error) {
+      console.error('Ошибка обновления посещаемости:', error);
+      alert('Не удалось обновить статус посещаемости');
     }
   };
 
@@ -90,16 +143,6 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
           <div className="meeting-details-title">{meeting.title}</div>
           
           <div className="meeting-details-field">
-            <span className="meeting-details-label">Команда:</span>
-            <span className="meeting-details-value">{meeting.team_name || '—'}</span>
-          </div>
-          
-          <div className="meeting-details-field">
-            <span className="meeting-details-label">Кейс:</span>
-            <span className="meeting-details-value">{meeting.case_title || '—'}</span>
-          </div>
-          
-          <div className="meeting-details-field">
             <span className="meeting-details-label">Дата:</span>
             <span className="meeting-details-value">{date}</span>
           </div>
@@ -129,6 +172,31 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
               <span className="meeting-details-value notes-value">{meeting.notes}</span>
             </div>
           )}
+
+          <div className="meeting-attendance-section">
+            <div className="meeting-attendance-title">Посещаемость кураторов</div>
+            <div className="meeting-attendance-list-wrapper">
+              {loadingAttendance ? (
+                <div className="meeting-attendance-loading">Загрузка...</div>
+              ) : attendance.length > 0 ? (
+                <div className="meeting-attendance-list">
+                  {attendance.map((item) => (
+                    <div key={item.id} className="meeting-attendance-item">
+                      <div 
+                        className={`attendance-checkbox ${item.is_present ? 'checked' : ''}`}
+                        onClick={() => handleAttendanceToggle(item.id, item.is_present)}
+                      >
+                        {item.is_present && <span className="checkmark">✓</span>}
+                      </div>
+                      <span className="curator-name">{getCuratorEmail(item.curator_assignment_id)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="meeting-attendance-empty">Нет назначенных кураторов</div>
+              )}
+            </div>
+          </div>
 
           <div className="meeting-tasks-section">
             <div className="meeting-tasks-title">Поручения</div>

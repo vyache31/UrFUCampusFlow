@@ -9,6 +9,9 @@ import { getTeamHistory, assignCaseToTeam, endCurrentCase, type TeamCaseHistory 
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
 import './teamEditPage.css';
+import { getTeamCurators, assignCuratorToTeam, unassignCuratorFromTeam, type Curator } from '../../services/curators';
+import AddCurator from '../../components/Modals/AddCurator';
+import api from '../../services/api';
 
 interface LocalMember {
   tempId: string;
@@ -56,6 +59,9 @@ const TeamEditPage = () => {
   
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
+
+  const [curators, setCurators] = useState<Curator[]>([]);
+  const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -118,6 +124,44 @@ const TeamEditPage = () => {
     
     fetchTeamData();
   }, [id]);
+
+  useEffect(() => {
+    const fetchCurators = async () => {
+      if (!id) return;
+      try {
+        const data = await getTeamCurators(id);
+        setCurators(data.filter(c => c.is_current === true));
+      } catch (error) {
+        console.error('Ошибка загрузки кураторов:', error);
+      }
+    };
+    fetchCurators();
+  }, [id]);
+
+  const handleAssignCurator = async (curatorId: string) => {
+    if (!id) return;
+    try {
+      const newAssignment = await assignCuratorToTeam(id, curatorId);
+      const userResponse = await api.get(`/users/${curatorId}`);
+      setCurators([...curators, { ...newAssignment, email: userResponse.data.email }]);
+    } catch (error) {
+      console.error('Ошибка назначения куратора:', error);
+      alert('Не удалось назначить куратора');
+    }
+  };
+
+  const handleUnassignCurator = async (assignmentId: string) => {
+    if (!id || !window.confirm('Открепить куратора от команды?')) return;
+    try {
+      await unassignCuratorFromTeam(id, assignmentId);
+      setCurators(curators.filter(c => c.id !== assignmentId));
+    } catch (error) {
+      console.error('Ошибка открепления куратора:', error);
+      alert('Не удалось открепить куратора');
+    }
+  };
+
+  const existingCuratorIds = curators.map(c => c.user_id);
 
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
@@ -483,6 +527,33 @@ const TeamEditPage = () => {
           </div>
         </div>
 
+        <div className="form-field">
+          <div className="field-header">
+            <label className="form-label">Кураторы</label>
+            <button className="add-btn" onClick={() => setIsCuratorModalOpen(true)}>
+              <PlusIcon />
+              <span>Добавить куратора</span>
+            </button>
+          </div>
+          {curators.length > 0 ? (
+            <div className="curators-list">
+              {curators.map((curator) => (
+                <div key={curator.id} className="curator-item">
+                  <span className="curator-name">{curator.email || `Куратор ${curator.user_id?.slice(-4)}`}</span>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => handleUnassignCurator(curator.id)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-curators">Нет назначенных кураторов</div>
+          )}
+        </div>
+
         {/* Состояние команды */}
         <div className="form-field" data-field="status">
           <label className="form-label">Состояние команды</label>
@@ -503,6 +574,13 @@ const TeamEditPage = () => {
 
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
+
+      <AddCurator
+        isOpen={isCuratorModalOpen}
+        onClose={() => setIsCuratorModalOpen(false)}
+        onAssign={handleAssignCurator}
+        existingCuratorIds={existingCuratorIds}
+      />
 
       <AddMemberModal
         isOpen={isMemberModalOpen}

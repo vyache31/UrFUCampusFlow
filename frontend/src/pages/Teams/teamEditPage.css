@@ -478,6 +478,37 @@
   margin-top: 10px;
 }
 
+.curators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.curator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+}
+
+.curator-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.empty-curators {
+  padding: 15px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  text-align: center;
+  color: #A5A5B0;
+  font-size: 14px;
+}
+
 @media (max-width: 1200px) {
   .edit-form {
     width: 100%;
