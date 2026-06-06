@@ -23,6 +23,7 @@ class Users(Base):
     evaluation_forms = relationship('EvaluationForm', back_populates='creator')
     evaluation_form_reactions = relationship('EvaluationFormReactions', back_populates='creator')
     evaluation_form_comments = relationship('EvaluationFormComments', back_populates='creator')
+    curator_assignments = relationship('CuratorAssignment', back_populates='user')
 
 
 class Roles(Base):
