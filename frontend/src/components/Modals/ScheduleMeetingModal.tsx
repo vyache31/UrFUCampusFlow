@@ -2,6 +2,7 @@ import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { CloseIcon, CheckIcon, CalendarIcon, PlusIcon } from '../common/Icons/Icons';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
 interface MeetingTask {
@@ -32,6 +33,7 @@ interface ScheduleMeetingModalProps {
     notes: string;
     tasks: MeetingTask[];
     recurrence_type: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+    interval: number;
     days_of_week?: string[];
     end_type: 'never' | 'after_occurrences' | 'by_date';
     occurrences?: number;
@@ -65,6 +67,7 @@ const ScheduleMeetingModal = ({
   onScheduleRecurring, 
   defaultTitle = '' 
 }: ScheduleMeetingModalProps) => {
+  const { showError } = useToast();
   const [title, setTitle] = useState(defaultTitle);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [time, setTime] = useState('');
@@ -134,7 +137,7 @@ const ScheduleMeetingModal = ({
 
   const handleSubmit = () => {
     if (!title.trim() || !selectedDate || !time) {
-      alert('Заполните название встречи, дату и время');
+      showError('Заполните название встречи, дату и время');
       return;
     }
 
@@ -150,8 +153,9 @@ const ScheduleMeetingModal = ({
         tasks,
       });
     } else if (onScheduleRecurring) {
+      let interval = 1;
+      if (recurrence === 'biweekly') interval = 2;
       
-      // Определяем тип повторения
       let patternType: 'daily' | 'weekly' | 'monthly' = 'daily';
       if (recurrence === 'weekly' || recurrence === 'biweekly') patternType = 'weekly';
       if (recurrence === 'monthly') patternType = 'monthly';
@@ -166,6 +170,7 @@ const ScheduleMeetingModal = ({
         notes,
         tasks,
         recurrence_type: recurrence as 'daily' | 'weekly' | 'biweekly' | 'monthly',
+        interval: interval,
         days_of_week: patternType === 'weekly' && selectedWeekDays.length > 0 ? selectedWeekDays : undefined,
         end_type: endType,
         occurrences: endType === 'after_occurrences' ? occurrences : undefined,
@@ -289,7 +294,6 @@ const ScheduleMeetingModal = ({
             />
           </div>
 
-          {/* Повторяемость */}
           <div className="schedule-field">
             <label className="schedule-label">Повторяемость:</label>
             <select 
@@ -303,7 +307,6 @@ const ScheduleMeetingModal = ({
             </select>
           </div>
 
-          {/* Выбор дней недели для еженедельного повторения */}
           {isWeeklyRecurrence && (
             <div className="schedule-field">
               <label className="schedule-label">Дни недели:</label>
@@ -322,7 +325,6 @@ const ScheduleMeetingModal = ({
             </div>
           )}
 
-          {/* Настройки окончания повторения */}
           {recurrence !== 'none' && (
             <div className="schedule-field recurrence-options">
               <label className="schedule-label">Окончание:</label>
@@ -379,7 +381,6 @@ const ScheduleMeetingModal = ({
             </div>
           )}
 
-          {/* Поручения */}
           <div className="schedule-field tasks-section">
             <label className="schedule-label">Поручения:</label>
             <div className="tasks-wrapper">

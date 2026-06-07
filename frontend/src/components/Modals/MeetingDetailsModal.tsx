@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CloseIcon } from '../common/Icons/Icons';
 import { getMeetingTasks, updateMeetingTask, type MeetingTask } from '../../services/meetings';
 import { getMeetingAttendance, updateMeetingAttendance, type CuratorAttendance, getTeamCurators, type Curator } from '../../services/curators';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
 interface MeetingDetailsModalProps {
@@ -23,6 +24,7 @@ interface MeetingDetailsModalProps {
 }
 
 const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }: MeetingDetailsModalProps) => {
+  const { showError, showSuccess } = useToast();
   const [tasks, setTasks] = useState<MeetingTask[]>([]);
   const [attendance, setAttendance] = useState<CuratorAttendance[]>([]);
   const [curators, setCurators] = useState<Curator[]>([]);
@@ -37,10 +39,11 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
       setTasks(data);
     } catch (error) {
       console.error('Ошибка загрузки поручений:', error);
+      showError('Не удалось загрузить поручения');
     } finally {
       setLoading(false);
     }
-  }, [meeting.id, teamId]);
+  }, [meeting.id, teamId, showError]);
 
   const fetchAttendance = useCallback(async () => {
     if (!meeting.id || !teamId) return;
@@ -50,10 +53,11 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
       setAttendance(data);
     } catch (error) {
       console.error('Ошибка загрузки посещаемости:', error);
+      showError('Не удалось загрузить посещаемость');
     } finally {
       setLoadingAttendance(false);
     }
-  }, [meeting.id, teamId]);
+  }, [meeting.id, teamId, showError]);
 
   const fetchCurators = useCallback(async () => {
     if (!teamId) return;
@@ -65,18 +69,18 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
     }
   }, [teamId]);
 
-    useEffect(() => {
-  if (isOpen && meeting.id && teamId) {
-    const loadData = async () => {
-      await Promise.all([
-        fetchTasks(),
-        fetchAttendance(),
-        fetchCurators()
-      ]);
-    };
-    loadData();
-  }
-}, [isOpen, meeting.id, teamId]);
+  useEffect(() => {
+    if (isOpen && meeting.id && teamId) {
+      const loadData = async () => {
+        await Promise.all([
+          fetchTasks(),
+          fetchAttendance(),
+          fetchCurators()
+        ]);
+      };
+      loadData();
+    }
+  }, [isOpen, meeting.id, teamId, fetchTasks, fetchAttendance, fetchCurators]);
 
   const getCuratorEmail = (assignmentId: string): string => {
     const curator = curators.find(c => c.id === assignmentId);
@@ -94,7 +98,7 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
       if (onTaskUpdate) onTaskUpdate();
     } catch (error) {
       console.error('Ошибка обновления задачи:', error);
-      alert('Не удалось обновить статус поручения');
+      showError('Не удалось обновить статус поручения');
     }
   };
 
@@ -104,9 +108,10 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
       setAttendance(prev => prev.map(a =>
         a.id === attendanceId ? { ...a, is_present: !currentStatus } : a
       ));
+      showSuccess('Статус посещаемости обновлён');
     } catch (error) {
       console.error('Ошибка обновления посещаемости:', error);
-      alert('Не удалось обновить статус посещаемости');
+      showError('Не удалось обновить статус посещаемости');
     }
   };
 

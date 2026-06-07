@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
 import { getCases, type Case } from '../../services/cases';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
 interface AddCaseModalProps {
@@ -11,10 +12,12 @@ interface AddCaseModalProps {
 }
 
 const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModalProps) => {
+  const { showError } = useToast();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const hasFetched = useRef(false);
+  
   const fetchCases = useCallback(async () => {
     if (!isOpen || hasFetched.current) return;
     
@@ -36,13 +39,19 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
 
   useEffect(() => {
     if (isOpen) {
+      hasFetched.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchCases();
     }
   }, [isOpen, fetchCases]);
+
   useEffect(() => {
     if (!isOpen) {
-      setSelectedCaseId(null);
+      const timer = setTimeout(() => {
+        setSelectedCaseId(null);
+      }, 0);
       hasFetched.current = false;
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -61,7 +70,7 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
         setSelectedCaseId(null);
         onClose();
       } else {
-        alert('Ошибка: не найден ID семестра для этого кейса');
+        showError('Ошибка: не найден ID семестра для этого кейса');
       }
     }
   };
