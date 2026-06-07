@@ -6,10 +6,12 @@ import { SaveIcon, GenerateIcon } from '../../components/common/Icons/Icons';
 import { createCase, deleteCase } from '../../services/cases';
 import { generateWithAI } from '../../services/ai';
 import GenerationLoader from '../../components/GenerationLoader/GenerationLoader';
+import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
 const CaseCreatePage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   
   const titleRef = useRef<HTMLDivElement>(null);
   const shortTitleRef = useRef<HTMLDivElement>(null);
@@ -174,9 +176,11 @@ const CaseCreatePage = () => {
       await deleteCase(tempCase.id);
       setTempCaseId(null);
       
+      showSuccess('Кейс успешно сгенерирован! Вы можете отредактировать и сохранить.');
+      
     } catch (error) {
       console.error('Ошибка генерации:', error);
-      alert('Не удалось сгенерировать кейс. Попробуйте позже.');
+      showError('Не удалось сгенерировать кейс. Попробуйте позже.');
     } finally {
       setIsGenerating(false);
     }
@@ -212,11 +216,12 @@ const CaseCreatePage = () => {
         creator_id: creator_id,
       };
       
-      const newCase = await createCase(caseForAPI);
-      console.log('Создан кейс:', newCase);
+      await createCase(caseForAPI);
+      showSuccess('Кейс успешно создан!');
       navigate('/cases');
     } catch (error) {
       console.error('Ошибка создания кейса:', error);
+      showError('Не удалось создать кейс. Попробуйте позже.');
       setErrors({ submit: 'Не удалось создать кейс' });
     } finally {
       setSaving(false);

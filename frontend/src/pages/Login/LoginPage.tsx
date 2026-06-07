@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogoIcon } from '../../components/common/Icons/Icons';
 import { login } from '../../services/auth';
+import { useToast } from '../../context/ToastContext';
 import './loginPage.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { showError } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -55,7 +57,7 @@ const LoginPage = () => {
       navigate('/');
     } catch (err) {
       console.error('Ошибка входа:', err);
-      alert('Неверный email или пароль');
+      showError('Неверный email или пароль');
     } finally {
       setLoading(false);
     }

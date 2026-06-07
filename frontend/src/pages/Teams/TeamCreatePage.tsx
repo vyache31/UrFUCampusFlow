@@ -10,6 +10,7 @@ import { createTeam } from '../../services/teams';
 import { addTeamMember } from '../../services/teamMembers';
 import { assignCaseToTeam } from '../../services/teamCaseHistory';
 import { assignCuratorToTeam, getAllCurators } from '../../services/curators';
+import { useToast } from '../../context/ToastContext';
 import './teamCreatePage.css';
 
 interface TeamMember {
@@ -34,6 +35,7 @@ interface AssignedCurator {
 
 const TeamCreatePage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   
   const nameRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -165,20 +167,23 @@ const TeamCreatePage = () => {
       shortId: member.shortId
     };
     setMembers([...members, newMember]);
+    showSuccess(`Участник ${member.name} добавлен`);
   };
 
   const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
     if (teamCase) {
-      alert('Можно выбрать только один кейс. Сначала удалите текущий кейс.');
+      showError('Можно выбрать только один кейс. Сначала удалите текущий кейс.');
       return;
     }
     setTeamCase({ caseSemesterId, title: caseTitle });
+    showSuccess('Кейс добавлен');
   };
 
   const handleAddCurator = (curatorId: string) => {
     const curator = availableCurators.find(c => c.id === curatorId);
     if (curator && !curators.some(c => c.curatorId === curatorId)) {
       setCurators([...curators, { id: Date.now().toString(), curatorId: curator.id, email: curator.email }]);
+      showSuccess(`Куратор ${curator.email} добавлен`);
     }
   };
 
@@ -187,11 +192,19 @@ const TeamCreatePage = () => {
   };
 
   const handleRemoveMember = (tempId: string) => {
+    const removedMember = members.find(m => m.tempId === tempId);
     setMembers(members.filter(m => m.tempId !== tempId));
+    if (removedMember) {
+      showSuccess(`Участник ${removedMember.name} удалён`);
+    }
   };
 
   const handleRemoveCase = () => {
-    setTeamCase(null);
+    if (teamCase) {
+      const caseTitle = teamCase.title;
+      setTeamCase(null);
+      showSuccess(`Кейс "${caseTitle}" удалён`);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -290,6 +303,7 @@ const TeamCreatePage = () => {
         }
       }
       
+      showSuccess('Команда успешно создана!');
       navigate('/teams');
     } catch (error) {
       console.error('Ошибка создания команды:', error);
@@ -300,6 +314,7 @@ const TeamCreatePage = () => {
       } else {
         setErrors({ submit: 'Не удалось создать команду' });
       }
+      showError('Не удалось создать команду');
     } finally {
       setSaving(false);
     }

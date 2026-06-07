@@ -12,6 +12,7 @@ import './teamEditPage.css';
 import { getTeamCurators, assignCuratorToTeam, unassignCuratorFromTeam, type Curator } from '../../services/curators';
 import AddCurator from '../../components/Modals/AddCurator';
 import api from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 interface LocalMember {
   tempId: string;
@@ -34,6 +35,7 @@ interface LocalCase {
 
 const TeamEditPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { showSuccess, showError, showConfirm } = useToast();
   const navigate = useNavigate();
   
   const nameRef = useRef<HTMLDivElement>(null);
@@ -144,21 +146,32 @@ const TeamEditPage = () => {
       const newAssignment = await assignCuratorToTeam(id, curatorId);
       const userResponse = await api.get(`/users/${curatorId}`);
       setCurators([...curators, { ...newAssignment, email: userResponse.data.email }]);
+      showSuccess('Куратор успешно назначен');
     } catch (error) {
       console.error('Ошибка назначения куратора:', error);
-      alert('Не удалось назначить куратора');
+      showError('Не удалось назначить куратора');
     }
   };
 
-  const handleUnassignCurator = async (assignmentId: string) => {
-    if (!id || !window.confirm('Открепить куратора от команды?')) return;
-    try {
-      await unassignCuratorFromTeam(id, assignmentId);
-      setCurators(curators.filter(c => c.id !== assignmentId));
-    } catch (error) {
-      console.error('Ошибка открепления куратора:', error);
-      alert('Не удалось открепить куратора');
-    }
+  const handleUnassignCurator = (assignmentId: string) => {
+    if (!id) return;
+    
+    showConfirm({
+      message: 'Открепить куратора от команды?',
+      onConfirm: async () => {
+        try {
+          await unassignCuratorFromTeam(id, assignmentId);
+          setCurators(curators.filter(c => c.id !== assignmentId));
+          showSuccess('Куратор успешно откреплён');
+        } catch (error) {
+          console.error('Ошибка открепления куратора:', error);
+          showError('Не удалось открепить куратора');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const existingCuratorIds = curators.map(c => c.user_id);
@@ -226,13 +239,27 @@ const TeamEditPage = () => {
 
   const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
     if (teamCase && teamCase.isExisting) {
-      alert('У команды уже есть активный кейс. Сначала завершите текущий кейс.');
+      showError('У команды уже есть активный кейс. Сначала завершите текущий кейс.');
       return;
     }
     
     if (teamCase && !teamCase.isExisting) {
-      const confirmReplace = window.confirm('Заменить текущий выбранный кейс?');
-      if (!confirmReplace) return;
+      showConfirm({
+        message: 'Заменить текущий выбранный кейс?',
+        onConfirm: () => {
+          const newCase: LocalCase = {
+            tempId: Date.now().toString(),
+            caseSemesterId,
+            title: caseTitle,
+            isExisting: false
+          };
+          setTeamCase(newCase);
+        },
+        onCancel: () => {},
+        confirmText: 'Да',
+        cancelText: 'Нет'
+      });
+      return;
     }
     
     const newCase: LocalCase = {
@@ -252,9 +279,16 @@ const TeamEditPage = () => {
     if (!teamCase) return;
     
     if (teamCase.isExisting) {
-      if (window.confirm('Вы уверены, что хотите завершить текущий кейс? Он переместится в историю команды.')) {
-        setTeamCase(null);
-      }
+      showConfirm({
+        message: 'Вы уверены, что хотите завершить текущий кейс? Он переместится в историю команды.',
+        onConfirm: () => {
+          setTeamCase(null);
+          showSuccess('Кейс завершён и перемещён в историю');
+        },
+        onCancel: () => {},
+        confirmText: 'Да',
+        cancelText: 'Нет'
+      });
     } else {
       setTeamCase(null);
     }
@@ -265,6 +299,7 @@ const TeamEditPage = () => {
     
     if (!formData.name.trim()) {
       setErrors({ name: 'Введите название команды' });
+      showError('Введите название команды');
       return;
     }
     
@@ -283,14 +318,9 @@ const TeamEditPage = () => {
       const currentMemberIds = members.filter(m => m.isExisting).map(m => m.memberId).filter((id): id is string => !!id);
       const removedMemberIds = originalMemberIds.filter(id => !currentMemberIds.includes(id));
       
-      console.log('Оригинальные участники:', originalMemberIds);
-      console.log('Текущие участники:', currentMemberIds);
-      console.log('Удалённые участники:', removedMemberIds);
-      
       for (const memberId of removedMemberIds) {
         try {
           await endTeamMember(id, memberId);
-          console.log(`Участник ${memberId} завершил членство`);
         } catch (err) {
           console.error(`Ошибка завершения членства ${memberId}:`, err);
         }
@@ -304,7 +334,6 @@ const TeamEditPage = () => {
             position: member.role,
             joined_at: new Date().toISOString()
           });
-          console.log(`Участник ${member.name} добавлен`);
         } catch (err) {
           console.error(`Ошибка добавления участника ${member.name}:`, err);
         }
@@ -316,7 +345,6 @@ const TeamEditPage = () => {
       if (hasExistingCase && !hasNewCase) {
         try {
           await endCurrentCase(id);
-          console.log('Текущий кейс завершен');
         } catch (err) {
           console.error('Ошибка завершения кейса:', err);
         }
@@ -329,7 +357,6 @@ const TeamEditPage = () => {
             started_at: new Date().toISOString(),
             is_current: true
           });
-          console.log(`Кейс ${teamCase.title} добавлен`);
         } catch (err) {
           console.error(`Ошибка добавления кейса:`, err);
         }
@@ -338,47 +365,50 @@ const TeamEditPage = () => {
       if (hasExistingCase && hasNewCase && !teamCase.isExisting) {
         try {
           await endCurrentCase(id);
-          console.log('Старый кейс завершен');
           
           await assignCaseToTeam(id, {
             case_semesters_id: teamCase.caseSemesterId,
             started_at: new Date().toISOString(),
             is_current: true
           });
-          console.log(`Новый кейс ${teamCase.title} добавлен`);
         } catch (err) {
           console.error(`Ошибка замены кейса:`, err);
         }
       }
       
-      alert('Команда успешно обновлена');
+      showSuccess('Команда успешно обновлена');
       navigate(`/teams/${id}`);
     } catch (err) {
       console.error('Ошибка обновления команды:', err);
       setErrors({ submit: 'Не удалось обновить команду' });
+      showError('Не удалось обновить команду');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id) return;
     
-    if (!window.confirm('Вы уверены, что хотите удалить эту команду? Это действие необратимо.')) {
-      return;
-    }
-    
-    try {
-      setDeleting(true);
-      await deleteTeam(id);
-      alert('Команда успешно удалена');
-      navigate('/teams');
-    } catch (err) {
-      console.error('Ошибка удаления команды:', err);
-      alert('Не удалось удалить команду');
-    } finally {
-      setDeleting(false);
-    }
+    showConfirm({
+      message: 'Вы уверены, что хотите удалить эту команду? Это действие необратимо.',
+      onConfirm: async () => {
+        try {
+          setDeleting(true);
+          await deleteTeam(id);
+          showSuccess('Команда успешно удалена');
+          navigate('/teams');
+        } catch (err) {
+          console.error('Ошибка удаления команды:', err);
+          showError('Не удалось удалить команду');
+        } finally {
+          setDeleting(false);
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const breadcrumbItems = [
@@ -527,6 +557,7 @@ const TeamEditPage = () => {
           </div>
         </div>
 
+        {/* Кураторы */}
         <div className="form-field">
           <div className="field-header">
             <label className="form-label">Кураторы</label>
