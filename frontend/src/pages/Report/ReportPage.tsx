@@ -7,7 +7,8 @@ import { DownloadIcon } from '../../components/common/Icons/Icons';
 import { getTeams, type Team } from '../../services/teams';
 import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory } from '../../services/teamCaseHistory';
-import { getTeamCurators, getAllMeetingAttendance } from '../../services/curators';
+import { getTeamCurators } from '../../services/curators';
+import { getAllMeetingAttendance } from '../../services/curators';
 import './reportPage.css';
 
 interface ReportTeam {
@@ -30,8 +31,10 @@ const ReportPage = () => {
         setLoading(true);
         const teams = await getTeams(10000);
         
+        const activeTeams = teams.filter(team => team.status === 'Работает над кейсом');
+        
         const reportTeams = await Promise.all(
-          teams.map(async (team: Team) => {
+          activeTeams.map(async (team: Team) => {
             let projectName = 'Не указан';
             
             try {
@@ -234,7 +237,7 @@ const ReportPage = () => {
         ))}
         
         {reportData.length === 0 && (
-          <div className="empty-report">Нет данных для отображения</div>
+          <div className="empty-report">Нет активных команд для отображения</div>
         )}
       </div>
     </div>
