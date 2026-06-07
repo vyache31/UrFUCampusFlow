@@ -56,12 +56,12 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
     if (selectedCaseId) {
       const foundCase = cases.find(c => c.id === selectedCaseId);
       
-      if (foundCase && foundCase.case_semesters_id) {
-        onAdd(foundCase.case_semesters_id, foundCase.title);
+      if (foundCase && foundCase.id) {
+        onAdd(foundCase.id, foundCase.title);
         setSelectedCaseId(null);
         onClose();
       } else {
-        alert('Ошибка: не найден ID семестра для этого кейса');
+        alert('Ошибка: не найден ID кейса');
       }
     }
   };
