@@ -3,13 +3,19 @@ import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
 import { getAllCurators } from '../../services/curators';
 import './Modal.css';
 
-interface AddCuratorModalProps {
+interface AddBotCuratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAssign: (curatorId: string) => void;
+  existingCuratorIds?: string[];
 }
 
-const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) => {
+const AddBotCuratorModal = ({ 
+  isOpen, 
+  onClose, 
+  onAssign, 
+  existingCuratorIds = [] 
+}: AddBotCuratorModalProps) => {
   const [curators, setCurators] = useState<{ id: string; email: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCuratorId, setSelectedCuratorId] = useState<string | null>(null);
@@ -19,12 +25,13 @@ const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) =>
       const fetchCurators = async () => {
         setLoading(true);
         const allCurators = await getAllCurators();
-        setCurators(allCurators);
+        const available = allCurators.filter(c => !existingCuratorIds.includes(c.id));
+        setCurators(available);
         setLoading(false);
       };
       fetchCurators();
     }
-  }, [isOpen]);
+  }, [isOpen, existingCuratorIds]);
 
   if (!isOpen) return null;
 
@@ -60,7 +67,7 @@ const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) =>
                   className={`curator-item ${selectedCuratorId === curator.id ? 'selected' : ''}`}
                   onClick={() => setSelectedCuratorId(curator.id)}
                 >
-                  <div>
+                  <div className="curator-info">
                     <div className="curator-email">{curator.email}</div>
                   </div>
                   <div className="custom-checkbox">
@@ -87,4 +94,4 @@ const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) =>
   );
 };
 
-export default AddCuratorModal;
+export default AddBotCuratorModal;

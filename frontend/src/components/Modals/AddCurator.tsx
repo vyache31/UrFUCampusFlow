@@ -3,13 +3,14 @@ import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
 import { getAllCurators } from '../../services/curators';
 import './Modal.css';
 
-interface AddCuratorModalProps {
+interface AddCuratorProps {
   isOpen: boolean;
   onClose: () => void;
   onAssign: (curatorId: string) => void;
+  existingCuratorIds?: string[];
 }
 
-const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) => {
+const AddCurator =({ isOpen, onClose, onAssign, existingCuratorIds = [] }: AddCuratorProps) => {
   const [curators, setCurators] = useState<{ id: string; email: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCuratorId, setSelectedCuratorId] = useState<string | null>(null);
@@ -19,12 +20,14 @@ const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) =>
       const fetchCurators = async () => {
         setLoading(true);
         const allCurators = await getAllCurators();
-        setCurators(allCurators);
+        // Исключаем уже назначенных кураторов
+        const available = allCurators.filter(c => !existingCuratorIds.includes(c.id));
+        setCurators(available);
         setLoading(false);
       };
       fetchCurators();
     }
-  }, [isOpen]);
+  }, [isOpen, existingCuratorIds]);
 
   if (!isOpen) return null;
 
@@ -87,4 +90,4 @@ const AddCuratorModal = ({ isOpen, onClose, onAssign }: AddCuratorModalProps) =>
   );
 };
 
-export default AddCuratorModal;
+export default AddCurator;

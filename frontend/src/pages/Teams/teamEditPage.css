@@ -305,7 +305,7 @@
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 30px;
   align-items: center;
 }
 
@@ -317,12 +317,18 @@
   font-family: 'Montserrat', sans-serif;
 }
 
-.member-role, .member-group{
+.member-role,
+.member-group {
   color: #A5A5B0;
   font-size: 12px;
   font-family: 'Montserrat', sans-serif;
+  padding: 0;
+  margin: 0;
 }
 
+.team-edit-page .member-group {
+  text-align: left;
+}
 
 .member-badge,
 .case-badge {
@@ -470,6 +476,37 @@
 .submit-error {
   text-align: center;
   margin-top: 10px;
+}
+
+.curators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.curator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+}
+
+.curator-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.empty-curators {
+  padding: 15px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  text-align: center;
+  color: #A5A5B0;
+  font-size: 14px;
 }
 
 @media (max-width: 1200px) {

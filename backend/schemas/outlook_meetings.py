@@ -33,7 +33,7 @@ class MeetingResponse(BaseModel):
     start_at: datetime
     end_at: datetime
     outlook_event_id: str
-    event_link: str
+    event_link: str | None = None
     notes: Optional[str] = None
     timezone: Optional[int] = None
     tasks: list[MeetingTaskResponse] = Field(default_factory=list)

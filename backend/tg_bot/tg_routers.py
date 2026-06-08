@@ -6,20 +6,26 @@ from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from fastapi import Depends
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import settings
+from database import get_db
 from tg_bot.backend_api import BackendAPI
-
+from tg_bot.bot_depends import get_bot_service
+from tg_bot.bot_repository import BotRepository
+from tg_bot.bot_service import BotService
 
 api = BackendAPI(settings.BACKEND_URL)
 
 bot = Bot(token=settings.BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
+db = get_db()
+repo = BotRepository(db)
+service = BotService(repo)
 
 class InterviewState(StatesGroup):
     waiting_for_datetime = State()
@@ -65,12 +71,15 @@ async def get_cases(callback: CallbackQuery):
     for index, item in enumerate(cases, start=1):
 
         case_id = item["case_id"]
+
         case = await api.get_case(case_id)
         CASE_CACHE[case_id] = case
+
 
         title = case.get("title", f"Кейс {index}")
 
         text.append(f"{index}. {title}")
+        print(f"LOG: in get_cases id = {case_id}")
 
         kb.button(
             text=str(index),
@@ -89,7 +98,7 @@ async def get_cases(callback: CallbackQuery):
 async def view_case(callback: CallbackQuery):
 
     case_id = callback.data.split("_")[1]
-
+    print(f"LOG: in view_case case_id = {case_id}")
     case = CASE_CACHE.get(case_id)
 
     if not case:
@@ -129,7 +138,7 @@ async def apply_case(callback: CallbackQuery, state: FSMContext):
     await state.set_state(InterviewState.waiting_for_datetime)
 
     await callback.message.edit_text(
-        "Отправьте дату и время в формате ДД.ММ.ГГГГ ЧЧ:ММ"
+        "Отправьте дату и время в формате ГГГГ-ММ-ДД ЧЧ:ММ"
     )
 
 @router.message(InterviewState.waiting_for_datetime)
@@ -138,7 +147,7 @@ async def process_datetime(message: Message, state: FSMContext):
     try:
         parsed_date = datetime.strptime(
             message.text,
-            "%d.%m.%Y %H:%M"
+            "%Y-%m-%d %H:%M"
         )
     except ValueError:
         await message.answer("Неверный формат даты.")
@@ -147,13 +156,17 @@ async def process_datetime(message: Message, state: FSMContext):
     data = await state.get_data()
 
     try:
+        print(f"LOG: {data['case_id']}")
+        bot_case = await api.get_bot_case_by_case_id(data['case_id'])
         await api.create_interview(
             tg_user_id=message.from_user.id,
-            case_id=data["case_id"],
+            case_id=bot_case["id"],
+            team_name='test_name',
             date_time=parsed_date.isoformat()
         )
 
-    except httpx.HTTPStatusError:
+    except httpx.HTTPStatusError as err:
+        print(str(err))
         await message.answer("Данное время занято. Попробуйте другое.")
         return
 

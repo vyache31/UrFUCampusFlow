@@ -11,6 +11,10 @@ import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
 import MeetingDetailsModal from '../../components/Modals/MeetingDetailsModal';
 import './teamViewPage.css';
+import { createMeetingsSeries } from '../../services/meetingsSeries';
+import { getTeamCurators, type Curator } from '../../services/curators';
+import { useToast } from '../../context/ToastContext';
+
 
 interface ControlPoint {
   id: string;
@@ -20,6 +24,7 @@ interface ControlPoint {
 
 const TeamViewPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
   
   const [team, setTeam] = useState<Team | null>(null);
@@ -35,6 +40,7 @@ const TeamViewPage = () => {
   const [selectedCaseId, setSelectedCaseId] = useState('');
   const [selectedCaseTitle, setSelectedCaseTitle] = useState('');
   const [controlPointsMap, setControlPointsMap] = useState<Map<string, ControlPoint[]>>(new Map());
+  const [curators, setCurators] = useState<Curator[]>([]);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -80,8 +86,12 @@ const TeamViewPage = () => {
             };
           })
         );
+
+        const sortedMeetings = enrichedMeetings.sort((a, b) => 
+          new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
+        );
         
-        setMeetings(enrichedMeetings);
+        setMeetings(sortedMeetings);
         
       } catch (err) {
         console.error('Ошибка загрузки данных команды:', err);
@@ -93,10 +103,129 @@ const TeamViewPage = () => {
     fetchTeamData();
   }, [id]);
 
+  useEffect(() => {
+    const fetchCurators = async () => {
+      if (!id) return;
+      try {
+        const data = await getTeamCurators(id);
+        setCurators(data.filter(c => c.is_current === true));
+      } catch (error) {
+        console.error('Ошибка загрузки кураторов:', error);
+      }
+    };
+    fetchCurators();
+  }, [id]);
+
   const currentCase = teamHistory.find(h => h.is_current === true);
 
   const handleEdit = () => {
     navigate(`/teams/${id}/edit`);
+  };
+
+  const handleScheduleRecurring = async (data: {
+  title: string;
+  start_date: string;
+  start_time: string;
+  durationMinutes: number;
+  location: string;
+  event_link: string;
+  notes: string;
+  tasks: { title: string; description: string }[];
+  recurrence_type: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  interval: number;
+  days_of_week?: string[];
+  end_type: 'never' | 'after_occurrences' | 'by_date';
+  occurrences?: number;
+  end_date?: string;
+}) => {
+  if (!id || !currentCase) {
+    showError('Нет активного кейса для назначения встречи');
+    return;
+  }
+
+  const [day, month, year] = data.start_date.split('.');
+  const [hours, minutes] = data.start_time.split(':');
+  
+  const startDateTime = new Date(
+    parseInt(year), 
+    parseInt(month) - 1, 
+    parseInt(day), 
+    parseInt(hours), 
+    parseInt(minutes)
+  );
+  
+  const endDateTime = new Date(startDateTime.getTime() + data.durationMinutes * 60 * 1000);
+  
+  let patternType: 'daily' | 'weekly' | 'monthly' = 'daily';
+  if (data.recurrence_type === 'weekly' || data.recurrence_type === 'biweekly') patternType = 'weekly';
+  if (data.recurrence_type === 'monthly') patternType = 'monthly';
+  
+  let weekDays: string[] | undefined = undefined;
+  if (patternType === 'weekly') {
+    if (data.days_of_week && data.days_of_week.length > 0) {
+      weekDays = data.days_of_week;
+    } else {
+      const startDay = startDateTime.toLocaleDateString('en-US', { weekday: 'long' });
+      weekDays = [startDay];
+    }
+  }
+  
+  let rangeType: 'noEnd' | 'endDate' | 'numbered';
+  const rangeStartDate = formatDateForApi(startDateTime);
+  
+  if (data.end_type === 'never') {
+    rangeType = 'noEnd';
+  } else if (data.end_type === 'after_occurrences') {
+    rangeType = 'numbered';
+  } else {
+    rangeType = 'endDate';
+  }
+  
+  try {
+    await createMeetingsSeries(id, {
+      title: data.title,
+      start_at: startDateTime.toISOString(),
+      end_at: endDateTime.toISOString(),
+      location: data.location || '',
+      event_link: data.event_link || '',
+      notes: data.notes || '',
+      recurrence: {
+        pattern: {
+          type: patternType,
+          interval: data.interval,
+          days_of_week: weekDays,
+        },
+        range: {
+          type: rangeType,
+          start_date: rangeStartDate,
+          ...(data.end_type === 'after_occurrences' && data.occurrences ? { number_of_occurrences: data.occurrences } : {}),
+          ...(data.end_type === 'by_date' && data.end_date ? { end_date: data.end_date } : {}),
+        },
+      },
+    });
+    
+    const updatedMeetings = await getTeamMeetings(id);
+    setMeetings(updatedMeetings);
+    
+    showSuccess('Серия встреч успешно создана!');
+  } catch (err: unknown) {
+    console.error('Ошибка создания серии встреч:', err);
+    const error = err as { response?: { data?: { detail?: string } } };
+    let errorMessage = error.response?.data?.detail || 'Не удалось создать серию встреч';
+    
+    if (errorMessage.includes('This time slot is not empty')) {
+      errorMessage = 'Это время уже занято. Пожалуйста, выберите другое время.';
+    }
+    
+    showError(errorMessage);
+  }
+};
+
+  const formatDateForApi = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const handleDeleteMeeting = async (meetingId: string, e: React.MouseEvent) => {
@@ -112,10 +241,10 @@ const TeamViewPage = () => {
       setDeletingMeetingId(meetingId);
       await deleteTeamMeeting(id, meetingId);
       setMeetings(prev => prev.filter(m => m.id !== meetingId));
-      alert('Встреча успешно удалена');
+      showSuccess('Встреча успешно удалена');
     } catch (error) {
       console.error('Ошибка удаления встречи:', error);
-      alert('Не удалось удалить встречу');
+      showError('Не удалось удалить встречу');
     } finally {
       setDeletingMeetingId(null);
     }
@@ -149,7 +278,7 @@ const TeamViewPage = () => {
     tasks: { title: string; description: string }[];
   }) => {
     if (!id || !currentCase) {
-      alert('Нет активного кейса для назначения встречи');
+      showError('Нет активного кейса для назначения встречи');
       return;
     }
     
@@ -167,7 +296,7 @@ const TeamViewPage = () => {
     const endDateTime = new Date(startDateTime.getTime() + data.durationMinutes * 60 * 1000);
     
     if (isNaN(startDateTime.getTime())) {
-      alert('Пожалуйста, выберите корректную дату и время');
+      showError('Пожалуйста, выберите корректную дату и время');
       return;
     }
     
@@ -200,14 +329,23 @@ const TeamViewPage = () => {
       const updatedMeetings = await getTeamMeetings(id);
       setMeetings(updatedMeetings);
       
-      alert(`Встреча успешно создана!${data.tasks.length > 0 ? ` Создано поручений: ${data.tasks.length}` : ''}`);
+      showSuccess(`Встреча успешно создана!${data.tasks.length > 0 ? ` Создано поручений: ${data.tasks.length}` : ''}`);
     } catch (err: unknown) {
-      console.error('Ошибка создания встречи:', err);
-      const error = err as { response?: { data?: { detail?: string } } };
-      const errorMessage = error.response?.data?.detail || 'Не удалось создать встречу';
-      alert(`Ошибка: ${errorMessage}`);
+    console.error('Ошибка создания встречи:', err);
+    const error = err as { response?: { data?: { detail?: string } } };
+    let errorMessage = error.response?.data?.detail || 'Не удалось создать встречу';
+    
+    if (errorMessage.includes('This time slot is not empty')) {
+      errorMessage = 'Это время уже занято. Пожалуйста, выберите другое время.';
+    } else if (errorMessage.includes('This team has not active team case history entry')) {
+      errorMessage = 'У команды нет активного кейса. Сначала назначьте кейс команде.';
+    } else if (errorMessage.includes('OAuth connection does not exist')) {
+      errorMessage = 'Необходимо подключить Outlook. Нажмите на свою почту в правом верхнем углу и выберите "Связать с Outlook".';
     }
-  };
+    
+    showError(errorMessage);
+  }
+};
 
   const handleOpenControlPoints = (caseId: string, caseTitle: string) => {
     setSelectedCaseId(caseId);
@@ -290,7 +428,10 @@ const TeamViewPage = () => {
               </div>
               {members.map((member) => (
                 <div key={member.id} className="member-row">
-                  <div className="member-name">{member.student_name}</div>
+                  <div className="member-name-wrapper">
+                    <span className="member-name">{member.student_name}</span>
+                    <span className="member-short-id">#{member.shortId}</span>
+                  </div>
                   <div className="member-role">{member.position}</div>
                   <div className="member-group">{member.group || '—'}</div>
                 </div>
@@ -298,6 +439,21 @@ const TeamViewPage = () => {
             </div>
           ) : (
             <div className="info-value">Нет участников</div>
+          )}
+        </div>
+
+        <div className="info-block">
+          <div className="info-label">Кураторы</div>
+          {curators.length > 0 ? (
+            <div className="curators-list">
+              {curators.map((curator) => (
+                <div key={curator.id} className="curator-item">
+                  <span className="curator-name">{curator.email || `Куратор ${curator.user_id?.slice(-4)}`}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="info-value">Нет назначенных кураторов</div>
           )}
         </div>
 
@@ -381,6 +537,7 @@ const TeamViewPage = () => {
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
         onSchedule={handleScheduleMeeting}
+        onScheduleRecurring={handleScheduleRecurring}
         defaultTitle={currentCase?.case_title || ''}
       />
 

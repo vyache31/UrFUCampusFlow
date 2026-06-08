@@ -9,3 +9,4 @@ def get_bot_service(db: AsyncSession = Depends(get_db)):
     bot_repo = BotRepository(db)
 
     return BotService(bot_repo)
+

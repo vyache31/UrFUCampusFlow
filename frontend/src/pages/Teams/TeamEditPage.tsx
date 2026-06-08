@@ -4,11 +4,15 @@ import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon, DeleteIcon } from '../../components/common/Icons/Icons';
 import { getTeamById, updateTeam, deleteTeam } from '../../services/teams';
-import { getTeamMembers, addTeamMember, type TeamMember } from '../../services/teamMembers';
+import { getTeamMembers, addTeamMember, endTeamMember, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, assignCaseToTeam, endCurrentCase, type TeamCaseHistory } from '../../services/teamCaseHistory';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
 import './teamEditPage.css';
+import { getTeamCurators, assignCuratorToTeam, unassignCuratorFromTeam, type Curator } from '../../services/curators';
+import AddCurator from '../../components/Modals/AddCurator';
+import api from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 
 interface LocalMember {
   tempId: string;
@@ -18,6 +22,7 @@ interface LocalMember {
   group: string;
   isExisting: boolean;
   memberId?: string;
+  shortId?: string;
 }
 
 interface LocalCase {
@@ -30,6 +35,7 @@ interface LocalCase {
 
 const TeamEditPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { showSuccess, showError, showConfirm } = useToast();
   const navigate = useNavigate();
   
   const nameRef = useRef<HTMLDivElement>(null);
@@ -48,12 +54,43 @@ const TeamEditPage = () => {
   });
   
   const [members, setMembers] = useState<LocalMember[]>([]);
+  const [originalMembers, setOriginalMembers] = useState<LocalMember[]>([]);
   const [teamCase, setTeamCase] = useState<LocalCase | null>(null);
   const [originalCaseId, setOriginalCaseId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
+
+  const [curators, setCurators] = useState<Curator[]>([]);
+  const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
+
+  // Функция для обновления содержимого contentEditable элементов
+  const updateEditableContent = () => {
+    if (nameRef.current && nameRef.current.innerText !== formData.name) {
+      nameRef.current.innerText = formData.name;
+      updateEmptyClass(nameRef.current);
+    }
+    if (descriptionRef.current && descriptionRef.current.innerText !== formData.description) {
+      descriptionRef.current.innerText = formData.description;
+      updateEmptyClass(descriptionRef.current);
+    }
+    if (notesRef.current && notesRef.current.innerText !== formData.notes) {
+      notesRef.current.innerText = formData.notes;
+      updateEmptyClass(notesRef.current);
+    }
+  };
+
+  // Функция для обновления класса empty
+  const updateEmptyClass = (element: HTMLDivElement | null) => {
+    if (!element) return;
+    const isEmpty = element.innerText.trim() === '';
+    if (isEmpty) {
+      element.classList.add('empty');
+    } else {
+      element.classList.remove('empty');
+    }
+  };
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -68,27 +105,42 @@ const TeamEditPage = () => {
           getTeamHistory(id).catch(() => []),
         ]);
         
-        setFormData({
+        const newFormData = {
           name: teamData.name,
           description: teamData.description || '',
           notes: teamData.notes || '',
           status: teamData.status
-        });
+        };
         
-        if (nameRef.current) nameRef.current.innerText = teamData.name;
-        if (descriptionRef.current) descriptionRef.current.innerText = teamData.description || '';
-        if (notesRef.current) notesRef.current.innerText = teamData.notes || '';
+        setFormData(newFormData);
         
-        const existingMembers: LocalMember[] = membersData.map((m: TeamMember) => ({
-          tempId: m.id,
-          studentId: m.student_id,
-          name: m.student_name,
-          role: m.position,
-          group: (m as { group?: string }).group || '',
+        // Обновляем contentEditable элементы после установки состояния
+        setTimeout(() => {
+          if (nameRef.current) {
+            nameRef.current.innerText = newFormData.name;
+            updateEmptyClass(nameRef.current);
+          }
+          if (descriptionRef.current) {
+            descriptionRef.current.innerText = newFormData.description;
+            updateEmptyClass(descriptionRef.current);
+          }
+          if (notesRef.current) {
+            notesRef.current.innerText = newFormData.notes;
+            updateEmptyClass(notesRef.current);
+          }
+        }, 0);
+        
+        const existingMembers: LocalMember[] = membersData.map((member: TeamMember) => ({
+          tempId: member.id,
+          studentId: member.student_id,
+          name: member.student_name,
+          role: member.position,
+          group: (member as { group?: string }).group || '',
           isExisting: true,
-          memberId: m.id
+          memberId: member.id
         }));
         setMembers(existingMembers);
+        setOriginalMembers(JSON.parse(JSON.stringify(existingMembers)));
         
         const currentActiveCase = historyData.find((h: TeamCaseHistory) => h.is_current === true);
         
@@ -115,6 +167,55 @@ const TeamEditPage = () => {
     
     fetchTeamData();
   }, [id]);
+
+  useEffect(() => {
+    const fetchCurators = async () => {
+      if (!id) return;
+      try {
+        const data = await getTeamCurators(id);
+        setCurators(data.filter(c => c.is_current === true));
+      } catch (error) {
+        console.error('Ошибка загрузки кураторов:', error);
+      }
+    };
+    fetchCurators();
+  }, [id]);
+
+  const handleAssignCurator = async (curatorId: string) => {
+    if (!id) return;
+    try {
+      const newAssignment = await assignCuratorToTeam(id, curatorId);
+      const userResponse = await api.get(`/users/${curatorId}`);
+      setCurators([...curators, { ...newAssignment, email: userResponse.data.email }]);
+      showSuccess('Куратор успешно назначен');
+    } catch (error) {
+      console.error('Ошибка назначения куратора:', error);
+      showError('Не удалось назначить куратора');
+    }
+  };
+
+  const handleUnassignCurator = (assignmentId: string) => {
+    if (!id) return;
+    
+    showConfirm({
+      message: 'Открепить куратора от команды?',
+      onConfirm: async () => {
+        try {
+          await unassignCuratorFromTeam(id, assignmentId);
+          setCurators(curators.filter(c => c.id !== assignmentId));
+          showSuccess('Куратор успешно откреплён');
+        } catch (error) {
+          console.error('Ошибка открепления куратора:', error);
+          showError('Не удалось открепить куратора');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
+  };
+
+  const existingCuratorIds = curators.map(c => c.user_id);
 
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
@@ -144,13 +245,24 @@ const TeamEditPage = () => {
       setupScrollableEditable(nameRef.current, 53);
       setupScrollableEditable(descriptionRef.current, 250);
       setupScrollableEditable(notesRef.current, 250);
+      
+      // Обновляем содержимое после того как DOM готов
+      updateEditableContent();
     }
   }, [loading]);
+
+  // Следим за изменением formData и обновляем contentEditable
+  useEffect(() => {
+    if (!loading) {
+      updateEditableContent();
+    }
+  }, [formData.name, formData.description, formData.notes, loading]);
 
   const handleContentChange = (field: string, element: HTMLDivElement | null) => {
     if (!element) return;
     const value = element.innerText;
     setFormData(prev => ({ ...prev, [field]: value }));
+    updateEmptyClass(element);
   };
 
   const handleStatusChange = (status: string) => {
@@ -162,6 +274,7 @@ const TeamEditPage = () => {
     name: string;
     role: string;
     group: string;
+    shortId: string;
     universityId: number;
   }) => {
     const newMember: LocalMember = {
@@ -170,6 +283,7 @@ const TeamEditPage = () => {
       name: member.name,
       role: member.role,
       group: member.group,
+      shortId: member.shortId,
       isExisting: false
     };
     setMembers([...members, newMember]);
@@ -177,22 +291,42 @@ const TeamEditPage = () => {
 
   const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
     if (teamCase && teamCase.isExisting) {
-      alert('У команды уже есть активный кейс. Сначала завершите текущий кейс.');
+      showError('У команды уже есть активный кейс. Сначала завершите текущий кейс.');
       return;
     }
     
     if (teamCase && !teamCase.isExisting) {
-      const confirmReplace = window.confirm('Заменить текущий выбранный кейс?');
-      if (!confirmReplace) return;
+      showConfirm({
+        message: 'Заменить текущий выбранный кейс?',
+        onConfirm: () => {
+          const newCase: LocalCase = {
+            tempId: Date.now().toString(),
+            caseSemesterId,
+            title: caseTitle,
+            isExisting: false
+          };
+          setTeamCase(newCase);
+        },
+        onCancel: () => {},
+        confirmText: 'Да',
+        cancelText: 'Нет'
+      });
+      return;
     }
     
     const newCase: LocalCase = {
       tempId: Date.now().toString(),
-      caseSemesterId,
+      caseSemesterId: caseSemesterId,
       title: caseTitle,
       isExisting: false
     };
     setTeamCase(newCase);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   const handleRemoveMember = (tempId: string) => {
@@ -203,9 +337,16 @@ const TeamEditPage = () => {
     if (!teamCase) return;
     
     if (teamCase.isExisting) {
-      if (window.confirm('Вы уверены, что хотите завершить текущий кейс? Он переместится в историю команды.')) {
-        setTeamCase(null);
-      }
+      showConfirm({
+        message: 'Вы уверены, что хотите завершить текущий кейс? Он переместится в историю команды.',
+        onConfirm: () => {
+          setTeamCase(null);
+          showSuccess('Кейс завершён и перемещён в историю');
+        },
+        onCancel: () => {},
+        confirmText: 'Да',
+        cancelText: 'Нет'
+      });
     } else {
       setTeamCase(null);
     }
@@ -216,6 +357,7 @@ const TeamEditPage = () => {
     
     if (!formData.name.trim()) {
       setErrors({ name: 'Введите название команды' });
+      showError('Введите название команды');
       return;
     }
     
@@ -229,6 +371,18 @@ const TeamEditPage = () => {
         status: formData.status,
         university_id: 1
       });
+      
+      const originalMemberIds = originalMembers.map(m => m.memberId).filter((id): id is string => !!id);
+      const currentMemberIds = members.filter(m => m.isExisting).map(m => m.memberId).filter((id): id is string => !!id);
+      const removedMemberIds = originalMemberIds.filter(id => !currentMemberIds.includes(id));
+      
+      for (const memberId of removedMemberIds) {
+        try {
+          await endTeamMember(id, memberId);
+        } catch (err) {
+          console.error(`Ошибка завершения членства ${memberId}:`, err);
+        }
+      }
       
       const newMembers = members.filter(m => !m.isExisting);
       for (const member of newMembers) {
@@ -247,79 +401,72 @@ const TeamEditPage = () => {
       const hasNewCase = teamCase !== null;
       
       if (hasExistingCase && !hasNewCase) {
-        console.log('Завершаем текущий кейс...');
         try {
           await endCurrentCase(id);
-          console.log('Кейс успешно завершен');
         } catch (err) {
           console.error('Ошибка завершения кейса:', err);
         }
       }
       
+      if (!hasExistingCase && hasNewCase && !teamCase.isExisting) {
+        try {
+          await assignCaseToTeam(id, {
+            case_semesters_id: teamCase.caseSemesterId,
+            started_at: new Date().toISOString(),
+            is_current: true
+          });
+        } catch (err) {
+          console.error(`Ошибка добавления кейса:`, err);
+        }
+      }
+      
       if (hasExistingCase && hasNewCase && !teamCase.isExisting) {
-        console.log('Завершаем старый кейс...');
         try {
           await endCurrentCase(id);
-          console.log('Старый кейс завершен');
-        } catch (err) {
-          console.error('Ошибка завершения старого кейса:', err);
-        }
-        
-        console.log('Добавляем новый кейс...');
-        try {
+          
           await assignCaseToTeam(id, {
             case_semesters_id: teamCase.caseSemesterId,
             started_at: new Date().toISOString(),
             is_current: true
           });
-          console.log(`Новый кейс ${teamCase.title} добавлен`);
         } catch (err) {
-          console.error(`Ошибка добавления кейса:`, err);
+          console.error(`Ошибка замены кейса:`, err);
         }
       }
       
-      if (!hasExistingCase && hasNewCase && !teamCase.isExisting) {
-        console.log('Добавляем новый кейс...');
-        try {
-          await assignCaseToTeam(id, {
-            case_semesters_id: teamCase.caseSemesterId,
-            started_at: new Date().toISOString(),
-            is_current: true
-          });
-          console.log(`Кейс ${teamCase.title} добавлен`);
-        } catch (err) {
-          console.error(`Ошибка добавления кейса:`, err);
-        }
-      }
-      
-      alert('Команда успешно обновлена');
+      showSuccess('Команда успешно обновлена');
       navigate(`/teams/${id}`);
     } catch (err) {
       console.error('Ошибка обновления команды:', err);
       setErrors({ submit: 'Не удалось обновить команду' });
+      showError('Не удалось обновить команду');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!id) return;
     
-    if (!window.confirm('Вы уверены, что хотите удалить эту команду? Это действие необратимо.')) {
-      return;
-    }
-    
-    try {
-      setDeleting(true);
-      await deleteTeam(id);
-      alert('Команда успешно удалена');
-      navigate('/teams');
-    } catch (err) {
-      console.error('Ошибка удаления команды:', err);
-      alert('Не удалось удалить команду');
-    } finally {
-      setDeleting(false);
-    }
+    showConfirm({
+      message: 'Вы уверены, что хотите удалить эту команду? Это действие необратимо.',
+      onConfirm: async () => {
+        try {
+          setDeleting(true);
+          await deleteTeam(id);
+          showSuccess('Команда успешно удалена');
+          navigate('/teams');
+        } catch (err) {
+          console.error('Ошибка удаления команды:', err);
+          showError('Не удалось удалить команду');
+        } finally {
+          setDeleting(false);
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const breadcrumbItems = [
@@ -368,6 +515,8 @@ const TeamEditPage = () => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => handleContentChange('name', nameRef.current)}
+            onBlur={() => handleContentChange('name', nameRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите название команды"
           />
           {errors.name && <div className="error-message">{errors.name}</div>}
@@ -381,6 +530,8 @@ const TeamEditPage = () => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onBlur={() => handleContentChange('description', descriptionRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите описание команды"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
@@ -400,7 +551,10 @@ const TeamEditPage = () => {
               {members.map((member) => (
                 <div key={member.tempId} className="member-item">
                   <div className="member-info">
-                    <span className="member-name">{member.name}</span>
+                    <div className="member-name-wrapper">
+                      <span className="member-name">{member.name}</span>
+                      <span className="member-short-id">#{member.shortId || member.studentId?.slice(-4)}</span>
+                    </div>
                     <span className="member-role">{member.role}</span>
                     <span className="member-group">{member.group || '—'}</span>
                   </div>
@@ -425,6 +579,8 @@ const TeamEditPage = () => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => handleContentChange('notes', notesRef.current)}
+            onBlur={() => handleContentChange('notes', notesRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите заметки"
           />
           {errors.notes && <div className="error-message">{errors.notes}</div>}
@@ -445,7 +601,7 @@ const TeamEditPage = () => {
             {teamCase ? (
               <div className="case-item">
                 <div className="case-info">
-                  <span className="case-title">{teamCase.title}</span>  
+                  <span className="case-title">{teamCase.title}</span>
                 </div>
                 <div className="case-actions">
                   <button 
@@ -463,6 +619,34 @@ const TeamEditPage = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Кураторы */}
+        <div className="form-field">
+          <div className="field-header">
+            <label className="form-label">Кураторы</label>
+            <button className="add-btn" onClick={() => setIsCuratorModalOpen(true)}>
+              <PlusIcon />
+              <span>Добавить куратора</span>
+            </button>
+          </div>
+          {curators.length > 0 ? (
+            <div className="curators-list">
+              {curators.map((curator) => (
+                <div key={curator.id} className="curator-item">
+                  <span className="curator-name">{curator.email || `Куратор ${curator.user_id?.slice(-4)}`}</span>
+                  <button 
+                    className="remove-btn"
+                    onClick={() => handleUnassignCurator(curator.id)}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-curators">Нет назначенных кураторов</div>
+          )}
         </div>
 
         {/* Состояние команды */}
@@ -486,6 +670,13 @@ const TeamEditPage = () => {
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
 
+      <AddCurator
+        isOpen={isCuratorModalOpen}
+        onClose={() => setIsCuratorModalOpen(false)}
+        onAssign={handleAssignCurator}
+        existingCuratorIds={existingCuratorIds}
+      />
+
       <AddMemberModal
         isOpen={isMemberModalOpen}
         onClose={() => setIsMemberModalOpen(false)}
@@ -496,7 +687,7 @@ const TeamEditPage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        usedCaseIds={teamCase ? [teamCase.caseSemesterId] : []}
+        usedCaseSemesterIds={teamCase ? [teamCase.caseSemesterId] : []} 
       />
     </div>
   );

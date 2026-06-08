@@ -975,6 +975,7 @@
   cursor: pointer;
   border-bottom: 1px solid #F4F4F4;
   transition: opacity 0.2s ease;
+  margin: 10px;
 }
 
 .curator-item:hover {
@@ -2500,4 +2501,261 @@
   .hint-text {
     margin-left: 0;
   }
+}
+
+/* Посещаемость кураторов */
+.meeting-attendance-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.meeting-attendance-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #202024;
+  margin-bottom: 12px;
+}
+
+.meeting-attendance-list-wrapper {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.meeting-attendance-list-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meeting-attendance-list-wrapper::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.meeting-attendance-list-wrapper::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.meeting-attendance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meeting-attendance-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attendance-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #A5A5B0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.attendance-checkbox.checked {
+  background: #D0DFB9;
+  border-color: #D0DFB9;
+}
+
+.attendance-checkbox .checkmark {
+  color: #202024;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.curator-name {
+  font-size: 14px;
+  color: #202024;
+}
+
+.meeting-attendance-empty {
+  color: #A5A5B0;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+.meeting-attendance-loading {
+  text-align: center;
+  padding: 16px;
+  color: #A5A5B0;
+  font-size: 14px;
+}
+
+/* Дополнительные стили для повторяемости */
+.recurrence-select {
+  width: 200px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23202024' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  padding-right: 40px;
+}
+
+.recurrence-options {
+  align-items: flex-start !important;
+}
+
+.recurrence-end-options {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  color: #202024;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.occurrences-input {
+  width: 60px;
+  padding: 6px 10px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+  margin: 0 5px;
+}
+
+.occurrences-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.date-picker-wrapper.small {
+  width: 130px;
+  margin-left: 10px;
+  background: #F4F4F4;
+  padding: 6px 10px;
+}
+
+.date-picker-input.small {
+  font-size: 12px;
+}
+
+/* Кнопки в футере */
+.schedule-modal-footer.double-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 20px 20px 20px;
+}
+
+.schedule-add-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.schedule-add-more-btn svg path {
+  fill: #202024;
+}
+
+.schedule-add-more-btn:hover {
+  background: #E0E0E0;
+}
+
+.schedule-add-more-btn:active {
+  background: transparent;
+  outline: 1px solid #A5A5B0;
+  outline-offset: -1px;
+}
+
+/* Список добавленных встреч */
+.added-meetings-list {
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.added-meetings-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  margin-bottom: 10px;
+}
+
+.added-meeting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+}
+
+.added-meeting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.added-meeting-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.added-meeting-date {
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.remove-meeting-btn {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.remove-meeting-btn:hover {
+  color: #F63333;
+  background: #FFE4E4;
 }

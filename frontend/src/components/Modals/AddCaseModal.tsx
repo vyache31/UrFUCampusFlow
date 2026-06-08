@@ -1,20 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
 import { getCases, type Case } from '../../services/cases';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
+
+interface CaseWithSemester extends Case {
+  case_semesters_id: string;
+  semester_name: string;
+}
 
 interface AddCaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (caseSemesterId: string, caseTitle: string) => void;
-  usedCaseIds?: string[];
+  usedCaseSemesterIds?: string[];
 }
 
-const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModalProps) => {
-  const [cases, setCases] = useState<Case[]>([]);
+const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseSemesterIds = [] }: AddCaseModalProps) => {
+  const { showError } = useToast();
+  const [cases, setCases] = useState<CaseWithSemester[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseSemesterId, setSelectedCaseSemesterId] = useState<string | null>(null);
   const hasFetched = useRef(false);
+  
   const fetchCases = useCallback(async () => {
     if (!isOpen || hasFetched.current) return;
     
@@ -22,9 +30,18 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
       setLoading(true);
       hasFetched.current = true;
       const data = await getCases(100);
-      const availableCases = data.filter(c => 
-        c.status_id === 3 && !usedCaseIds.includes(c.id)
-      );
+      
+      const availableCases = data
+        .filter(c => 
+          c.status_id === 3 && 
+          c.case_semesters_id &&
+          !usedCaseSemesterIds.includes(c.case_semesters_id)
+        )
+        .map(c => ({
+          ...c,
+          case_semesters_id: c.case_semesters_id,
+          semester_name: c.semester_name || 'Семестр не указан'
+        } as CaseWithSemester));
       
       setCases(availableCases);
     } catch (error) {
@@ -32,36 +49,42 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
     } finally {
       setLoading(false);
     }
-  }, [isOpen, usedCaseIds]);
+  }, [isOpen, usedCaseSemesterIds]);
 
   useEffect(() => {
     if (isOpen) {
+      hasFetched.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchCases();
     }
   }, [isOpen, fetchCases]);
+
   useEffect(() => {
     if (!isOpen) {
-      setSelectedCaseId(null);
+      const timer = setTimeout(() => {
+        setSelectedCaseSemesterId(null);
+      }, 0);
       hasFetched.current = false;
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSelectCase = (caseId: string) => {
-    setSelectedCaseId(caseId);
+  const handleSelectCase = (caseSemesterId: string) => {
+    setSelectedCaseSemesterId(caseSemesterId);
   };
 
   const handleSubmit = () => {
-    if (selectedCaseId) {
-      const foundCase = cases.find(c => c.id === selectedCaseId);
+    if (selectedCaseSemesterId) {
+      const foundCase = cases.find(c => c.case_semesters_id === selectedCaseSemesterId);
       
-      if (foundCase && foundCase.case_semesters_id) {
+      if (foundCase) {
         onAdd(foundCase.case_semesters_id, foundCase.title);
-        setSelectedCaseId(null);
+        setSelectedCaseSemesterId(null);
         onClose();
       } else {
-        alert('Ошибка: не найден ID семестра для этого кейса');
+        showError('Ошибка: выбранный кейс не найден');
       }
     }
   };
@@ -84,14 +107,14 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
             ) : (
               cases.map((caseItem) => (
                 <div
-                  key={caseItem.id}
-                  className={`case-item-modal ${selectedCaseId === caseItem.id ? 'selected' : ''}`}
-                  onClick={() => handleSelectCase(caseItem.id)}
+                  key={caseItem.case_semesters_id}
+                  className={`case-item-modal ${selectedCaseSemesterId === caseItem.case_semesters_id ? 'selected' : ''}`}
+                  onClick={() => handleSelectCase(caseItem.case_semesters_id)}
                 >
                   <div className="case-checkbox-modal">
-                    {selectedCaseId === caseItem.id && <CheckIcon />}
+                    {selectedCaseSemesterId === caseItem.case_semesters_id && <CheckIcon />}
                   </div>
-                  <span className="case-title-modal">{caseItem.short_title || caseItem.title}</span>
+                    <span className="case-title-modal">{caseItem.short_title || caseItem.title}</span>
                 </div>
               ))
             )}
@@ -102,7 +125,7 @@ const AddCaseModal = ({ isOpen, onClose, onAdd, usedCaseIds = [] }: AddCaseModal
           <button 
             className="modal-add-btn" 
             onClick={handleSubmit}
-            disabled={!selectedCaseId || cases.length === 0}
+            disabled={!selectedCaseSemesterId || cases.length === 0}
           >
             <CheckIcon />
             <span>Добавить</span>

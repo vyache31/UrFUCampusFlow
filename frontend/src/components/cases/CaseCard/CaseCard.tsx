@@ -8,7 +8,7 @@ import {
   CheckboxIcon 
 } from '../../common/Icons/Icons';
 import { truncateCardTitle, truncateCardDescription } from '../../../utils/truncate';
-import './caseCard.css';
+import './CaseCard.css';
 
 interface CaseCardProps {
   type: 'case' | 'team';

@@ -19,16 +19,21 @@ const Meetings = ({ meetings, loading = false, onTaskUpdate }: MeetingsProps) =>
     const now = new Date();
     const sevenDaysLater = new Date();
     sevenDaysLater.setDate(now.getDate() + 7);
+    sevenDaysLater.setHours(23, 59, 59, 999);
     
-    return meetings.filter(meeting => {
-      const meetingDate = new Date(meeting.start_at);
-      return meetingDate >= now && meetingDate <= sevenDaysLater;
-    });
+    return meetings
+      .filter(meeting => {
+        const meetingDate = new Date(meeting.start_at);
+        return meetingDate >= now && meetingDate <= sevenDaysLater;
+      })
+      .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
   }, [meetings]);
   
   const upcomingMeetings = useMemo(() => {
     const now = new Date();
-    return meetings.filter(meeting => new Date(meeting.start_at) > now);
+    return meetings
+      .filter(meeting => new Date(meeting.start_at) > now)
+      .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
   }, [meetings]);
   
   const displayedMeetings = isExpanded ? weeklyMeetings : upcomingMeetings.slice(0, 3);
@@ -100,18 +105,10 @@ const Meetings = ({ meetings, loading = false, onTaskUpdate }: MeetingsProps) =>
             );
           })}
 
-          {weeklyMeetings.length > 3 && (
+           {weeklyMeetings.length > 3 && (
             <button className="expand-btn" onClick={() => setIsExpanded(!isExpanded)}>
               {isExpanded ? 'Свернуть' : `Развернуть на неделю (${weeklyMeetings.length})`}
               {isExpanded ? <CollapseArrowIcon /> : <ExpandArrowIcon />}
-            </button>
-          )}
-          
-          {/* Если встреч на неделю меньше 3, но есть ещё будущие встречи */}
-          {weeklyMeetings.length <= 3 && upcomingMeetings.length > 3 && !isExpanded && (
-            <button className="expand-btn" onClick={() => setIsExpanded(!isExpanded)}>
-              Развернуть все встречи
-              <ExpandArrowIcon />
             </button>
           )}
         </div>
