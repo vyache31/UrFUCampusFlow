@@ -45,7 +45,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-alpha_user}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-alpha_db}
       REDIS_URL: redis://redis:6379/0
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
-    command: alembic upgrade head
+    command: sh -c "alembic upgrade head"
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,6 +63,7 @@ services:
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    command: sh -c "python -m seeds.seed && uvicorn main:app --host 0.0.0.0 --port 8000 --access-log --log-level info"
     depends_on:
       postgres:
         condition: service_healthy
