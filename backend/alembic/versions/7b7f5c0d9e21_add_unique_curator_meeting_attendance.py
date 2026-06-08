@@ -8,6 +8,7 @@ Create Date: 2026-06-06 00:00:00.000000
 from typing import Sequence, Union
 
 from alembic import op
+import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
@@ -19,6 +20,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+    op.create_table(
+        "curator_meetings_attendance",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("meeting_id", sa.Integer, nullable=False),
+        sa.Column("curator_assignment_id", sa.Integer, nullable=False),
+    )
     op.create_unique_constraint(
         "uq_curator_meeting_attendance_meeting_assignment",
         "curator_meetings_attendance",
@@ -27,9 +34,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Downgrade schema."""
     op.drop_constraint(
         "uq_curator_meeting_attendance_meeting_assignment",
         "curator_meetings_attendance",
         type_="unique",
     )
+    op.drop_table("curator_meetings_attendance")
