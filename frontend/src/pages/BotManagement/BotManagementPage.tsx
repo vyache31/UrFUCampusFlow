@@ -3,10 +3,11 @@ import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import BotCaseCard from '../../components/cases/BotCaseCard/BotCaseCard';
 import { getCases, type Case } from '../../services/cases';
-import { getBotMode, updateBotMode, getBotCases, addBotCase, deleteBotCase, getBotInterviews, deleteBotInterview, getBotCurators, addBotCurator, deleteBotCurator, type BotInterview, type BotCurator } from '../../services/bot';
+import { getBotMode, updateBotMode, getBotCases, addBotCase, deleteBotCase, getBotInterviews, deleteBotInterview, getBotCurators, addBotCurator, deleteBotCurator, sendBotMessage, type BotInterview, type BotCurator } from '../../services/bot';
 import AddBotCuratorModal from '../../components/Modals/AddBotCuratorModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
-import { PlusIcon, CloseIcon } from '../../components/common/Icons/Icons';
+import SendMessageModal from '../../components/Modals/SendMessageModal';
+import { PlusIcon, SendIcon, CloseIcon } from '../../components/common/Icons/Icons';
 import { useToast } from '../../context/ToastContext';
 import axios from 'axios';
 import './botManagement.css';
@@ -24,6 +25,7 @@ const BotManagementPage = () => {
   const [botStatus, setBotStatus] = useState<'набор' | 'стоп набор'>('набор');
   const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
   const [isAddCaseModalOpen, setIsAddCaseModalOpen] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchAllData = async () => {
@@ -95,6 +97,21 @@ const BotManagementPage = () => {
       showSuccess(`Режим изменён на "${mode}"`);
     } catch (error) {
       console.error('Ошибка изменения режима:', error);
+      showError(getErrorMessage(error));
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleSendMessage = async (message: string) => {
+    if (isUpdating) return;
+    
+    setIsUpdating(true);
+    try {
+      await sendBotMessage(message);
+      showSuccess('Сообщение успешно отправлено');
+    } catch (error) {
+      console.error('Ошибка отправки сообщения:', error);
       showError(getErrorMessage(error));
     } finally {
       setIsUpdating(false);
@@ -266,6 +283,10 @@ const BotManagementPage = () => {
             Стоп набор
           </button>
         </div>
+        <button className="send-message-btn" onClick={() => setIsSendModalOpen(true)} disabled={isUpdating}>
+          <SendIcon />
+          <span>Отправить сообщение</span>
+        </button>
       </div>
 
       {/* Секция кураторов */}
@@ -327,6 +348,12 @@ const BotManagementPage = () => {
           <span>Добавить кейс</span>
         </button>
       </div>
+
+      <SendMessageModal
+        isOpen={isSendModalOpen}
+        onClose={() => setIsSendModalOpen(false)}
+        onSend={handleSendMessage}
+      />
 
       <AddBotCuratorModal
         isOpen={isCuratorModalOpen}

@@ -135,3 +135,9 @@ export const addBotInterview = async (data: {
 export const deleteBotInterview = async (interviewId: string): Promise<void> => {
   await api.delete(`/bot/interviews?interview_id=${interviewId}`);
 };
+
+// Отправить сообщение через бота
+export const sendBotMessage = async (message: string): Promise<string> => {
+  const response = await api.post(`/bot/message?message=${encodeURIComponent(message)}`);
+  return response.data;
+};
