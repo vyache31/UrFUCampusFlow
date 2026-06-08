@@ -11,6 +11,8 @@ from tg_bot.bot_schemas import (
     RecruitmentCuratorCreate,
     InterviewCreate
 )
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+
 
 
 class BotService:
@@ -50,8 +52,11 @@ class BotService:
     async def get_all_bot_cases(self):
         return await self.bot_repo.get_all_bot_cases()
 
-    async def get_bot_case_by_id(self, bot_case_id: str):
-        return await self.bot_repo.get_bot_case_by_id(bot_case_id)
+    async def get_bot_case_by_id(self, case_id: str):
+        return await self.bot_repo.get_bot_case_by_id(case_id)
+
+    async def get_bot_case_by_case_id(self, bot_case_id: str):
+        return await self.bot_repo.get_bot_case_by_case_id(bot_case_id)
 
     async def add_bot_case(self, schema: BotCaseCreate):
         await self._check_stop_mode()
@@ -141,3 +146,38 @@ class BotService:
         await self.bot_repo.delete_interview(interview)
 
         return True
+
+    async def get_all_tg_users(self):
+        return await self.bot_repo.get_all_interviews()
+
+    async def broadcast_message(self, text: str):
+        from tg_bot.tg_routers import bot
+        users = await self.get_all_tg_users()
+
+        success = 0
+        failed = 0
+
+        for user in users:
+            try:
+                await bot.send_message(
+                    chat_id=user.tg_user_id,
+                    text=text
+                )
+                success += 1
+
+            except (
+                    TelegramBadRequest,
+                    TelegramForbiddenError,
+                    Exception
+            ) as e:
+                print(
+                    f"Failed to send message "
+                    f"to {user.tg_user_id}: {e}"
+                )
+                failed += 1
+
+        return {
+            "total": len(users),
+            "success": success,
+            "failed": failed
+        }

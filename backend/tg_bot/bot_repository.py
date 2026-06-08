@@ -37,6 +37,14 @@ class BotRepository:
 
         return case.scalar_one_or_none()
 
+    async def get_bot_case_by_case_id(self, case_id: str):
+        case = await self.db.execute(
+            select(BotCases)
+            .where(BotCases.case_id == case_id)
+        )
+
+        return case.scalar_one_or_none()
+
     async def add_bot_case(self, bot_case: BotCases):
         self.db.add(bot_case)
         await self.db.commit()
@@ -101,3 +109,4 @@ class BotRepository:
     async def delete_interview(self, interview: Interviews):
         await self.db.delete(interview)
         await self.db.commit()
+
