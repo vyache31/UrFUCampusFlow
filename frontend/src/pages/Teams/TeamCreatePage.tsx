@@ -519,7 +519,7 @@ const TeamCreatePage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        usedCaseIds={teamCase ? [teamCase.caseSemesterId] : []}
+        usedCaseSemesterIds={teamCase ? [teamCase.caseSemesterId] : []}
       />
 
       <AddCuratorModal

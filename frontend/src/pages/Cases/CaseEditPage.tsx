@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
@@ -26,10 +26,46 @@ const CaseEditPage = () => {
     shortTitle: '',
     description: '',
     expectedResult: '',
-    criteria: '',
-    semester: ''
+    criteria: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Функция для обновления класса empty
+  const updateEmptyClass = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    const text = element.innerText.trim();
+    const isEmpty = text === '';
+    
+    if (isEmpty) {
+      element.classList.add('empty');
+    } else {
+      element.classList.remove('empty');
+    }
+  }, []);
+
+  // Функция для обновления содержимого contentEditable элементов
+  const updateEditableContent = useCallback(() => {
+    if (titleRef.current && titleRef.current.innerText !== formData.title) {
+      titleRef.current.innerText = formData.title;
+      updateEmptyClass(titleRef.current);
+    }
+    if (shortTitleRef.current && shortTitleRef.current.innerText !== formData.shortTitle) {
+      shortTitleRef.current.innerText = formData.shortTitle;
+      updateEmptyClass(shortTitleRef.current);
+    }
+    if (descriptionRef.current && descriptionRef.current.innerText !== formData.description) {
+      descriptionRef.current.innerText = formData.description;
+      updateEmptyClass(descriptionRef.current);
+    }
+    if (expectedResultRef.current && expectedResultRef.current.innerText !== formData.expectedResult) {
+      expectedResultRef.current.innerText = formData.expectedResult;
+      updateEmptyClass(expectedResultRef.current);
+    }
+    if (criteriaRef.current && criteriaRef.current.innerText !== formData.criteria) {
+      criteriaRef.current.innerText = formData.criteria;
+      updateEmptyClass(criteriaRef.current);
+    }
+  }, [formData.title, formData.shortTitle, formData.description, formData.expectedResult, formData.criteria, updateEmptyClass]);
 
   useEffect(() => {
     const fetchCase = async () => {
@@ -44,17 +80,34 @@ const CaseEditPage = () => {
           shortTitle: data.short_title || '',
           description: data.project_goals || '',
           expectedResult: data.required_result || '',
-          criteria: data.grade_criteria || '',
-          semester: data.semester_name || ''
+          criteria: data.grade_criteria || ''
         };
         
         setFormData(formValues);
         
-        if (titleRef.current) titleRef.current.innerText = formValues.title;
-        if (shortTitleRef.current) shortTitleRef.current.innerText = formValues.shortTitle;
-        if (descriptionRef.current) descriptionRef.current.innerText = formValues.description;
-        if (expectedResultRef.current) expectedResultRef.current.innerText = formValues.expectedResult;
-        if (criteriaRef.current) criteriaRef.current.innerText = formValues.criteria;
+        // Обновляем contentEditable элементы после установки состояния
+        setTimeout(() => {
+          if (titleRef.current) {
+            titleRef.current.innerText = formValues.title;
+            updateEmptyClass(titleRef.current);
+          }
+          if (shortTitleRef.current) {
+            shortTitleRef.current.innerText = formValues.shortTitle;
+            updateEmptyClass(shortTitleRef.current);
+          }
+          if (descriptionRef.current) {
+            descriptionRef.current.innerText = formValues.description;
+            updateEmptyClass(descriptionRef.current);
+          }
+          if (expectedResultRef.current) {
+            expectedResultRef.current.innerText = formValues.expectedResult;
+            updateEmptyClass(expectedResultRef.current);
+          }
+          if (criteriaRef.current) {
+            criteriaRef.current.innerText = formValues.criteria;
+            updateEmptyClass(criteriaRef.current);
+          }
+        }, 0);
         
       } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
@@ -67,6 +120,13 @@ const CaseEditPage = () => {
     fetchCase();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Следим за изменением formData и обновляем contentEditable
+  useEffect(() => {
+    if (!loading) {
+      updateEditableContent();
+    }
+  }, [loading, updateEditableContent]);
 
   const fieldLimits: Record<string, number> = {
     title: 100,
@@ -131,79 +191,47 @@ const CaseEditPage = () => {
     if (!element) return;
     const value = element.innerText;
     setFormData(prev => ({ ...prev, [field]: value }));
+    updateEmptyClass(element);
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  const updateEmptyClass = (element: HTMLDivElement | null) => {
-    if (!element) return;
-      const text = element.innerText.trim();
-      const isEmpty = text === '';
+  const handleSave = async () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'Введите название кейса';
+    if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
+    if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
+    if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
     
-    if (isEmpty) {
-      element.classList.add('empty');
-    } else {
-      element.classList.remove('empty');
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
-};
-
-useEffect(() => {
-  if (!loading) {
-    const elements = [
-      { ref: titleRef, field: 'title' },
-      { ref: shortTitleRef, field: 'shortTitle' },
-      { ref: descriptionRef, field: 'description' },
-      { ref: expectedResultRef, field: 'expectedResult' },
-      { ref: criteriaRef, field: 'criteria' },
-    ];
     
-    setTimeout(() => {
-      elements.forEach(({ ref }) => {
-        const el = ref.current;
-        if (el) {
-          updateEmptyClass(el);
-        }
-      });
-    }, 50);
-  }
-}, [loading, formData]);
-
-const handleSave = async () => {
-  const newErrors: Record<string, string> = {};
-  if (!formData.title.trim()) newErrors.title = 'Введите название кейса';
-  if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
-  if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
-  if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
-  
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    return;
-  }
-  
-  try {
-    setSaving(true);
-    const currentCase = await getCaseById(id!);
-    
-    const caseForAPI = {
-      title: formData.title,
-      short_title: formData.shortTitle,
-      difficulty_level_id: currentCase.difficulty_level_id || 1,
-      project_goals: formData.description,
-      required_result: formData.expectedResult,
-      grade_criteria: formData.criteria,
-      university_id: currentCase.university_id || 1,
-      start_date: currentCase.start_date,
-      end_date: currentCase.end_date,
-      creator_id: currentCase.creator_id,
-    };
-    
-    console.log('Отправляем на обновление:', caseForAPI);
-    
-    await updateCase(id!, caseForAPI);
-    console.log('Кейс обновлён');
-    showSuccess('Кейс успешно обновлён');
-    navigate(`/cases/${id}`);
+    try {
+      setSaving(true);
+      const currentCase = await getCaseById(id!);
+      
+      const caseForAPI = {
+        title: formData.title,
+        short_title: formData.shortTitle,
+        difficulty_level_id: currentCase.difficulty_level_id || 1,
+        project_goals: formData.description,
+        required_result: formData.expectedResult,
+        grade_criteria: formData.criteria,
+        university_id: currentCase.university_id || 1,
+        start_date: currentCase.start_date,
+        end_date: currentCase.end_date,
+        creator_id: currentCase.creator_id,
+      };
+      
+      console.log('Отправляем на обновление:', caseForAPI);
+      
+      await updateCase(id!, caseForAPI);
+      console.log('Кейс обновлён');
+      showSuccess('Кейс успешно обновлён');
+      navigate(`/cases/${id}`);
     } catch (error) {
       console.error('Ошибка обновления кейса:', error);
       if (error && typeof error === 'object' && 'response' in error) {
@@ -290,6 +318,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'title')}
             onInput={() => handleContentChange('title', titleRef.current)}
+            onBlur={() => handleContentChange('title', titleRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите название кейса"
           />
@@ -305,6 +334,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'shortTitle')}
             onInput={() => handleContentChange('shortTitle', shortTitleRef.current)}
+            onBlur={() => handleContentChange('shortTitle', shortTitleRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите короткое название (будет отображаться в карточке)"
           />
@@ -320,6 +350,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onBlur={() => handleContentChange('description', descriptionRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите описание кейса"
           />
@@ -335,6 +366,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'expectedResult')}
             onInput={() => handleContentChange('expectedResult', expectedResultRef.current)}
+            onBlur={() => handleContentChange('expectedResult', expectedResultRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите предполагаемый результат"
           />
@@ -350,21 +382,11 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'criteria')}
             onInput={() => handleContentChange('criteria', criteriaRef.current)}
+            onBlur={() => handleContentChange('criteria', criteriaRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
-        </div>
-
-        <div className="form-field form-field-row" data-field="semester">
-          <label className="form-label">Семестр</label>
-          <div className="semester-wrapper">
-            <div className="semester-toggle">
-              <button className="semester-option active" disabled>
-                {formData.semester || 'Не указан'}
-              </button>
-            </div>
-          </div>
         </div>
 
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}

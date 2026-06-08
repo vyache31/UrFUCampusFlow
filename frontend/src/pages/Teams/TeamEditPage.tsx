@@ -65,6 +65,33 @@ const TeamEditPage = () => {
   const [curators, setCurators] = useState<Curator[]>([]);
   const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
 
+  // Функция для обновления содержимого contentEditable элементов
+  const updateEditableContent = () => {
+    if (nameRef.current && nameRef.current.innerText !== formData.name) {
+      nameRef.current.innerText = formData.name;
+      updateEmptyClass(nameRef.current);
+    }
+    if (descriptionRef.current && descriptionRef.current.innerText !== formData.description) {
+      descriptionRef.current.innerText = formData.description;
+      updateEmptyClass(descriptionRef.current);
+    }
+    if (notesRef.current && notesRef.current.innerText !== formData.notes) {
+      notesRef.current.innerText = formData.notes;
+      updateEmptyClass(notesRef.current);
+    }
+  };
+
+  // Функция для обновления класса empty
+  const updateEmptyClass = (element: HTMLDivElement | null) => {
+    if (!element) return;
+    const isEmpty = element.innerText.trim() === '';
+    if (isEmpty) {
+      element.classList.add('empty');
+    } else {
+      element.classList.remove('empty');
+    }
+  };
+
   useEffect(() => {
     const fetchTeamData = async () => {
       if (!id) return;
@@ -78,16 +105,30 @@ const TeamEditPage = () => {
           getTeamHistory(id).catch(() => []),
         ]);
         
-        setFormData({
+        const newFormData = {
           name: teamData.name,
           description: teamData.description || '',
           notes: teamData.notes || '',
           status: teamData.status
-        });
+        };
         
-        if (nameRef.current) nameRef.current.innerText = teamData.name;
-        if (descriptionRef.current) descriptionRef.current.innerText = teamData.description || '';
-        if (notesRef.current) notesRef.current.innerText = teamData.notes || '';
+        setFormData(newFormData);
+        
+        // Обновляем contentEditable элементы после установки состояния
+        setTimeout(() => {
+          if (nameRef.current) {
+            nameRef.current.innerText = newFormData.name;
+            updateEmptyClass(nameRef.current);
+          }
+          if (descriptionRef.current) {
+            descriptionRef.current.innerText = newFormData.description;
+            updateEmptyClass(descriptionRef.current);
+          }
+          if (notesRef.current) {
+            notesRef.current.innerText = newFormData.notes;
+            updateEmptyClass(notesRef.current);
+          }
+        }, 0);
         
         const existingMembers: LocalMember[] = membersData.map((member: TeamMember) => ({
           tempId: member.id,
@@ -204,13 +245,24 @@ const TeamEditPage = () => {
       setupScrollableEditable(nameRef.current, 53);
       setupScrollableEditable(descriptionRef.current, 250);
       setupScrollableEditable(notesRef.current, 250);
+      
+      // Обновляем содержимое после того как DOM готов
+      updateEditableContent();
     }
   }, [loading]);
+
+  // Следим за изменением formData и обновляем contentEditable
+  useEffect(() => {
+    if (!loading) {
+      updateEditableContent();
+    }
+  }, [formData.name, formData.description, formData.notes, loading]);
 
   const handleContentChange = (field: string, element: HTMLDivElement | null) => {
     if (!element) return;
     const value = element.innerText;
     setFormData(prev => ({ ...prev, [field]: value }));
+    updateEmptyClass(element);
   };
 
   const handleStatusChange = (status: string) => {
@@ -264,7 +316,7 @@ const TeamEditPage = () => {
     
     const newCase: LocalCase = {
       tempId: Date.now().toString(),
-      caseSemesterId,
+      caseSemesterId: caseSemesterId,
       title: caseTitle,
       isExisting: false
     };
@@ -463,6 +515,7 @@ const TeamEditPage = () => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => handleContentChange('name', nameRef.current)}
+            onBlur={() => handleContentChange('name', nameRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите название команды"
           />
@@ -477,6 +530,7 @@ const TeamEditPage = () => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onBlur={() => handleContentChange('description', descriptionRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите описание команды"
           />
@@ -525,6 +579,7 @@ const TeamEditPage = () => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => handleContentChange('notes', notesRef.current)}
+            onBlur={() => handleContentChange('notes', notesRef.current)}
             onPaste={handlePaste}
             data-placeholder="Введите заметки"
           />
@@ -632,7 +687,7 @@ const TeamEditPage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        usedCaseIds={teamCase ? [teamCase.caseSemesterId] : []}
+        usedCaseSemesterIds={teamCase ? [teamCase.caseSemesterId] : []} 
       />
     </div>
   );
