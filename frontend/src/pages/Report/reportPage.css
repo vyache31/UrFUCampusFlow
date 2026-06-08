@@ -68,9 +68,15 @@
 .report-content {
   width: 886px;
   margin-left: 227px;
+  margin-bottom: 60px;
   display: flex;
   flex-direction: column;
   gap: 60px;
+  page-break-inside: avoid;
+}
+
+.report-content * {
+  box-sizing: border-box;
 }
 
 .team-report-card {
@@ -79,6 +85,8 @@
   align-items: flex-start;
   gap: 20px;
   width: 100%;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .team-name {
@@ -97,11 +105,25 @@
   line-height: 24px;
 }
 
+.section-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #A5A5B0;
+  margin-bottom: 10px;
+  margin-top: 15px;
+  text-align: left;
+}
+
+.section-subtitle:first-of-type {
+  margin-top: 0;
+}
+
+/* Участники */
 .team-members {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 15px;
+  align-items: flex-start;
+  gap: 10px;
   width: 100%;
 }
 
@@ -110,24 +132,116 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  padding: 8px 0;
+  border-bottom: 1px solid #F4F4F4;
+  gap: 15px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.member-row:last-child {
+  border-bottom: none;
+}
+
+.member-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 250px;
 }
 
 .member-name {
   color: #202024;
   font-size: 14px;
   font-family: 'Montserrat', sans-serif;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 21px;
 }
 
-.member-group {
+.member-short-id {
+  font-size: 12px;
+  color: #A5A5B0;
+  font-family: monospace;
+}
+
+.member-role {
+  flex: 1;
   color: #202024;
   font-size: 14px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
   line-height: 21px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.member-group {
+  color: #A5A5B0;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
   text-align: right;
-  min-width: 150px;
+  min-width: 100px;
+}
+
+/* Кураторы */
+.team-curators {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.curator-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 0;
+  border-bottom: 1px solid #F4F4F4;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.curator-row:last-child {
+  border-bottom: none;
+}
+
+.curator-name {
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+}
+
+.curator-attendance {
+  color: #4E85FC;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 21px;
+  text-align: right;
+}
+
+/* Состояния загрузки и ошибок */
+.loading-container,
+.error-container,
+.empty-report {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #A5A5B0;
+  background: #fff;
+  border-radius: 40px;
+  margin-top: 40px;
+}
+
+.error-container {
+  color: #F63333;
 }
 
 @media (max-width: 1200px) {
@@ -154,48 +268,83 @@
   }
 
   .member-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .member-info-wrapper {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .member-role {
+    text-align: left;
+    flex: auto;
+    width: 100%;
+  }
+  
+  .member-group {
+    text-align: left;
+    width: 100%;
+  }
+  
+  .curator-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 5px;
   }
-
-  .member-group {
+  
+  .curator-attendance {
     text-align: left;
   }
-
-  .team-members {
-    align-items: flex-start;
-  }
-}
-
-.loading-container,
-.error-container,
-.empty-report {
-  text-align: center;
-  padding: 40px;
-  font-size: 18px;
-  color: #A5A5B0;
-  background: #fff;
-  border-radius: 40px;
-  margin-top: 40px;
-}
-
-.error-container {
-  color: #F63333;
 }
 
 /* Стили для печати */
 @media print {
-  .report-header {
-    display: none;
-  }
-  
-  .download-btn {
-    display: none;
+  .report-header,
+  .download-btn,
+  .header,
+  .breadcrumb {
+    display: none !important;
   }
   
   .report-content {
+    margin: 0 !important;
+    padding: 20mm !important;
+    width: 100% !important;
+  }
+  
+  .team-report-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 30px;
+  }
+  
+  .team-report-card:last-child {
+    margin-bottom: 0;
+  }
+  
+  .member-row,
+  .curator-row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  body {
     margin: 0;
-    width: 100%;
+    padding: 0;
+  }
+  
+  .curator-attendance {
+    color: #202024 !important;
+  }
+  
+  .member-short-id {
+    color: #666 !important;
+  }
+  
+  .member-group,
+  .section-subtitle {
+    color: #666 !important;
   }
 }

@@ -66,6 +66,15 @@ async def get_all_bot_cases(
     return await service.get_all_bot_cases()
 
 
+@router.get('/cases/{bot_case_id}')
+async def get_botcase_by_case(
+    bot_case_id: str,
+    user=Depends(get_current_auth_user),
+    service: BotService = Depends(get_bot_service)
+):
+    return await service.get_bot_case_by_case_id(bot_case_id)
+
+
 @router.post('/cases')
 async def add_bot_case(
     schema: BotCaseCreate,
@@ -77,7 +86,7 @@ async def add_bot_case(
         return await service.add_bot_case(bot_case)
     except PermissionError as err:
         raise HTTPException(
-            status_code=403,
+            status_code=409,
             detail=str(err)
         )
 
@@ -89,7 +98,7 @@ async def delete_bot_case(
     service: BotService = Depends(get_bot_service)
 ):
     try:
-        bot_case = await service.get_bot_case_by_id(bot_case_id=bot_case_id)
+        bot_case = await service.get_bot_case_by_id(bot_case_id)
         if not bot_case:
             raise HTTPException(
                 status_code=404,
@@ -101,7 +110,7 @@ async def delete_bot_case(
         }
     except PermissionError as err:
         raise HTTPException(
-            status_code=403,
+            status_code=409,
             detail=str(err)
         )
 
@@ -129,7 +138,7 @@ async def add_recruitment_curator(
         )
     except PermissionError as err:
         raise HTTPException(
-            status_code=403,
+            status_code=409,
             detail=str(err)
         )
 
@@ -140,11 +149,17 @@ async def delete_recruitment_curator(
     user=Depends(get_current_auth_user),
     service: BotService = Depends(get_bot_service)
 ):
-    curator = await service.delete_recruitment_curator(curator_id=curator_id)
-    if not curator:
+    try:
+        curator = await service.delete_recruitment_curator(curator_id=curator_id)
+        if not curator:
+            raise HTTPException(
+                status_code=404,
+                detail='Curator not found'
+            )
+    except PermissionError as err:
         raise HTTPException(
-            status_code=404,
-            detail='Curator not found'
+            status_code=409,
+            detail=str(err)
         )
 
     return {'status': 'deleted'}
@@ -188,3 +203,17 @@ async def delete_interview(
     return {
         'status': 'deleted'
     }
+
+@router.post('/message')
+async def send_message(
+        message: str,
+        user = Depends(get_current_auth_user),
+        service = Depends(get_bot_service)
+):
+    try:
+        return await service.broadcast_message(message)
+    except Exception as err:
+        raise HTTPException(
+            status_code=400,
+            detail=str(err)
+        )

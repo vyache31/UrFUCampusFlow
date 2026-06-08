@@ -8,10 +8,12 @@ import BulkActionsBar from '../../components/cases/BulkActions/BulkActionsBar';
 import ActionsDropdown from '../../components/sent-cases/ActionsDropdown';
 import CaseCard from '../../components/cases/CaseCard/CaseCard';
 import { getCases, deleteCase, sendToReview, rejectCase, activateCase, archiveCase, type Case } from '../../services/cases';
+import { useToast } from '../../context/ToastContext';
 import './casesPage.css';
 
 const CasesPage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirm } = useToast();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Все кейсы');
@@ -26,11 +28,13 @@ const CasesPage = () => {
         setCases(data);
       } catch (error) {
         console.error('Ошибка загрузки кейсов:', error);
+        showError('Не удалось загрузить кейсы');
       } finally {
         setLoading(false);
       }
     };
     fetchCases();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const availableSemesters = useMemo(() => {
@@ -113,19 +117,26 @@ const CasesPage = () => {
       ? 'Вы уверены, что хотите удалить выбранный кейс? Это действие необратимо.'
       : `Вы уверены, что хотите удалить ${selectedCaseIds.length} кейсов? Это действие необратимо.`;
     
-    if (window.confirm(confirmMessage)) {
-      try {
-        for (const caseId of selectedCaseIds) {
-          await deleteCase(caseId);
+    showConfirm({
+      message: confirmMessage,
+      onConfirm: async () => {
+        try {
+          for (const caseId of selectedCaseIds) {
+            await deleteCase(caseId);
+          }
+          const updatedCases = await getCases(100);
+          setCases(updatedCases);
+          setSelectedCaseIds([]);
+          showSuccess(selectedCaseIds.length === 1 ? 'Кейс успешно удалён' : `Удалено ${selectedCaseIds.length} кейсов`);
+        } catch (error) {
+          console.error('Ошибка при удалении:', error);
+          showError('Не удалось удалить некоторые кейсы');
         }
-        const updatedCases = await getCases(100);
-        setCases(updatedCases);
-        setSelectedCaseIds([]);
-      } catch (error) {
-        console.error('Ошибка при удалении:', error);
-        alert('Не удалось удалить некоторые кейсы.');
-      }
-    }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   // Отправить на оценку
@@ -139,9 +150,10 @@ const CasesPage = () => {
       const updatedCases = await getCases(100);
       setCases(updatedCases);
       setSelectedCaseIds([]);
+      showSuccess(selectedCaseIds.length === 1 ? 'Кейс отправлен на оценку' : `Отправлено на оценку ${selectedCaseIds.length} кейсов`);
     } catch (error) {
       console.error('Ошибка при отправке на оценку:', error);
-      alert('Не удалось отправить кейсы на оценку.');
+      showError('Не удалось отправить кейсы на оценку');
     }
   };
 
@@ -156,10 +168,10 @@ const CasesPage = () => {
       const updatedCases = await getCases(100);
       setCases(updatedCases);
       setSelectedCaseIds([]);
-      alert(`Кейсы одобрены и стали активными`);
+      showSuccess(selectedCaseIds.length === 1 ? 'Кейс одобрен и стал активным' : `${selectedCaseIds.length} кейсов одобрены и стали активными`);
     } catch (error) {
       console.error('Ошибка при одобрении:', error);
-      alert('Не удалось одобрить кейсы.');
+      showError('Не удалось одобрить кейсы');
     }
   };
 
@@ -174,9 +186,10 @@ const CasesPage = () => {
       const updatedCases = await getCases(100);
       setCases(updatedCases);
       setSelectedCaseIds([]);
+      showSuccess(selectedCaseIds.length === 1 ? 'Кейс отправлен на доработку' : `${selectedCaseIds.length} кейсов отправлены на доработку`);
     } catch (error) {
       console.error('Ошибка при отправке на доработку:', error);
-      alert('Не удалось отправить кейсы на доработку.');
+      showError('Не удалось отправить кейсы на доработку');
     }
   };
 
@@ -191,10 +204,10 @@ const CasesPage = () => {
       const updatedCases = await getCases(100);
       setCases(updatedCases);
       setSelectedCaseIds([]);
-      alert(`Кейсы архивированы`);
+      showSuccess(selectedCaseIds.length === 1 ? 'Кейс архивирован' : `${selectedCaseIds.length} кейсов архивированы`);
     } catch (error) {
       console.error('Ошибка при архивации:', error);
-      alert('Не удалось архивировать кейсы.');
+      showError('Не удалось архивировать кейсы');
     }
   };
 

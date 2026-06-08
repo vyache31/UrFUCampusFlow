@@ -2,12 +2,16 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #FFFFFF;
 }
 
 .page-wrapper {
   max-width: 1440px;
   margin: 0 auto;
   padding: 0 50px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Заголовок страницы */
@@ -372,4 +376,165 @@
   font-weight: 500;
   color: #fff;
   justify-self: end;
+}
+
+
+/* Список кейсов */
+.bot-management-page .cases-wrapper {
+  background: #F4F4F4;
+  padding: 30px 50px 30px 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  border-radius: 40px 40px 0 0;
+}
+
+/* Секция добавления кейса */
+.add-case-section {
+  background: #F4F4F4;
+  padding: 15px 50px 30px 50px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Секция кураторов */
+.curators-section {
+  background: #F4F4F4;
+  padding: 30px 50px;
+  margin-bottom: 10px;
+  border-radius: 40px;
+}
+
+.curators-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.curators-title {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  color: #202024;
+  margin: 0;
+}
+
+.add-curator-btn-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4E85FC;
+  border: none;
+  border-radius: 40px;
+  padding: 10px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-curator-btn-header svg path {
+  fill: white;
+}
+
+.add-curator-btn-header:hover {
+  background: #3563C6;
+}
+
+.add-curator-btn-header:active {
+  background: transparent;
+  outline: 1px solid #4E85FC;
+  color: #4E85FC;
+}
+
+.add-curator-btn-header:active svg path {
+  fill: #4E85FC;
+}
+
+.curators-list-wrapper {
+  width: 100%;
+}
+
+.curators-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.curator-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border-radius: 40px;
+  padding: 8px 12px 8px 20px;
+}
+
+.curator-name {
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #202024;
+}
+
+.remove-curator-card {
+  width: 28px;
+  height: 28px;
+  background: #F4F4F4;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.remove-curator-card svg {
+  width: 14px;
+  height: 14px;
+}
+
+.remove-curator-card svg path {
+  fill: #A5A5B0;
+  transition: fill 0.2s ease;
+}
+
+.remove-curator-card:hover {
+  background: #FFE4E4;
+}
+
+.remove-curator-card:hover svg path {
+  fill: #F63333;
+}
+
+.empty-curators-list {
+  padding: 40px;
+  text-align: center;
+  background: white;
+  border-radius: 25px;
+  color: #A5A5B0;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .curators-section {
+    padding: 20px;
+  }
+  
+  .curators-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .curator-card {
+    width: 100%;
+    justify-content: space-between;
+  }
 }

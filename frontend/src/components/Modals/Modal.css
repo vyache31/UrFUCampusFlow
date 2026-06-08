@@ -975,6 +975,7 @@
   cursor: pointer;
   border-bottom: 1px solid #F4F4F4;
   transition: opacity 0.2s ease;
+  margin: 10px;
 }
 
 .curator-item:hover {
@@ -1179,4 +1180,1582 @@
 
 .modal-close-circle:hover {
   background: #E0E0E0;
+}
+
+/* Детали встречи */
+.meeting-details-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #202024;
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.meeting-details-field {
+  display: flex;
+  margin-bottom: 16px;
+  gap: 20px;
+}
+
+.meeting-details-label {
+  width: 100px;
+  color: #A5A5B0;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  flex-shrink: 0;
+}
+
+.meeting-details-value {
+  flex: 1;
+  color: #202024;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  word-break: break-word;
+}
+
+.meeting-details-value.notes-value {
+  white-space: pre-wrap;
+  background: #F4F4F4;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+
+.meeting-details-link {
+  flex: 1;
+  color: #4E85FC;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+  line-height: 21px;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.meeting-details-link:hover {
+  text-decoration: underline;
+  color: #3563C6;
+}
+
+/* Модальное окно встречи увеличенное */
+.schedule-modal-large {
+  width: 700px !important;
+}
+
+/* Поля ввода */
+.schedule-input {
+  flex: 1;
+  padding: 10px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  transition: border-color 0.2s ease;
+}
+
+.schedule-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.schedule-input::placeholder {
+  color: #A5A5B0;
+}
+
+.duration-input {
+  width: 100px;
+  flex: none;
+  text-align: center;
+}
+
+.schedule-textarea {
+  flex: 1;
+  padding: 10px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.schedule-textarea:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.schedule-textarea::placeholder {
+  color: #A5A5B0;
+}
+
+/* Поручения */
+.tasks-field {
+  align-items: flex-start !important;
+}
+
+.tasks-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 8px 12px;
+  gap: 10px;
+}
+
+.task-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.task-desc {
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.remove-task-btn {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #A5A5B0;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-task-btn:hover {
+  color: #F63333;
+}
+
+.add-task-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.task-title-input {
+  flex: 2;
+  padding: 8px 12px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+}
+
+.task-title-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.task-desc-input {
+  flex: 3;
+  padding: 8px 12px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+}
+
+.task-desc-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-task-btn {
+  width: 32px;
+  height: 32px;
+  background: #4E85FC;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.add-task-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-task-btn svg path {
+  fill: white;
+}
+
+.add-task-btn:hover {
+  background: #3563C6;
+}
+
+/* Секция поручений в модалке просмотра */
+.meeting-tasks-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.meeting-tasks-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #202024;
+  margin-bottom: 12px;
+}
+
+.meeting-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meeting-task-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #A5A5B0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.task-checkbox.completed {
+  background: #D0DFB9;
+  border-color: #D0DFB9;
+}
+
+.task-checkbox .checkmark {
+  color: #202024;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title.completed {
+  text-decoration: line-through;
+  color: #A5A5B0;
+}
+
+.task-description {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: 4px;
+}
+
+.meeting-tasks-empty {
+  color: #A5A5B0;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+/* Поручения - секция */
+.tasks-section {
+  align-items: flex-start !important;
+}
+
+.tasks-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+  gap: 10px;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.task-description {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: 4px;
+}
+
+.remove-task-btn {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.remove-task-btn:hover {
+  color: #F63333;
+  background: #FFE4E4;
+}
+
+/* Форма добавления поручения */
+.add-task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F9F9F9;
+  border-radius: 20px;
+  padding: 15px;
+}
+
+.task-title-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+}
+
+.task-title-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.task-desc-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+}
+
+.task-desc-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-task-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 5px;
+}
+
+.cancel-add-task {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: color 0.2s ease;
+}
+
+.cancel-add-task:hover {
+  color: #202024;
+}
+
+.confirm-add-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4E85FC;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.confirm-add-task svg {
+  width: 16px;
+  height: 16px;
+}
+
+.confirm-add-task svg path {
+  fill: white;
+}
+
+.confirm-add-task:hover {
+  background: #3563C6;
+}
+
+/* Кнопка добавить поручение */
+.add-task-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: 1px dashed #4E85FC;
+  border-radius: 40px;
+  padding: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4E85FC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.add-task-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-task-button svg path {
+  fill: #4E85FC;
+}
+
+.add-task-button:hover {
+  border-color: #3563C6;
+  background: #F4F8FF;
+  color: #3563C6;
+}
+
+.add-task-button:hover svg path {
+  fill: #3563C6;
+}
+
+/* Секция поручений в модалке просмотра */
+.meeting-tasks-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.meeting-tasks-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #202024;
+  margin-bottom: 12px;
+}
+
+.meeting-tasks-list-wrapper {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.meeting-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meeting-task-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #A5A5B0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.task-checkbox.completed {
+  background: #D0DFB9;
+  border-color: #D0DFB9;
+}
+
+.task-checkbox .checkmark {
+  color: #202024;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-title.completed {
+  text-decoration: line-through;
+  color: #A5A5B0;
+}
+
+.task-description {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: 4px;
+}
+
+.meeting-tasks-empty {
+  color: #A5A5B0;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+/* Поручения в модалке создания встречи */
+.tasks-section {
+  align-items: flex-start !important;
+}
+
+.tasks-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0; 
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.task-description {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: 4px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.remove-task-btn {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.remove-task-btn:hover {
+  color: #F63333;
+  background: #FFE4E4;
+}
+
+/* Форма добавления поручения */
+.add-task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F9F9F9;
+  border-radius: 20px;
+  padding: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-title-input,
+.task-desc-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  box-sizing: border-box;
+}
+
+.task-title-input:focus,
+.task-desc-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-task-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 5px;
+}
+
+.cancel-add-task {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: color 0.2s ease;
+}
+
+.cancel-add-task:hover {
+  color: #202024;
+}
+
+.confirm-add-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4E85FC;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.confirm-add-task svg {
+  width: 16px;
+  height: 16px;
+}
+
+.confirm-add-task svg path {
+  fill: white;
+}
+
+.confirm-add-task:hover {
+  background: #3563C6;
+}
+
+/* Кнопка добавить поручение */
+.add-task-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: 1px dashed #4E85FC;
+  border-radius: 40px;
+  padding: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4E85FC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.add-task-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-task-button svg path {
+  fill: #4E85FC;
+}
+
+.add-task-button:hover {
+  border-color: #3563C6;
+  background: #F4F8FF;
+  color: #3563C6;
+}
+
+.add-task-button:hover svg path {
+  fill: #3563C6;
+}
+/* Секция поручений в модалке просмотра */
+.meeting-tasks-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.meeting-tasks-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #202024;
+  margin-bottom: 12px;
+}
+
+.meeting-tasks-list-wrapper {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.meeting-tasks-list-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.meeting-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meeting-task-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #A5A5B0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.task-checkbox.completed {
+  background: #D0DFB9;
+  border-color: #D0DFB9;
+}
+
+.task-checkbox .checkmark {
+  color: #202024;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.task-title.completed {
+  text-decoration: line-through;
+  color: #A5A5B0;
+}
+
+.task-description {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: 4px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.meeting-tasks-empty {
+  color: #A5A5B0;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+.meeting-tasks-loading {
+  text-align: center;
+  padding: 20px;
+  color: #A5A5B0;
+  font-size: 14px;
+}
+
+/* Поручения - секция */
+.tasks-section {
+  align-items: flex-start !important;
+}
+
+.tasks-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Список поручений с прокруткой */
+.tasks-list {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 5px;
+}
+
+.tasks-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tasks-list::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.tasks-list::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.tasks-list::-webkit-scrollbar-thumb:hover {
+  background: #202024;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.task-description {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: 4px;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.remove-task-btn {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.remove-task-btn:hover {
+  color: #F63333;
+  background: #FFE4E4;
+}
+
+/* Форма добавления поручения */
+.add-task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F9F9F9;
+  border-radius: 20px;
+  padding: 15px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.task-title-input,
+.task-desc-input {
+  width: 100%;
+  padding: 12px 15px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: #202024;
+  box-sizing: border-box;
+}
+
+.task-title-input:focus,
+.task-desc-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.add-task-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 5px;
+}
+
+.cancel-add-task {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  cursor: pointer;
+  border-radius: 20px;
+  transition: color 0.2s ease;
+}
+
+.cancel-add-task:hover {
+  color: #202024;
+}
+
+.confirm-add-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4E85FC;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.confirm-add-task svg {
+  width: 16px;
+  height: 16px;
+}
+
+.confirm-add-task svg path {
+  fill: white;
+}
+
+.confirm-add-task:hover {
+  background: #3563C6;
+}
+
+/* Кнопка добавить поручение */
+.add-task-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: 1px dashed #4E85FC;
+  border-radius: 40px;
+  padding: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4E85FC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.add-task-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.add-task-button svg path {
+  fill: #4E85FC;
+}
+
+.add-task-button:hover {
+  border-color: #3563C6;
+  background: #F4F8FF;
+  color: #3563C6;
+}
+
+.add-task-button:hover svg path {
+  fill: #3563C6;
+}
+
+/* Поиск студентов в модалке */
+.search-wrapper-modal {
+  position: relative;
+  flex: 1;
+}
+
+.search-bar-modal {
+  display: flex;
+  align-items: center;
+  background: #F4F4F4;
+  border-radius: 25px;
+  padding: 10px 15px;
+  gap: 10px;
+  width: 100%;
+  transition: border-color 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.search-bar-modal:focus-within {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.search-bar-modal svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.search-bar-modal svg circle,
+.search-bar-modal svg line {
+  stroke: #A5A5B0;
+}
+
+.search-input-modal {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #202024;
+}
+
+.search-input-modal::placeholder {
+  color: #A5A5B0;
+}
+
+.search-loading-modal {
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.search-results-modal {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 100%;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.search-results-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-results-modal::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.search-results-modal::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.search-result-item-modal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.search-result-item-modal:last-child {
+  border-bottom: none;
+}
+
+.search-result-item-modal:hover {
+  background: #F4F4F4;
+}
+
+.result-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.result-group {
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.search-results-modal.empty .search-result-item-modal {
+  justify-content: center;
+  color: #A5A5B0;
+  cursor: default;
+}
+
+.search-results-modal.empty .search-result-item-modal:hover {
+  background: transparent;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .search-result-item-modal {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+.hint-text {
+  font-size: 12px;
+  color: #A5A5B0;
+  margin-top: -5px;
+  margin-left: 100px;
+}
+
+@media (max-width: 900px) {
+  .hint-text {
+    margin-left: 0;
+  }
+}
+
+.hint-text {
+  font-size: 12px;
+  margin-top: -5px;
+  margin-left: 100px;
+}
+
+.hint-text.success {
+  color: #2E7D32;
+}
+
+.hint-text:not(.success) {
+  color: #F9E27D;
+}
+
+@media (max-width: 900px) {
+  .hint-text {
+    margin-left: 0;
+  }
+}
+
+/* Посещаемость кураторов */
+.meeting-attendance-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.meeting-attendance-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #202024;
+  margin-bottom: 12px;
+}
+
+.meeting-attendance-list-wrapper {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.meeting-attendance-list-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meeting-attendance-list-wrapper::-webkit-scrollbar-track {
+  background: #E0E0E0;
+  border-radius: 10px;
+}
+
+.meeting-attendance-list-wrapper::-webkit-scrollbar-thumb {
+  background: #A5A5B0;
+  border-radius: 10px;
+}
+
+.meeting-attendance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meeting-attendance-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attendance-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid #A5A5B0;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.attendance-checkbox.checked {
+  background: #D0DFB9;
+  border-color: #D0DFB9;
+}
+
+.attendance-checkbox .checkmark {
+  color: #202024;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.curator-name {
+  font-size: 14px;
+  color: #202024;
+}
+
+.meeting-attendance-empty {
+  color: #A5A5B0;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+.meeting-attendance-loading {
+  text-align: center;
+  padding: 16px;
+  color: #A5A5B0;
+  font-size: 14px;
+}
+
+/* Дополнительные стили для повторяемости */
+.recurrence-select {
+  width: 200px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23202024' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  padding-right: 40px;
+}
+
+.recurrence-options {
+  align-items: flex-start !important;
+}
+
+.recurrence-end-options {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-family: 'Montserrat', sans-serif;
+  color: #202024;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.occurrences-input {
+  width: 60px;
+  padding: 6px 10px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  outline: none;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+  margin: 0 5px;
+}
+
+.occurrences-input:focus {
+  border-color: #4E85FC;
+  background: #fff;
+}
+
+.date-picker-wrapper.small {
+  width: 130px;
+  margin-left: 10px;
+  background: #F4F4F4;
+  padding: 6px 10px;
+}
+
+.date-picker-input.small {
+  font-size: 12px;
+}
+
+/* Кнопки в футере */
+.schedule-modal-footer.double-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 20px 20px 20px;
+}
+
+.schedule-add-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #F4F4F4;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.schedule-add-more-btn svg path {
+  fill: #202024;
+}
+
+.schedule-add-more-btn:hover {
+  background: #E0E0E0;
+}
+
+.schedule-add-more-btn:active {
+  background: transparent;
+  outline: 1px solid #A5A5B0;
+  outline-offset: -1px;
+}
+
+/* Список добавленных встреч */
+.added-meetings-list {
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 1px solid #F4F4F4;
+}
+
+.added-meetings-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #A5A5B0;
+  margin-bottom: 10px;
+}
+
+.added-meeting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+}
+
+.added-meeting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.added-meeting-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.added-meeting-date {
+  font-size: 12px;
+  color: #A5A5B0;
+}
+
+.remove-meeting-btn {
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #A5A5B0;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+.remove-meeting-btn:hover {
+  color: #F63333;
+  background: #FFE4E4;
 }

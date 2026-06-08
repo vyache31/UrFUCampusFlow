@@ -1,22 +1,25 @@
+import uuid
+
+from integrations.microsoft_graph_client import GraphClient
 from models import Meetings, MeetingTask
 from repositories.meetings_repository import MeetingsRepository
-from services.microsoft_oauth_service import MicrosoftOAuthService
-from integrations.microsoft_graph_client import GraphClient
 from schemas.outlook_meetings import MeetingCreate, MeetingResponse, MeetingUpdate
-import uuid
+from services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
+from services.microsoft_oauth_service import MicrosoftOAuthService
 
 
 class MeetingsService:
     def __init__(
-            self,
-            meetings_repo: MeetingsRepository,
-            graph_client: GraphClient,
-            oauth_service: MicrosoftOAuthService
-        ):
+        self,
+        meetings_repo: MeetingsRepository,
+        graph_client: GraphClient,
+        oauth_service: MicrosoftOAuthService,
+        curator_attendance_service: CuratorMeetingAttendanceService,
+    ):
         self.meetings_repo = meetings_repo
         self.graph_client = graph_client
         self.oauth_service = oauth_service
-
+        self.curator_attendance_service = curator_attendance_service
 
     @staticmethod
     def _handle_meeting_data(meeting_data: MeetingCreate) -> dict:
@@ -26,37 +29,31 @@ class MeetingsService:
             start_at=meeting_data.start_at,
             end_at=meeting_data.end_at,
             location=meeting_data.location,
-            event_link=meeting_data.event_link
+            event_link=meeting_data.event_link,
         )
-
 
     @staticmethod
     def _build_graph_event_data(
-            title: str,
-            notes: str | None,
-            start_at,
-            end_at,
-            location: str | None,
-            event_link: str | None
+        title: str,
+        notes: str | None,
+        start_at,
+        end_at,
+        location: str | None,
+        event_link: str | None,
     ) -> dict:
         data = {
             "subject": title,
-            "body": {
-                "contentType": "HTML",
-                "content": notes
-            },
+            "body": {"contentType": "HTML", "content": notes},
             "start": {
                 "dateTime": str(start_at.isoformat()),
-                "timeZone": "Ekaterinburg Standard Time"
+                "timeZone": "Ekaterinburg Standard Time",
             },
             "end": {
                 "dateTime": str(end_at.isoformat()),
-                "timeZone": "Ekaterinburg Standard Time"
+                "timeZone": "Ekaterinburg Standard Time",
             },
-            "location":{
-                "displayName": location or ""
-            },
-            "isOnlineMeeting": False
+            "location": {"displayName": location or ""},
+            "isOnlineMeeting": False,
         }
 
         if event_link is not None:
@@ -64,69 +61,67 @@ class MeetingsService:
 
         return data
 
-
     @staticmethod
-    def _has_calendar_conflicts(events: list[dict], ignored_event_id: str | None = None) -> bool:
+    def _has_calendar_conflicts(
+        events: list[dict], ignored_event_id: str | None = None
+    ) -> bool:
         for event in events:
-            if ignored_event_id and event.get('id') == ignored_event_id:
+            if ignored_event_id and event.get("id") == ignored_event_id:
                 continue
-            if event.get('isCancelled'):
+            if event.get("isCancelled"):
                 continue
-            if event.get('showAs') == 'free':
+            if event.get("showAs") == "free":
                 continue
 
             return True
 
         return False
 
-
     async def _build_headers(self, user_id: str) -> dict:
         access_token = await self.oauth_service.get_actual_access_token(user_id)
 
         return {"Authorization": f"Bearer {access_token}"}
 
-
     async def create_meeting(
-            self,
-            user_id: str,
-            current_team_case_history_id: str,
-            meeting_data: MeetingCreate
-        ) -> MeetingResponse:
+        self,
+        user_id: str,
+        current_team_case_history_id: str,
+        meeting_data: MeetingCreate,
+    ) -> MeetingResponse:
         headers = await self._build_headers(user_id)
 
         correct_timeline = meeting_data.start_at < meeting_data.end_at
 
         if not correct_timeline:
-            raise ValueError('Meeting start time should be earlier than ending time')
+            raise ValueError("Meeting start time should be earlier than ending time")
 
         calendar_view = await self.graph_client.list_calendar_view(
             params={
-                'startDateTime': str(meeting_data.start_at.isoformat()),
-                'endDateTime': str(meeting_data.end_at.isoformat())
+                "startDateTime": str(meeting_data.start_at.isoformat()),
+                "endDateTime": str(meeting_data.end_at.isoformat()),
             },
-            headers=headers
+            headers=headers,
         )
 
-        events = calendar_view.get('value', [])
+        events = calendar_view.get("value", [])
         if self._has_calendar_conflicts(events):
-            raise ValueError('This time slot is not empty. Try another time.')
+            raise ValueError("This time slot is not empty. Try another time.")
 
         payload = await self.graph_client.create_event(
-            event_info=self._handle_meeting_data(meeting_data),
-            headers=headers
+            event_info=self._handle_meeting_data(meeting_data), headers=headers
         )
 
         created_meeting = Meetings(
-            id = str(uuid.uuid4()),
-            team_case_history_id = current_team_case_history_id,
-            title = meeting_data.title,
-            location = meeting_data.location,
-            start_at = meeting_data.start_at,
-            end_at = meeting_data.end_at,
-            outlook_event_id = payload['id'],
-            event_link = meeting_data.event_link or payload.get('webLink', ''),
-            notes = meeting_data.notes,
-            timezone = meeting_data.timezone
+            id=str(uuid.uuid4()),
+            team_case_history_id=current_team_case_history_id,
+            title=meeting_data.title,
+            location=meeting_data.location,
+            start_at=meeting_data.start_at,
+            end_at=meeting_data.end_at,
+            outlook_event_id=payload["id"],
+            event_link=meeting_data.event_link or payload.get("webLink", ""),
+            notes=meeting_data.notes,
+            timezone=meeting_data.timezone,
         )
 
         created_meeting.tasks = [
@@ -134,22 +129,24 @@ class MeetingsService:
                 id=str(uuid.uuid4()),
                 title=task.title,
                 description=task.description,
-                is_completed=False
+                is_completed=False,
             )
             for task in meeting_data.tasks
         ]
 
         meeting = await self.meetings_repo.create(created_meeting)
+        await self.curator_attendance_service.create_default_for_meeting(
+            meeting_id=meeting.id
+        )
 
         return self.to_response(meeting)
 
-
     async def update_meeting(
-            self,
-            user_id: str,
-            current_team_case_history_id: str,
-            meeting_id: str,
-            meeting_data: MeetingUpdate
+        self,
+        user_id: str,
+        current_team_case_history_id: str,
+        meeting_id: str,
+        meeting_data: MeetingUpdate,
     ) -> MeetingResponse | None:
         meeting = await self.meetings_repo.get_by_id(meeting_id)
 
@@ -161,35 +158,37 @@ class MeetingsService:
         if not update_data:
             return self.to_response(meeting)
 
-        for field in ('title', 'start_at', 'end_at'):
+        for field in ("title", "start_at", "end_at"):
             if field in update_data and update_data[field] is None:
-                raise ValueError(f'{field} can not be empty')
+                raise ValueError(f"{field} can not be empty")
 
-        start_at = update_data.get('start_at', meeting.start_at)
-        end_at = update_data.get('end_at', meeting.end_at)
+        start_at = update_data.get("start_at", meeting.start_at)
+        end_at = update_data.get("end_at", meeting.end_at)
 
         if start_at >= end_at:
-            raise ValueError('Meeting start time should be earlier than ending time')
+            raise ValueError("Meeting start time should be earlier than ending time")
 
         headers = await self._build_headers(user_id)
 
-        if 'start_at' in update_data or 'end_at' in update_data:
+        if "start_at" in update_data or "end_at" in update_data:
             calendar_view = await self.graph_client.list_calendar_view(
                 params={
-                    'startDateTime': str(start_at.isoformat()),
-                    'endDateTime': str(end_at.isoformat())
+                    "startDateTime": str(start_at.isoformat()),
+                    "endDateTime": str(end_at.isoformat()),
                 },
-                headers=headers
+                headers=headers,
             )
 
-            events = calendar_view.get('value', [])
-            if self._has_calendar_conflicts(events, ignored_event_id=meeting.outlook_event_id):
-                raise ValueError('This time slot is not empty. Try another time.')
+            events = calendar_view.get("value", [])
+            if self._has_calendar_conflicts(
+                events, ignored_event_id=meeting.outlook_event_id
+            ):
+                raise ValueError("This time slot is not empty. Try another time.")
 
-        title = update_data.get('title', meeting.title)
-        location = update_data.get('location', meeting.location)
-        event_link = update_data.get('event_link') or meeting.event_link
-        notes = update_data.get('notes', meeting.notes)
+        title = update_data.get("title", meeting.title)
+        location = update_data.get("location", meeting.location)
+        event_link = update_data.get("event_link") or meeting.event_link
+        notes = update_data.get("notes", meeting.notes)
 
         await self.graph_client.update_event(
             event_id=meeting.outlook_event_id,
@@ -199,9 +198,9 @@ class MeetingsService:
                 start_at=start_at,
                 end_at=end_at,
                 location=location,
-                event_link=event_link
+                event_link=event_link,
             ),
-            headers=headers
+            headers=headers,
         )
 
         meeting.title = title
@@ -215,12 +214,8 @@ class MeetingsService:
 
         return self.to_response(meeting)
 
-
     async def delete_meeting(
-            self,
-            user_id: str,
-            current_team_case_history_id: str,
-            meeting_id: str
+        self, user_id: str, current_team_case_history_id: str, meeting_id: str
     ) -> bool | None:
         meeting = await self.meetings_repo.get_by_id(meeting_id)
 
@@ -230,22 +225,24 @@ class MeetingsService:
         headers = await self._build_headers(user_id)
 
         await self.graph_client.delete_event(
-            event_id=meeting.outlook_event_id,
-            headers=headers
+            event_id=meeting.outlook_event_id, headers=headers
         )
 
         await self.meetings_repo.delete(meeting)
 
         return True
 
+    async def get_by_team_case_history_id(
+        self, team_case_history_id: str
+    ) -> list[MeetingResponse]:
+        meetings = await self.meetings_repo.get_by_team_case_history_id(
+            team_case_history_id
+        )
 
-    async def get_by_team_case_history_id(self, team_case_history_id: str) -> list[MeetingResponse]:
-        meetings = await self.meetings_repo.get_by_team_case_history_id(team_case_history_id)
+        return [self.to_response(meeting) for meeting in meetings]
 
-        return [
-            self.to_response(meeting)
-            for meeting in meetings
-        ]
+    async def get_by_id(self, meeting_id: str) -> Meetings | None:
+        return await self.meetings_repo.get_by_id(meeting_id)
 
     @staticmethod
     def to_response(meeting: Meetings) -> MeetingResponse:
@@ -260,5 +257,5 @@ class MeetingsService:
             event_link=meeting.event_link,
             notes=meeting.notes,
             timezone=meeting.timezone,
-            tasks=meeting.tasks
+            tasks=meeting.tasks,
         )

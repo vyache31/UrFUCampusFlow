@@ -6,10 +6,12 @@ import TeamStatusFilter from '../../components/teams/TeamFilters/TeamStatusFilte
 import TeamBulkActionsBar from '../../components/teams/TeamBulkActions/TeamBulkActionsBar';
 import TeamCard from '../../components/teams/TeamCard/TeamCard';
 import { getTeams, deleteTeam, type Team } from '../../services/teams';
+import { useToast } from '../../context/ToastContext';
 import './teamsPage.css';
 
 const TeamsPage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirm } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Все команды');
@@ -19,7 +21,12 @@ const TeamsPage = () => {
     try {
       setLoading(true);
       const data = await getTeams(10000);
-      setTeams(data);
+      const sortedTeams = [...data].sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateB.getTime() - dateA.getTime();
+      });
+      setTeams(sortedTeams);
     } catch (error) {
       console.error('Ошибка загрузки команд:', error);
     } finally {
@@ -28,7 +35,11 @@ const TeamsPage = () => {
   };
 
   useEffect(() => {
-    fetchTeams();
+    const loadTeams = async () => {
+      await fetchTeams();
+    };
+    loadTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredTeams = teams.filter(team => {
@@ -46,27 +57,32 @@ const TeamsPage = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (selectedTeamIds.length === 0) return;
     
     const confirmMessage = selectedTeamIds.length === 1 
       ? 'Вы уверены, что хотите удалить выбранную команду? Это действие необратимо.'
       : `Вы уверены, что хотите удалить ${selectedTeamIds.length} команд? Это действие необратимо.`;
     
-    if (window.confirm(confirmMessage)) {
-      try {
-        for (const teamId of selectedTeamIds) {
-          await deleteTeam(teamId);
+    showConfirm({
+      message: confirmMessage,
+      onConfirm: async () => {
+        try {
+          for (const teamId of selectedTeamIds) {
+            await deleteTeam(teamId);
+          }
+          await fetchTeams();
+          setSelectedTeamIds([]);
+          showSuccess('Команды успешно удалены');
+        } catch (error) {
+          console.error('Ошибка при удалении:', error);
+          showError('Не удалось удалить некоторые команды.');
         }
-        const updatedTeams = await getTeams(10000);
-        setTeams(updatedTeams);
-        setSelectedTeamIds([]);
-        alert('Команды успешно удалены');
-      } catch (error) {
-        console.error('Ошибка при удалении:', error);
-        alert('Не удалось удалить некоторые команды.');
-      }
-    }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const handleCreateTeam = () => {

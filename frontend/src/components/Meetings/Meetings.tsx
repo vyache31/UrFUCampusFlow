@@ -1,67 +1,129 @@
-import { useState, useEffect } from 'react';
-import { truncateMeetingProject, truncateMeetingTeam } from '../../utils/truncate';
+import { useState, useMemo } from 'react';
 import { ExpandArrowIcon, CollapseArrowIcon } from '../common/Icons/Icons';
-import { getMeetings } from '../../services/meetings';
+import MeetingDetailsModal from '../Modals/MeetingDetailsModal';
 import type { Meeting } from '../../services/meetings';
 import './meetings.css';
 
-const Meetings = () => {
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loading, setLoading] = useState(true);
+interface MeetingsProps {
+  meetings: Meeting[];
+  loading?: boolean;
+  onTaskUpdate?: () => void;
+}
+
+const Meetings = ({ meetings, loading = false, onTaskUpdate }: MeetingsProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const weeklyMeetings = useMemo(() => {
+    const now = new Date();
+    const sevenDaysLater = new Date();
+    sevenDaysLater.setDate(now.getDate() + 7);
+    sevenDaysLater.setHours(23, 59, 59, 999);
+    
+    return meetings
+      .filter(meeting => {
+        const meetingDate = new Date(meeting.start_at);
+        return meetingDate >= now && meetingDate <= sevenDaysLater;
+      })
+      .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+  }, [meetings]);
+  
+  const upcomingMeetings = useMemo(() => {
+    const now = new Date();
+    return meetings
+      .filter(meeting => new Date(meeting.start_at) > now)
+      .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+  }, [meetings]);
+  
+  const displayedMeetings = isExpanded ? weeklyMeetings : upcomingMeetings.slice(0, 3);
 
-  useEffect(() => {
-    const fetchMeetings = async () => {
-      try {
-        const data = await getMeetings();
-        setMeetings(data.slice(0, 2));
-      } catch (error) {
-        console.error('Ошибка загрузки встреч:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMeetings();
-  }, []);
+  const handleMeetingClick = (meeting: Meeting) => {
+    setSelectedMeeting(meeting);
+    setIsModalOpen(true);
+  };
 
-  // Временная заглушка, пока нет данных с бэка
-  const allMeetings = meetings;
+  if (loading) {
+    return (
+      <section className="section">
+        <h2 className="section-title">Ближайшие встречи</h2>
+        <div className="meetings-card">
+          <div className="loading-meetings">Загрузка встреч...</div>
+        </div>
+      </section>
+    );
+  }
 
-  if (loading) return <div>Загрузка встреч...</div>;
+  if (meetings.length === 0) {
+    return (
+      <section className="section">
+        <h2 className="section-title">Ближайшие встречи</h2>
+        <div className="meetings-card">
+          <div className="empty-meetings">Нет запланированных встреч</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className="section">
-      <h2 className="section-title">Ближайшие встречи</h2>
-      <div className="meetings-card">
-        <div className="meetings-header">
-          <span>Проект</span>
-          <span>Команда</span>
-          <span>день</span>
-          <span>время</span>
-          <span>дата</span>
+    <>
+      <section className="section">
+        <h2 className="section-title">Ближайшие встречи</h2>
+        <div className="meetings-card">
+          <div className="meetings-header">
+            <span>Проект</span>
+            <span>Команда</span>
+            <span>день</span>
+            <span>время</span>
+            <span>дата</span>
+          </div>
+
+          {displayedMeetings.map((meeting) => {
+            const meetingDate = new Date(meeting.start_at);
+            const day = meetingDate.toLocaleDateString('ru-RU', { weekday: 'short' }).slice(0, 2);
+            const date = meetingDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            const time = meetingDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            
+            const projectTitle = meeting.case_title || meeting.title;
+            
+            return (
+              <div 
+                key={meeting.id} 
+                className="meeting-row clickable"
+                onClick={() => handleMeetingClick(meeting)}
+              >
+                <span className="meeting-project-title" title={projectTitle}>
+                  {projectTitle.length > 35 ? projectTitle.slice(0, 35) + '...' : projectTitle}
+                </span>
+                <span className="meeting-team-name">
+                  {meeting.team_name || 'Без названия'}
+                </span>
+                <span>{day}</span>
+                <span>{time}</span>
+                <span>{date}</span>
+              </div>
+            );
+          })}
+
+           {weeklyMeetings.length > 3 && (
+            <button className="expand-btn" onClick={() => setIsExpanded(!isExpanded)}>
+              {isExpanded ? 'Свернуть' : `Развернуть на неделю (${weeklyMeetings.length})`}
+              {isExpanded ? <CollapseArrowIcon /> : <ExpandArrowIcon />}
+            </button>
+          )}
         </div>
+      </section>
 
-        {allMeetings.map((meeting) => {
-          const { displayText: displayProject, fullText: fullProject } = truncateMeetingProject(meeting.project);
-          const { displayText: displayTeam, fullText: fullTeam } = truncateMeetingTeam(meeting.teamName);
-          
-          return (
-            <div key={meeting.id} className="meeting-row">
-              <span title={fullProject}>{displayProject}</span>
-              <span title={fullTeam}>{displayTeam}</span>
-              <span>{meeting.day}</span>
-              <span>{meeting.time}</span>
-              <span>{meeting.date}</span>
-            </div>
-          );
-        })}
-
-        <button className="expand-btn" onClick={() => setIsExpanded(!isExpanded)}>
-          {isExpanded ? 'Свернуть неделю' : 'Развернуть на неделю'}
-          {isExpanded ? <CollapseArrowIcon /> : <ExpandArrowIcon />}
-        </button>
-      </div>
-    </section>
+      {selectedMeeting && selectedMeeting.team_id && (
+        <MeetingDetailsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          meeting={selectedMeeting}
+          teamId={selectedMeeting.team_id}
+          onTaskUpdate={onTaskUpdate}
+        />
+      )}
+    </>
   );
 };
 

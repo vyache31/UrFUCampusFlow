@@ -28,7 +28,9 @@
   gap: 20px;
 }
 
-.edit-btn, .schedule-btn {
+.schedule-btn,
+.history-btn,
+.edit-btn {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -37,12 +39,11 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.edit-btn {
   background: #4E85FC;
 }
 
+.schedule-btn span,
+.history-btn span,
 .edit-btn span {
   color: white;
   font-size: 16px;
@@ -51,59 +52,37 @@
   line-height: 24px;
 }
 
+.schedule-btn svg path,
+.history-btn svg path,
 .edit-btn svg path {
   fill: white;
+  stroke: white;
 }
 
+.schedule-btn:hover,
+.history-btn:hover,
 .edit-btn:hover {
   background: #3563C6;
 }
 
+.schedule-btn:active,
+.history-btn:active,
 .edit-btn:active {
   background: transparent;
   outline: 1px solid #4E85FC;
   outline-offset: -1px;
 }
 
+.schedule-btn:active span,
+.history-btn:active span,
 .edit-btn:active span {
   color: #4E85FC;
 }
 
+.schedule-btn:active svg path,
+.history-btn:active svg path,
 .edit-btn:active svg path {
   fill: #4E85FC;
-}
-
-.schedule-btn {
-  background: #4E85FC;
-}
-
-.schedule-btn span {
-  color: white;
-  font-size: 16px;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 500;
-  line-height: 24px;
-}
-
-.schedule-btn svg path {
-  stroke: white;
-}
-
-.schedule-btn:hover {
-  background: #3563C6;
-}
-
-.schedule-btn:active {
-  background: transparent;
-  outline: 1px solid #4E85FC;
-  outline-offset: -1px;
-}
-
-.schedule-btn:active span {
-  color: #4E85FC;
-}
-
-.schedule-btn:active svg path {
   stroke: #4E85FC;
 }
 
@@ -158,9 +137,8 @@
 }
 
 .members-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr;
   padding-bottom: 10px;
   border-bottom: 1px solid #F4F4F4;
 }
@@ -174,40 +152,57 @@
 }
 
 .members-header span:first-child {
-  flex: 2;
   text-align: left;
 }
 
 .members-header span:nth-child(2) {
-  flex: 1.5;
   text-align: center;
+  transform: translateX(22px);
 }
 
-.members-header span:nth-child(3),
-.members-header span:nth-child(4) {
-  flex: 1;
+.members-header span:last-child {
   text-align: right;
+  transform: translateX(60px);
 }
 
 .member-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr;
   align-items: center;
-  width: 100%;
+  padding: 10px 0;
+  border-bottom: 1px solid #F4F4F4;
+}
+
+.member-row:last-child {
+  border-bottom: none;
+}
+
+.member-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .member-name {
-  flex: 2;
   color: #202024;
   font-size: 14px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
   line-height: 21px;
-  text-align: left;
+}
+
+.member-short-id {
+  font-size: 12px;
+  color: #A5A5B0;
+  font-family: monospace;
+  background: #F4F4F4;
+  padding: 2px 6px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 .member-role {
-  flex: 1.5;
   color: #202024;
   font-size: 14px;
   font-family: 'Montserrat', sans-serif;
@@ -216,24 +211,13 @@
   text-align: center;
 }
 
-.member-university {
-  flex: 1;
+.team-view-page .member-group {
   color: #202024;
   font-size: 14px;
   font-family: 'Montserrat', sans-serif;
   font-weight: 400;
   line-height: 21px;
-  text-align: right;
-}
-
-.member-group {
-  flex: 1;
-  color: #202024;
-  font-size: 14px;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 400;
-  line-height: 21px;
-  text-align: right;
+  text-align: center;
 }
 
 /* Кейсы с контрольными точками */
@@ -264,6 +248,12 @@
   font-family: 'Montserrat', sans-serif;
   font-weight: 500;
   line-height: 21px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.case-title:hover {
+  color: #F9E27D;
 }
 
 .case-right {
@@ -281,6 +271,14 @@
   font-weight: 400;
   line-height: 21px;
   transition: color 0.2s ease;
+}
+
+.case-right:hover .control-points-label {
+  color: #F9E27D;
+}
+
+.case-right:hover .case-toggle-btn svg path {
+  stroke: #F9E27D;
 }
 
 .case-toggle-btn {
@@ -306,30 +304,6 @@
 .case-toggle-btn svg path {
   stroke: #202024;
   transition: stroke 0.2s ease;
-}
-
-.case-right:hover {
-  color: #A5A5B0;
-}
-
-.case-right:hover .control-points-label {
-  color: #A5A5B0;
-}
-
-.case-right:hover .case-toggle-btn svg path {
-  stroke: #A5A5B0;
-}
-
-.case-right:active {
-  color: #F9E27D;
-}
-
-.case-right:active .control-points-label {
-  color: #F9E27D;
-}
-
-.case-right:active .case-toggle-btn svg path {
-  stroke: #F9E27D;
 }
 
 .meetings-block {
@@ -365,7 +339,7 @@
 
 .meetings-header-row {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
+  grid-template-columns: 1fr 100px 100px 40px;
   padding-bottom: 10px;
   margin-bottom: 10px;
   border-bottom: 1px solid rgba(165, 165, 176, 0.2);
@@ -399,7 +373,7 @@
 
 .meeting-row-view {
   display: grid;
-  grid-template-columns: 1fr 100px 100px;
+  grid-template-columns: 1fr 100px 100px 40px;
   align-items: center;
 }
 
@@ -422,12 +396,85 @@
   text-align: center;
 }
 
+.delete-meeting-btn {
+  width: 32px;
+  height: 32px;
+  background: #F4F4F4;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.delete-meeting-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.delete-meeting-btn svg path {
+  fill: #A5A5B0;
+  transition: fill 0.2s ease;
+}
+
+.delete-meeting-btn:hover {
+  background: #FFE4E4;
+}
+
+.delete-meeting-btn:hover svg path {
+  fill: #F63333;
+}
+
+.delete-meeting-btn:active {
+  background: transparent;
+  outline: 1px solid #F63333;
+  outline-offset: -1px;
+}
+
+.delete-meeting-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .loading-container,
 .not-found {
   text-align: center;
   padding: 40px;
   font-size: 18px;
   color: #A5A5B0;
+}
+
+.curators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.curator-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F4F4F4;
+  border-radius: 20px;
+  padding: 10px 15px;
+}
+
+.curator-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #202024;
+}
+
+.empty-curators {
+  padding: 15px;
+  background: #F4F4F4;
+  border-radius: 20px;
+  text-align: center;
+  color: #A5A5B0;
+  font-size: 14px;
 }
 
 /* Адаптив */
@@ -442,27 +489,9 @@
     line-height: 48px;
   }
   
-  .members-header,
-  .member-row {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .member-name,
-  .member-role,
-  .member-university,
-  .member-group {
-    flex: auto;
-    text-align: left;
-  }
-  
-  .members-header span {
-    display: none;
-  }
-  
   .meetings-header-row,
   .meeting-row-view {
-    grid-template-columns: 1fr 80px 80px;
+    grid-template-columns: 1fr 80px 80px 40px;
   }
 }
 

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { CloseIcon, PlusIcon } from '../common/Icons/Icons';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
 interface ControlPoint {
@@ -23,11 +24,11 @@ const ControlPointsModal = ({
   initialPoints = [],
   onPointsChange
 }: ControlPointsModalProps) => {
+  const { showError } = useToast();
   const [controlPoints, setControlPoints] = useState<ControlPoint[]>(initialPoints);
   const [newPointName, setNewPointName] = useState('');
   const [newPointScore, setNewPointScore] = useState('');
 
-  // сохранить при изменениях
   const handlePointsChange = useCallback((newPoints: ControlPoint[]) => {
     setControlPoints(newPoints);
     if (onPointsChange) {
@@ -44,9 +45,12 @@ const ControlPointsModal = ({
         name: newPointName.trim(),
         score: newPointScore ? Number(newPointScore) : null
       };
-      handlePointsChange([...controlPoints, newPoint]);
+      const updatedPoints = [...controlPoints, newPoint];
+      handlePointsChange(updatedPoints);
       setNewPointName('');
       setNewPointScore('');
+    } else {
+      showError('Введите название контрольной точки');
     }
   };
 
@@ -74,8 +78,8 @@ const ControlPointsModal = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="control-points-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="control-points-header">
-          <button className="control-points-close" onClick={onClose}>
+        <div className="modal-header-bar">
+          <button className="modal-close-circle" onClick={onClose}>
             <CloseIcon />
           </button>
         </div>

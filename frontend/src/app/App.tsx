@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastProvider } from '../context/ToastContext';
 import DashboardPage from '../pages/Dashboard/DashboardPage';
 import CasesPage from '../pages/Cases/CasesPage';
 import CaseViewPage from '../pages/Cases/CaseViewPage';
@@ -10,30 +11,36 @@ import TeamsPage from '../pages/Teams/TeamsPage';
 import LoginPage from '../pages/Login/LoginPage';
 import TeamCreatePage from '../pages/Teams/TeamCreatePage';
 import TeamViewPage from '../pages/Teams/TeamViewPage';
+import TeamEditPage from '../pages/Teams/TeamEditPage';
 import BotManagementPage from '../pages/BotManagement/BotManagementPage';
 import OutlookCallbackPage from '../pages/OutlookCallback/OutlookCallbackPage';
 import SSOPage from '../pages/Login/SSOPage';
+import TeamCaseHistoryPage from '../pages/Teams/TeamCaseHistoryPage';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/cases" element={<CasesPage />} />
-        <Route path="/cases/:id" element={<CaseViewPage />} />
-        <Route path="/cases/:id/edit" element={<CaseEditPage />} />
-        <Route path="/cases/create" element={<CaseCreatePage />} />
-        <Route path="/cases/:id/comments" element={<CaseCommentsPage />} />
-        <Route path="/report" element={<ReportPage />} /> 
-        <Route path="/teams" element={<TeamsPage />} />
-        <Route path="/teams/create" element={<TeamCreatePage />} />
-        <Route path="/teams/:id" element={<TeamViewPage />} />
-        <Route path="/bot-management" element={<BotManagementPage />} />
-        <Route path="/outlook/callback" element={<OutlookCallbackPage />} />
-        <Route path="/sso" element={<SSOPage />} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/cases" element={<CasesPage />} />
+          <Route path="/cases/:id" element={<CaseViewPage />} />
+          <Route path="/cases/:id/edit" element={<CaseEditPage />} />
+          <Route path="/cases/create" element={<CaseCreatePage />} />
+          <Route path="/cases/:id/comments" element={<CaseCommentsPage />} />
+          <Route path="/report" element={<ReportPage />} /> 
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/teams/create" element={<TeamCreatePage />} />
+          <Route path="/teams/:id" element={<TeamViewPage />} />
+          <Route path="/teams/:id/edit" element={<TeamEditPage />} />
+          <Route path="/bot-management" element={<BotManagementPage />} />
+          <Route path="/outlook/callback" element={<OutlookCallbackPage />} />
+          <Route path="/sso" element={<SSOPage />} />
+          <Route path="/teams/:id/history" element={<TeamCaseHistoryPage />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 
