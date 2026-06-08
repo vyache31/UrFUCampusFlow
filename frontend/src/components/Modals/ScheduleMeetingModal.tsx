@@ -100,15 +100,40 @@ const ScheduleMeetingModal = ({
     return `${year}-${month}-${day}`;
   };
 
+  const isValidTime = (timeStr: string): boolean => {
+    if (timeStr.length !== 5) return false;
+    const hours = parseInt(timeStr.slice(0, 2), 10);
+    const minutes = parseInt(timeStr.slice(3, 5), 10);
+    return !isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
+  };
+
   const handleTimeChange = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
     const limited = cleaned.slice(0, 4);
     let formatted = limited;
+    
     if (limited.length >= 3) {
-      formatted = `${limited.slice(0, 2)}:${limited.slice(2, 4)}`;
+      const hours = parseInt(limited.slice(0, 2), 10);
+      let validHours = hours;
+      if (hours > 23) validHours = 23;
+      const hoursStr = String(validHours).padStart(2, '0');
+      formatted = `${hoursStr}:${limited.slice(2, 4)}`;
+      
+      if (limited.length === 4) {
+        const minutes = parseInt(limited.slice(2, 4), 10);
+        if (minutes > 59) {
+          formatted = `${hoursStr}:59`;
+        }
+      }
     } else if (limited.length === 2) {
-      formatted = `${limited}:`;
+      const hours = parseInt(limited, 10);
+      if (hours > 23) {
+        formatted = '23:';
+      } else {
+        formatted = `${limited}:`;
+      }
     }
+    
     setTime(formatted);
   };
 
@@ -138,6 +163,11 @@ const ScheduleMeetingModal = ({
   const handleSubmit = () => {
     if (!title.trim() || !selectedDate || !time) {
       showError('Заполните название встречи, дату и время');
+      return;
+    }
+
+    if (!isValidTime(time)) {
+      showError('Введите корректное время (ЧЧ:ММ, часы 00-23, минуты 00-59)');
       return;
     }
 

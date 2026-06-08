@@ -239,6 +239,12 @@ const handleSave = async () => {
     });
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
     { label: 'Все кейсы', path: '/cases' },
@@ -284,6 +290,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'title')}
             onInput={() => handleContentChange('title', titleRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите название кейса"
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
@@ -298,6 +305,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'shortTitle')}
             onInput={() => handleContentChange('shortTitle', shortTitleRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите короткое название (будет отображаться в карточке)"
           />
           {errors.shortTitle && <div className="error-message">{errors.shortTitle}</div>}
@@ -312,6 +320,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите описание кейса"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
@@ -326,6 +335,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'expectedResult')}
             onInput={() => handleContentChange('expectedResult', expectedResultRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите предполагаемый результат"
           />
           {errors.expectedResult && <div className="error-message">{errors.expectedResult}</div>}
@@ -340,6 +350,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'criteria')}
             onInput={() => handleContentChange('criteria', criteriaRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
