@@ -97,7 +97,7 @@ async def seed_bot_mode(session: AsyncSession):
     print("BOTMODE SEED START")
     from tg_bot.models.bot import BotMode
     existing_user = await session.scalar(
-        select(BotMode).where(BotMode.mode == "stop")
+        select(BotMode)
     )
 
     if existing_user:

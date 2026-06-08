@@ -55,6 +55,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: alpha-backend
+    volumes:
+      - ./backend:/backend
     env_file:
       - ./backend/.env
     environment:
@@ -63,7 +65,7 @@ services:
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
-    command: sh -c "python -m seeds.seed && uvicorn main:app --host 0.0.0.0 --port 8000 --access-log --log-level info"
+    command: sh -c "python -m seeds.seed && uvicorn main:app --host 0.0.0.0 --port 8000 --reload --access-log --log-level info"
     depends_on:
       postgres:
         condition: service_healthy
