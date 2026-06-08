@@ -12,12 +12,12 @@ class Interviews(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
     tg_user_id: Mapped[int]
-    case_id: Mapped[str] = mapped_column(ForeignKey('bot_cases.id'))
+    case_id: Mapped[str] = mapped_column(ForeignKey('bot_cases.id', ondelete="CASCADE"))
     team_name: Mapped[str]
     date_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    case = relationship('BotCases')
+    case = relationship("BotCases", back_populates="interviews")
 
 class BotMode(Base):
     __tablename__ = 'bot_mode'
@@ -35,6 +35,11 @@ class BotCases(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     case = relationship('Cases')
+    interviews = relationship(
+        "Interviews",
+        back_populates="case",
+        cascade="all, delete-orphan"
+    )
 
 
 class RecruitmentCurators(Base):

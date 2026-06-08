@@ -98,7 +98,7 @@ async def delete_bot_case(
     service: BotService = Depends(get_bot_service)
 ):
     try:
-        bot_case = await service.get_bot_case_by_id(bot_case_id=bot_case_id)
+        bot_case = await service.get_bot_case_by_id(bot_case_id)
         if not bot_case:
             raise HTTPException(
                 status_code=404,
@@ -149,11 +149,17 @@ async def delete_recruitment_curator(
     user=Depends(get_current_auth_user),
     service: BotService = Depends(get_bot_service)
 ):
-    curator = await service.delete_recruitment_curator(curator_id=curator_id)
-    if not curator:
+    try:
+        curator = await service.delete_recruitment_curator(curator_id=curator_id)
+        if not curator:
+            raise HTTPException(
+                status_code=404,
+                detail='Curator not found'
+            )
+    except PermissionError as err:
         raise HTTPException(
-            status_code=404,
-            detail='Curator not found'
+            status_code=409,
+            detail=str(err)
         )
 
     return {'status': 'deleted'}
