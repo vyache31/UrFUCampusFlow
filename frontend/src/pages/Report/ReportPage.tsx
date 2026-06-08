@@ -9,6 +9,7 @@ import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory } from '../../services/teamCaseHistory';
 import { getTeamCurators } from '../../services/curators';
 import { getAllMeetingAttendance } from '../../services/curators';
+import { useToast } from '../../context/ToastContext';
 import './reportPage.css';
 
 interface ReportTeam {
@@ -20,6 +21,7 @@ interface ReportTeam {
 }
 
 const ReportPage = () => {
+  const { showError, showSuccess } = useToast();
   const [reportData, setReportData] = useState<ReportTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -96,15 +98,18 @@ const ReportPage = () => {
         );
         
         setReportData(reportTeams);
+        showSuccess(`Загружено ${reportTeams.length} активных команд`);
       } catch (err) {
         console.error('Ошибка загрузки отчёта:', err);
         setError('Не удалось загрузить данные для отчёта');
+        showError('Не удалось загрузить данные для отчёта');
       } finally {
         setLoading(false);
       }
     };
     
     fetchReportData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDownloadReport = async () => {
@@ -150,9 +155,10 @@ const ReportPage = () => {
       }
       
       pdf.save('report.pdf');
+      showSuccess('Отчёт успешно сохранён');
     } catch (error) {
       console.error('Ошибка при создании PDF:', error);
-      alert('Не удалось создать PDF');
+      showError('Не удалось создать PDF');
     }
   };
 

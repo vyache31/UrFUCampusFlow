@@ -8,6 +8,7 @@ import SendMessageModal from '../../components/Modals/SendMessageModal';
 import AddBotCuratorModal from '../../components/Modals/AddBotCuratorModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
 import { PlusIcon, SendIcon, CloseIcon } from '../../components/common/Icons/Icons';
+import { useToast } from '../../context/ToastContext';
 import './botManagement.css';
 
 interface CaseWithData extends Case {
@@ -16,6 +17,7 @@ interface CaseWithData extends Case {
 }
 
 const BotManagementPage = () => {
+  const { showSuccess, showError, showConfirm } = useToast();
   const [cases, setCases] = useState<CaseWithData[]>([]);
   const [botCuratorsList, setBotCuratorsList] = useState<BotCurator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +64,7 @@ const BotManagementPage = () => {
       setCases(casesWithData);
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
+      showError('Не удалось загрузить данные');
     } finally {
       setLoading(false);
     }
@@ -69,6 +72,7 @@ const BotManagementPage = () => {
 
   useEffect(() => {
     fetchAllData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleToggleMode = async (mode: 'набор' | 'стоп набор') => {
@@ -76,49 +80,58 @@ const BotManagementPage = () => {
       const newMode = mode === 'набор' ? 'recruitment' : 'stop';
       await updateBotMode(newMode);
       setBotStatus(mode);
+      showSuccess(`Режим изменён на "${mode}"`);
     } catch (error) {
       console.error('Ошибка изменения режима:', error);
-      alert('Не удалось изменить режим');
+      showError('Не удалось изменить режим');
     }
   };
 
   const handleSendMessage = (message: string) => {
     console.log('Отправка сообщения:', message);
+    showSuccess('Сообщение отправлено');
   };
 
   const handleAddCurator = async (curatorId: string) => {
     try {
       await addBotCurator(curatorId);
       await fetchAllData(); 
-      alert('Куратор добавлен в список');
+      showSuccess('Куратор добавлен в список');
     } catch (error) {
       console.error('Ошибка добавления куратора:', error);
-      alert('Не удалось добавить куратора');
+      showError('Не удалось добавить куратора');
     } finally {
       setIsCuratorModalOpen(false);
     }
   };
 
   const handleRemoveCurator = async (curatorRecordId: string) => {
-    if (!window.confirm('Удалить куратора из списка?')) return;
-    
-    try {
-      await deleteBotCurator(curatorRecordId);
-      await fetchAllData();
-      alert('Куратор удален');
-    } catch (error) {
-      console.error('Ошибка удаления куратора:', error);
-      alert('Не удалось удалить куратора');
-    }
+    showConfirm({
+      message: 'Удалить куратора из списка?',
+      onConfirm: async () => {
+        try {
+          await deleteBotCurator(curatorRecordId);
+          await fetchAllData();
+          showSuccess('Куратор удалён');
+        } catch (error) {
+          console.error('Ошибка удаления куратора:', error);
+          showError('Не удалось удалить куратора');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const handleAddCase = async (caseId: string) => {
     try {
       await addBotCase(caseId);
       await fetchAllData();
+      showSuccess('Кейс добавлен в бот');
     } catch (error) {
       console.error('Ошибка добавления кейса:', error);
-      alert('Не удалось добавить кейс');
+      showError('Не удалось добавить кейс');
     }
   };
 
@@ -126,31 +139,45 @@ const BotManagementPage = () => {
     const caseItem = cases.find(c => c.id === caseId);
     if (!caseItem?.botCaseId) return;
     
-    if (!window.confirm('Удалить кейс из бота?')) return;
-    
-    try {
-      await deleteBotCase(caseItem.botCaseId);
-      setCases(prev => prev.filter(c => c.id !== caseId));
-    } catch (error) {
-      console.error('Ошибка удаления кейса:', error);
-      alert('Не удалось удалить кейс');
-    }
+    showConfirm({
+      message: 'Удалить кейс из бота?',
+      onConfirm: async () => {
+        try {
+          await deleteBotCase(caseItem.botCaseId as string);
+          setCases(prev => prev.filter(c => c.id !== caseId));
+          showSuccess('Кейс удалён из бота');
+        } catch (error) {
+          console.error('Ошибка удаления кейса:', error);
+          showError('Не удалось удалить кейс');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const handleRemoveInterview = async (interviewId: string, caseId: string) => {
-    if (!window.confirm('Удалить запись на интервью?')) return;
-    
-    try {
-      await deleteBotInterview(interviewId);
-      setCases(prev => prev.map(c => 
-        c.id === caseId 
-          ? { ...c, interviews: c.interviews.filter(i => i.id !== interviewId) }
-          : c
-      ));
-    } catch (error) {
-      console.error('Ошибка удаления интервью:', error);
-      alert('Не удалось удалить интервью');
-    }
+    showConfirm({
+      message: 'Удалить запись на интервью?',
+      onConfirm: async () => {
+        try {
+          await deleteBotInterview(interviewId);
+          setCases(prev => prev.map(c => 
+            c.id === caseId 
+              ? { ...c, interviews: c.interviews.filter(i => i.id !== interviewId) }
+              : c
+          ));
+          showSuccess('Запись на интервью удалена');
+        } catch (error) {
+          console.error('Ошибка удаления интервью:', error);
+          showError('Не удалось удалить интервью');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const breadcrumbItems = [

@@ -5,11 +5,13 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getCaseById, updateCase } from '../../services/cases';
 import { SaveIcon, DeleteIcon } from '../../components/common/Icons/Icons';
 import { deleteCase } from '../../services/cases';
+import { useToast } from '../../context/ToastContext';
 import './caseEditPage.css';
 
 const CaseEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirm } = useToast();
   
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -56,12 +58,14 @@ const CaseEditPage = () => {
         
       } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
+        showError('Не удалось загрузить кейс');
       } finally {
         setLoading(false);
       }
     };
     
     fetchCase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fieldLimits: Record<string, number> = {
@@ -198,6 +202,7 @@ const handleSave = async () => {
     
     await updateCase(id!, caseForAPI);
     console.log('Кейс обновлён');
+    showSuccess('Кейс успешно обновлён');
     navigate(`/cases/${id}`);
     } catch (error) {
       console.error('Ошибка обновления кейса:', error);
@@ -208,20 +213,30 @@ const handleSave = async () => {
       } else {
         setErrors({ submit: 'Не удалось обновить кейс' });
       }
+      showError('Не удалось обновить кейс');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Вы уверены, что хотите удалить этот кейс? Это действие необратимо.')) {
-      try {
-        await deleteCase(id!);
-        console.log('Кейс удален:', id);
-        navigate('/cases');
-      } catch (error) {
-        console.error('Ошибка удаления:', error);
-        alert('Не удалось удалить кейс. Попробуйте позже.');
-      }
-    }
+    showConfirm({
+      message: 'Вы уверены, что хотите удалить этот кейс? Это действие необратимо.',
+      onConfirm: async () => {
+        try {
+          await deleteCase(id!);
+          console.log('Кейс удален:', id);
+          showSuccess('Кейс успешно удалён');
+          navigate('/cases');
+        } catch (error) {
+          console.error('Ошибка удаления:', error);
+          showError('Не удалось удалить кейс');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const breadcrumbItems = [
