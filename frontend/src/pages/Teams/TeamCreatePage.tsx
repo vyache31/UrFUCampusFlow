@@ -116,6 +116,12 @@ const TeamCreatePage = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
   const handleContentChange = (field: string, element: HTMLDivElement | null) => {
     if (!element) return;
     const value = element.innerText;
@@ -352,6 +358,7 @@ const TeamCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'name')}
             onInput={() => handleContentChange('name', nameRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите название команды"
           />
           {errors.name && <div className="error-message">{errors.name}</div>}
@@ -367,6 +374,7 @@ const TeamCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите описание команды"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
@@ -413,6 +421,7 @@ const TeamCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'notes')}
             onInput={() => handleContentChange('notes', notesRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите заметки"
           />
           {errors.notes && <div className="error-message">{errors.notes}</div>}

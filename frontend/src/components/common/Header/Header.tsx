@@ -5,12 +5,14 @@ import { searchAll, type SearchResult } from '../../../services/search';
 import { connectOutlook, getOutlookStatus, disconnectOutlook } from '../../../services/outlook';
 import { logout, getTokenPayload } from '../../../services/auth';
 import { truncateWithTooltip } from '../../../utils/truncate';
+import { useToast } from '../../../context/ToastContext';
 import './header.css';
 
 const USER_EMAIL_MAX_LENGTH = 30;
 
 const Header = () => {
   const navigate = useNavigate();
+  const { showError, showSuccess, showConfirm } = useToast();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -82,21 +84,28 @@ const Header = () => {
       window.location.href = authorize_url;
     } catch (error) {
       console.error('Ошибка при подключении Outlook:', error);
-      alert('Не удалось подключить Outlook');
+      showError('Не удалось подключить Outlook');
     }
   };
 
   const handleDisconnectOutlook = async () => {
     setIsDropdownOpen(false);
-    if (window.confirm('Вы уверены, что хотите отключить Outlook?')) {
-      try {
-        await disconnectOutlook();
-        setIsOutlookConnected(false);
-        alert('Outlook отключён');
-      } catch {
-        alert('Не удалось отключить Outlook');
-      }
-    }
+    
+    showConfirm({
+      message: 'Вы уверены, что хотите отключить Outlook?',
+      onConfirm: async () => {
+        try {
+          await disconnectOutlook();
+          setIsOutlookConnected(false);
+          showSuccess('Outlook отключён');
+        } catch {
+          showError('Не удалось отключить Outlook');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
   };
 
   const performSearch = useCallback(async (query: string) => {

@@ -5,11 +5,13 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getCaseById, updateCase } from '../../services/cases';
 import { SaveIcon, DeleteIcon } from '../../components/common/Icons/Icons';
 import { deleteCase } from '../../services/cases';
+import { useToast } from '../../context/ToastContext';
 import './caseEditPage.css';
 
 const CaseEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirm } = useToast();
   
   const titleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -56,12 +58,14 @@ const CaseEditPage = () => {
         
       } catch (error) {
         console.error('Ошибка загрузки кейса:', error);
+        showError('Не удалось загрузить кейс');
       } finally {
         setLoading(false);
       }
     };
     
     fetchCase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fieldLimits: Record<string, number> = {
@@ -198,6 +202,7 @@ const handleSave = async () => {
     
     await updateCase(id!, caseForAPI);
     console.log('Кейс обновлён');
+    showSuccess('Кейс успешно обновлён');
     navigate(`/cases/${id}`);
     } catch (error) {
       console.error('Ошибка обновления кейса:', error);
@@ -208,20 +213,36 @@ const handleSave = async () => {
       } else {
         setErrors({ submit: 'Не удалось обновить кейс' });
       }
+      showError('Не удалось обновить кейс');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Вы уверены, что хотите удалить этот кейс? Это действие необратимо.')) {
-      try {
-        await deleteCase(id!);
-        console.log('Кейс удален:', id);
-        navigate('/cases');
-      } catch (error) {
-        console.error('Ошибка удаления:', error);
-        alert('Не удалось удалить кейс. Попробуйте позже.');
-      }
-    }
+    showConfirm({
+      message: 'Вы уверены, что хотите удалить этот кейс? Это действие необратимо.',
+      onConfirm: async () => {
+        try {
+          await deleteCase(id!);
+          console.log('Кейс удален:', id);
+          showSuccess('Кейс успешно удалён');
+          navigate('/cases');
+        } catch (error) {
+          console.error('Ошибка удаления:', error);
+          showError('Не удалось удалить кейс');
+        }
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
   };
 
   const breadcrumbItems = [
@@ -269,6 +290,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'title')}
             onInput={() => handleContentChange('title', titleRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите название кейса"
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
@@ -283,6 +305,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'shortTitle')}
             onInput={() => handleContentChange('shortTitle', shortTitleRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите короткое название (будет отображаться в карточке)"
           />
           {errors.shortTitle && <div className="error-message">{errors.shortTitle}</div>}
@@ -297,6 +320,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите описание кейса"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
@@ -311,6 +335,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'expectedResult')}
             onInput={() => handleContentChange('expectedResult', expectedResultRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите предполагаемый результат"
           />
           {errors.expectedResult && <div className="error-message">{errors.expectedResult}</div>}
@@ -325,6 +350,7 @@ const handleSave = async () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'criteria')}
             onInput={() => handleContentChange('criteria', criteriaRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
