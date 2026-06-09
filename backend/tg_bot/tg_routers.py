@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -26,6 +27,7 @@ router = Router()
 db = get_db()
 repo = BotRepository(db)
 service = BotService(repo)
+EKATERINBURG_TZ = ZoneInfo("Asia/Yekaterinburg")
 
 class InterviewState(StatesGroup):
     waiting_for_datetime = State()
@@ -162,7 +164,7 @@ async def process_datetime(message: Message, state: FSMContext):
             tg_user_id=message.from_user.id,
             case_id=bot_case["id"],
             team_name='test_name',
-            date_time=parsed_date.isoformat()
+            date_time=parsed_date.replace(tzinfo=EKATERINBURG_TZ).isoformat()
         )
 
     except httpx.HTTPStatusError as err:
