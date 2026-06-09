@@ -54,7 +54,9 @@ class Meetings(Base):
     )
     series = relationship("MeetingsSeries", back_populates="meetings")
     curator_attendance = relationship(
-        "CuratorMeetingsAttendance", back_populates="meeting"
+        "CuratorMeetingsAttendance",
+        back_populates="meeting",
+        cascade="all, delete-orphan",
     )
 
     @property
