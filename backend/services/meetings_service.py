@@ -1,4 +1,7 @@
+import logging
 import uuid
+
+import httpx
 
 from integrations.microsoft_graph_client import GraphClient
 from models import Meetings, MeetingTask
@@ -6,6 +9,9 @@ from repositories.meetings_repository import MeetingsRepository
 from schemas.outlook_meetings import MeetingCreate, MeetingResponse, MeetingUpdate
 from services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
 from services.microsoft_oauth_service import MicrosoftOAuthService
+
+
+logger = logging.getLogger(__name__)
 
 
 class MeetingsService:
@@ -81,6 +87,22 @@ class MeetingsService:
         access_token = await self.oauth_service.get_actual_access_token(user_id)
 
         return {"Authorization": f"Bearer {access_token}"}
+
+    @staticmethod
+    def _is_missing_graph_event(err: httpx.HTTPStatusError) -> bool:
+        if err.response.status_code in {404, 410}:
+            return True
+
+        try:
+            error_code = err.response.json().get("error", {}).get("code")
+        except ValueError:
+            return False
+
+        return error_code in {
+            "ErrorItemNotFound",
+            "Request_ResourceNotFound",
+            "ResourceNotFound",
+        }
 
     async def create_meeting(
         self,
@@ -224,9 +246,19 @@ class MeetingsService:
 
         headers = await self._build_headers(user_id)
 
-        await self.graph_client.delete_event(
-            event_id=meeting.outlook_event_id, headers=headers
-        )
+        try:
+            await self.graph_client.delete_event(
+                event_id=meeting.outlook_event_id, headers=headers
+            )
+        except httpx.HTTPStatusError as err:
+            if not self._is_missing_graph_event(err):
+                logger.error(
+                    "Failed to delete Outlook event %s: %s %s",
+                    meeting.outlook_event_id,
+                    err.response.status_code,
+                    err.response.text,
+                )
+                raise
 
         await self.meetings_repo.delete(meeting)
 
