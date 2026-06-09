@@ -121,6 +121,9 @@ const Meetings = ({ meetings, loading = false, onTaskUpdate }: MeetingsProps) =>
           meeting={selectedMeeting}
           teamId={selectedMeeting.team_id}
           onTaskUpdate={onTaskUpdate}
+          onMeetingUpdate={(updatedMeeting) => setSelectedMeeting(currentMeeting => (
+            currentMeeting ? { ...currentMeeting, ...updatedMeeting } : updatedMeeting
+          ))}
         />
       )}
     </>
