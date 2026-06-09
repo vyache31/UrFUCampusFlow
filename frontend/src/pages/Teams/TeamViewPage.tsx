@@ -558,6 +558,16 @@ const TeamViewPage = () => {
           }}
           meeting={selectedMeeting}
           teamId={id!}
+          onMeetingUpdate={(updatedMeeting) => {
+            setSelectedMeeting(currentMeeting => (
+              currentMeeting ? { ...currentMeeting, ...updatedMeeting } : updatedMeeting
+            ));
+            setMeetings(currentMeetings => currentMeetings.map(currentMeeting => (
+              currentMeeting.id === updatedMeeting.id
+                ? { ...currentMeeting, ...updatedMeeting }
+                : currentMeeting
+            )));
+          }}
         />
       )}
     </div>

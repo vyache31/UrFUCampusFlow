@@ -1226,6 +1226,113 @@
   border-radius: 16px;
 }
 
+.meeting-notes-field {
+  align-items: flex-start;
+}
+
+.meeting-notes-content,
+.meeting-notes-view {
+  flex: 1;
+  min-width: 0;
+}
+
+.meeting-notes-view {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.meeting-notes-view .notes-value {
+  display: block;
+}
+
+.meeting-notes-view .notes-value.empty {
+  color: #A5A5B0;
+  font-style: italic;
+}
+
+.meeting-notes-edit-button,
+.meeting-notes-cancel-button,
+.meeting-notes-save-button {
+  border: none;
+  border-radius: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.meeting-notes-edit-button {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  background: #F4F4F4;
+  color: #202024;
+}
+
+.meeting-notes-edit-button:hover {
+  background: #E0E0E0;
+}
+
+.meeting-notes-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meeting-notes-textarea {
+  width: 100%;
+  min-height: 100px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  outline: none;
+  resize: vertical;
+  background: #F4F4F4;
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.meeting-notes-textarea:focus {
+  border-color: #4E85FC;
+  background: #FFFFFF;
+}
+
+.meeting-notes-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.meeting-notes-cancel-button,
+.meeting-notes-save-button {
+  padding: 8px 14px;
+}
+
+.meeting-notes-cancel-button {
+  background: transparent;
+  color: #666672;
+}
+
+.meeting-notes-save-button {
+  background: #4E85FC;
+  color: #FFFFFF;
+}
+
+.meeting-notes-cancel-button:disabled,
+.meeting-notes-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 600px) {
+  .meeting-notes-view {
+    flex-direction: column;
+  }
+}
+
 .meeting-details-link {
   flex: 1;
   color: #4E85FC;
@@ -2758,4 +2865,134 @@
 .remove-meeting-btn:hover {
   color: #F63333;
   background: #FFE4E4;
+}
+
+.meeting-tasks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.meeting-tasks-header .meeting-tasks-title {
+  margin-bottom: 0;
+}
+
+.meeting-task-add-button,
+.meeting-task-delete-button,
+.meeting-task-cancel-button,
+.meeting-task-save-button {
+  border: none;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+}
+
+.meeting-task-add-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 18px;
+  background: #F4F4F4;
+  color: #202024;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.meeting-task-add-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.meeting-task-add-button:hover {
+  background: #E0E0E0;
+}
+
+.meeting-task-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #F9F9F9;
+}
+
+.meeting-task-create-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  outline: none;
+  background: #FFFFFF;
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+}
+
+.meeting-task-create-input:focus {
+  border-color: #4E85FC;
+}
+
+.meeting-task-create-description {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.meeting-task-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.meeting-task-cancel-button,
+.meeting-task-save-button {
+  padding: 8px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.meeting-task-cancel-button {
+  background: transparent;
+  color: #666672;
+}
+
+.meeting-task-save-button {
+  background: #4E85FC;
+  color: #FFFFFF;
+}
+
+.meeting-task-save-button:disabled,
+.meeting-task-cancel-button:disabled,
+.meeting-task-delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.meeting-task-delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 15px;
+  background: transparent;
+}
+
+.meeting-task-delete-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.meeting-task-delete-button:hover {
+  background: #FFE4E4;
+}
+
+.meeting-task-delete-button:hover svg path {
+  fill: #F63333;
 }
