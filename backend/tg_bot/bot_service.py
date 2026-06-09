@@ -124,10 +124,20 @@ class BotService:
     async def get_interview_by_id(self, interview_id: str):
         return await self.bot_repo.get_interview_by_id(interview_id)
 
+    async def get_interview_by_datetime(self, date_time: datetime):
+        interview = await self.bot_repo.get_interview_by_datetime(date_time)
+        if interview:
+            raise ValueError("время занято, попробуйте другое")
+
+
     async def add_interview(self, schema: InterviewCreate):
         case = await self.bot_repo.get_bot_case_by_id(schema.case_id)
         if not case:
             raise ValueError("данного кейса нет в списке набора!")
+        interview = await self.bot_repo.get_interview_by_datetime(schema.date_time)
+        if interview:
+            raise ValueError("время занято, попробуйте другое")
+
         interview = Interviews(
             id=str(uuid.uuid4()),
             tg_user_id=schema.tg_user_id,

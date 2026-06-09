@@ -72,3 +72,18 @@ class BackendAPI:
             response.raise_for_status()
 
             return response.json()
+
+    async def can_book_date_time_interview(
+                self,
+                date_time: str
+        ):
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/bot/interviews",
+                    params={"date_time": date_time},
+                    headers=headers
+                )
+
+                response.raise_for_status()
+
+                return response.json()

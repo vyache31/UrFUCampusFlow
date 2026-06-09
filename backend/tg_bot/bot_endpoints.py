@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from tg_bot.bot_service import BotService
 from tg_bot.bot_schemas import (
@@ -166,9 +169,20 @@ async def delete_recruitment_curator(
 
 @router.get('/interviews')
 async def get_all_interviews(
+    date_time: Optional[datetime] = None,
     user=Depends(get_current_auth_user),
     service: BotService = Depends(get_bot_service)
 ):
+    if date_time:
+        try:
+            return await service.get_interview_by_datetime(date_time)
+        except ValueError as err:
+            raise HTTPException(
+                status_code=409,
+                detail=str(err)
+            )
+
+
     return await service.get_all_interviews()
 
 
@@ -182,7 +196,7 @@ async def add_interview(
         return await service.add_interview(schema)
     except ValueError as err:
         raise HTTPException(
-            status_code=404,
+            status_code=409,
             detail=str(err)
         )
 
