@@ -49,6 +49,13 @@ class EvaluationService:
         if not await self.repo.get_form_by_id(schema.evaluation_form_id):
             raise ValueError("This form does not exist")
 
+        existing_reaction = await self.repo.get_reaction_by_form_and_user(
+            schema.evaluation_form_id, user_id
+        )
+
+        if existing_reaction:
+            raise ValueError("User has already reacted to this form")
+
         created_reaction = EvaluationFormReactions(
             id=str(uuid.uuid4()),
             evaluation_form_id=schema.evaluation_form_id,

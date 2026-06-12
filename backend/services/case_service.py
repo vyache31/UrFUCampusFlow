@@ -1,39 +1,39 @@
-from models import Cases, CaseSemesters
 import uuid
-from services.const.case_status_workflow import ALLOWED_CASE_STATUS_TRANSITIONS, CASE_STATUS_DRAFT
-from repositories.case_repository import CaseRepository
-from schemas.case import CaseCreate, CaseUpdate, CaseResponse
-from repositories.user_repository import UserRepository
-from repositories.university_info_repository import UniversityInfoRepository
-from repositories.difficulty_level_repository import DifficultyLevelRepository
-from repositories.case_status_repository import CaseStatusRepository
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
+
 from fastapi import HTTPException
-from services.semesters_service import SemestersService
+
+from models import Cases, CaseSemesters
+from repositories.case_repository import CaseRepository
 from repositories.case_semesters_repository import CaseSemestersRepository
+from repositories.case_status_repository import CaseStatusRepository
+from repositories.difficulty_level_repository import DifficultyLevelRepository
+from repositories.university_info_repository import UniversityInfoRepository
+from repositories.user_repository import UserRepository
+from schemas.case import CaseCreate, CaseResponse, CaseUpdate
+from services.const.case_status_workflow import (
+    ALLOWED_CASE_STATUS_TRANSITIONS,
+    CASE_STATUS_DRAFT,
+)
+from services.evaluation_service import EvaluationService
+from services.semesters_service import SemestersService
 
-
-
-FK_FIELDS = {
-    "difficulty_level_id",
-    "university_id",
-    "creator_id"
-}
+FK_FIELDS = {"difficulty_level_id", "university_id", "creator_id"}
 
 
 class CaseService:
-
     def __init__(
-            self,
-            case_repo: CaseRepository,
-            user_repo: UserRepository,
-            uni_repo: UniversityInfoRepository,
-            diff_repo: DifficultyLevelRepository,
-            statuses_repo: CaseStatusRepository,
-            semesters_service: SemestersService,
-            case_semester_repo: CaseSemestersRepository
-        ):
+        self,
+        case_repo: CaseRepository,
+        user_repo: UserRepository,
+        uni_repo: UniversityInfoRepository,
+        diff_repo: DifficultyLevelRepository,
+        statuses_repo: CaseStatusRepository,
+        semesters_service: SemestersService,
+        case_semester_repo: CaseSemestersRepository,
+        evaluation_service: EvaluationService,
+    ):
         self.case_repo = case_repo
         self.user_repo = user_repo
         self.uni_repo = uni_repo
@@ -41,12 +41,16 @@ class CaseService:
         self.statuses_repo = statuses_repo
         self.semesters_service = semesters_service
         self.case_semester_repo = case_semester_repo
+        self.evaluation_service = evaluation_service
 
     async def _apply_fk_updates(self, case: Cases, fk_data: dict[str, Any]) -> None:
         config = {
-            'creator_id': (self.user_repo.get_by_id, 'Creator not found.'),
-            'university_id': (self.uni_repo.get_by_id, 'University not found.'),
-            'difficulty_level_id': (self.diff_repo.get_by_id, 'Difficulty level not found'),
+            "creator_id": (self.user_repo.get_by_id, "Creator not found."),
+            "university_id": (self.uni_repo.get_by_id, "University not found."),
+            "difficulty_level_id": (
+                self.diff_repo.get_by_id,
+                "Difficulty level not found",
+            ),
         }
 
         for key, value in fk_data.items():
@@ -57,7 +61,9 @@ class CaseService:
             else:
                 raise ValueError(config[key][1])
 
-    async def create_case(self, schema: CaseCreate, creator_id: str) -> CaseResponse | None:
+    async def create_case(
+        self, schema: CaseCreate, creator_id: str
+    ) -> CaseResponse | None:
         is_exist = await self.case_repo.get_by_title(schema.title)
 
         if is_exist:
@@ -66,7 +72,7 @@ class CaseService:
         draft_status = await self.statuses_repo.get_by_code(CASE_STATUS_DRAFT)
 
         if not draft_status:
-            raise ValueError('Draft status not found in db')
+            raise ValueError("Draft status not found in db")
 
         case = Cases(
             id=str(uuid.uuid4()),
@@ -82,29 +88,32 @@ class CaseService:
             end_date=schema.end_date,
             university_id=schema.university_id,
             status_id=draft_status.id,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
         )
 
-        await self._apply_fk_updates(case, {
-            "difficulty_level_id": schema.difficulty_level_id,
-            "university_id": schema.university_id,
-            "creator_id": creator_id,
-        })
+        await self._apply_fk_updates(
+            case,
+            {
+                "difficulty_level_id": schema.difficulty_level_id,
+                "university_id": schema.university_id,
+                "creator_id": creator_id,
+            },
+        )
 
         case = await self.case_repo.create(case)
         case = await self.case_repo.get_with_relations(case.id)
 
         semester = await self.semesters_service.get_or_create_current()
 
-        case_semester_existing_connection = await self.case_semester_repo.get_by_case_and_semester(case.id, semester.id)
+        case_semester_existing_connection = (
+            await self.case_semester_repo.get_by_case_and_semester(case.id, semester.id)
+        )
 
         if case_semester_existing_connection:
-            raise ValueError('This Case already exists in the current semester')
+            raise ValueError("This Case already exists in the current semester")
 
         case_semester_connection = CaseSemesters(
-            id=str(uuid.uuid4()),
-            case_id=case.id,
-            semester_id=semester.id
+            id=str(uuid.uuid4()), case_id=case.id, semester_id=semester.id
         )
 
         await self.case_semester_repo.create(case_semester_connection)
@@ -124,7 +133,9 @@ class CaseService:
         cases = await self.case_repo.get_all(limit=limit)
         return [self._to_response(case) for case in cases]
 
-    async def update_case(self, case_id: str, schema: CaseUpdate) -> CaseResponse | None:
+    async def update_case(
+        self, case_id: str, schema: CaseUpdate
+    ) -> CaseResponse | None:
         case = await self.case_repo.get_by_id(case_id=case_id)
 
         if not case:
@@ -174,12 +185,12 @@ class CaseService:
             return None
 
         seasons = {
-            'FALL': 'Осенний',
-            'SPRING': 'Весенний',
+            "FALL": "Осенний",
+            "SPRING": "Весенний",
         }
         season_name = seasons.get(semester.season, semester.season)
 
-        return f'{season_name} {semester.year}'
+        return f"{season_name} {semester.year}"
 
     def _to_response(self, case: Cases) -> CaseResponse:
         case_semester = self._get_case_semester(case)
@@ -190,7 +201,9 @@ class CaseService:
             title=case.title,
             short_title=case.short_title,
             difficulty_level_id=case.difficulty_level_id,
-            difficulty_level_name=case.difficulty_level.level_name if case.difficulty_level else None,
+            difficulty_level_name=case.difficulty_level.level_name
+            if case.difficulty_level
+            else None,
             project_goals=case.project_goals,
             required_result=case.required_result,
             grade_criteria=case.grade_criteria,
@@ -212,21 +225,22 @@ class CaseService:
             updated_at=case.updated_at,
         )
 
-
-    #Работа с переходами статусов кейсов
-    async def _transit_case_status(self, case_id: str, new_status_code: str) -> CaseResponse | None:
+    # Работа с переходами статусов кейсов
+    async def _transit_case_status(
+        self, case_id: str, new_status_code: str
+    ) -> CaseResponse | None:
         case = await self.case_repo.get_by_id(case_id)
 
         if not case:
             return None
 
         if new_status_code not in ALLOWED_CASE_STATUS_TRANSITIONS[case.status.code]:
-            raise ValueError('Invalid status transition')
+            raise ValueError("Invalid status transition")
 
         new_status = await self.statuses_repo.get_by_code(status_code=new_status_code)
 
         if not new_status:
-            raise ValueError(f'Status with code {new_status_code} not found')
+            raise ValueError(f"Status with code {new_status_code} not found")
 
         case.status = new_status
 
@@ -234,18 +248,33 @@ class CaseService:
 
         return self._to_response(case)
 
-
     async def send_to_review(self, case_id: str) -> CaseResponse | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='IN_REVIEW')
+        case = await self.case_repo.get_by_id(case_id)
 
+        if not case:
+            return None
+
+        updated_case = await self._transit_case_status(
+            case_id=case_id, new_status_code="IN_REVIEW"
+        )
+
+        await self.evaluation_service.create_evaluation_form(
+            case_id=case_id, creator_id=case.creator.id
+        )
+
+        return updated_case
 
     async def reject(self, case_id: str) -> CaseResponse | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='REVISION')
-
+        return await self._transit_case_status(
+            case_id=case_id, new_status_code="REVISION"
+        )
 
     async def activate_after_submition(self, case_id: str) -> CaseResponse | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='ACTIVE')
-
+        return await self._transit_case_status(
+            case_id=case_id, new_status_code="ACTIVE"
+        )
 
     async def archive(self, case_id: str) -> CaseResponse | None:
-        return await self._transit_case_status(case_id=case_id, new_status_code='ARCHIVED')
+        return await self._transit_case_status(
+            case_id=case_id, new_status_code="ARCHIVED"
+        )
