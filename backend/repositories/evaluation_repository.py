@@ -40,6 +40,25 @@ class EvaluationRepository:
 
         return [reaction for reaction in reactions.scalars().all()]
 
+    async def get_all_reactions(self) -> list[EvaluationFormReactions]:
+        reactions = await self.db.execute(
+            select(EvaluationFormReactions)
+            .order_by(EvaluationFormReactions.created_at.desc())
+        )
+
+        return [reaction for reaction in reactions.scalars().all()]
+
+    async def get_reactions_by_type(
+        self, reaction_type: str
+    ) -> list[EvaluationFormReactions]:
+        reactions = await self.db.execute(
+            select(EvaluationFormReactions)
+            .where(EvaluationFormReactions.reaction == reaction_type)
+            .order_by(EvaluationFormReactions.created_at.desc())
+        )
+
+        return [reaction for reaction in reactions.scalars().all()]
+
     async def update_reaction(
         self, reaction: EvaluationFormReactions
     ) -> EvaluationFormReactions | None:

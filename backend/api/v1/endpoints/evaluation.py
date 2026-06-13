@@ -10,6 +10,7 @@ from schemas.evaluation_schemas import (
     EvaluationReactionCreate,
     EvaluationReactionResponse,
     EvaluationReactionUpdate,
+    ReactionType,
 )
 from services.evaluation_service import EvaluationService
 
@@ -92,7 +93,30 @@ async def create_evaluation_reaction(
 
 
 @router.get(
-    "/evaluation-reactions/{reaction_id}",
+    "/evaluation-reactions/",
+    response_model=list[EvaluationReactionResponse],
+)
+async def get_all_evaluation_reactions(
+    user=Depends(get_current_auth_user),
+    service: EvaluationService = Depends(get_evaluation_service),
+):
+    return await service.get_all_evaluation_reactions()
+
+
+@router.get(
+    "/evaluation-reactions/{reaction_type}",
+    response_model=list[EvaluationReactionResponse],
+)
+async def get_evaluation_reactions_by_type(
+    reaction_type: ReactionType,
+    user=Depends(get_current_auth_user),
+    service: EvaluationService = Depends(get_evaluation_service),
+):
+    return await service.get_evaluation_reactions_by_type(reaction_type)
+
+
+@router.get(
+    "/evaluation-reactions/id/{reaction_id}",
     response_model=EvaluationReactionResponse,
 )
 async def get_evaluation_reaction(
