@@ -180,6 +180,20 @@ class EvaluationService:
 
         return [self._to_response_reaction(reaction) for reaction in reactions]
 
+    async def get_all_evaluation_reactions(
+        self,
+    ) -> list[EvaluationReactionResponse]:
+        reactions = await self.repo.get_all_reactions()
+
+        return [self._to_response_reaction(reaction) for reaction in reactions]
+
+    async def get_evaluation_reactions_by_type(
+        self, reaction_type: ReactionType
+    ) -> list[EvaluationReactionResponse]:
+        reactions = await self.repo.get_reactions_by_type(reaction_type.value)
+
+        return [self._to_response_reaction(reaction) for reaction in reactions]
+
     async def get_evaluation_reaction_by_form_and_user(
         self, form_id: str, user_id: str
     ) -> EvaluationReactionResponse | None:
