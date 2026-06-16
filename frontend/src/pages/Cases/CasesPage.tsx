@@ -291,6 +291,7 @@ const CasesPage = () => {
             description={caseItem.description || ''}
             status={caseItem.status}
             defaultOpen={false}
+            evaluationFormId={caseItem.case_semesters_id}
             likes={caseItem.likes || 0}
             dislikes={caseItem.dislikes || 0}
             onOpenFull={() => handleOpenFullCase(caseItem.id)}
