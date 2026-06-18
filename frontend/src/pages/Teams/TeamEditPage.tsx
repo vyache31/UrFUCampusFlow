@@ -446,28 +446,36 @@ const TeamEditPage = () => {
   };
 
   const handleDelete = () => {
-    if (!id) return;
-    
-    showConfirm({
-      message: 'Вы уверены, что хотите удалить эту команду? Это действие необратимо.',
-      onConfirm: async () => {
-        try {
-          setDeleting(true);
-          await deleteTeam(id);
-          showSuccess('Команда успешно удалена');
-          navigate('/teams');
-        } catch (err) {
-          console.error('Ошибка удаления команды:', err);
+  if (!id) return;
+  
+  showConfirm({
+    message: 'Вы уверены, что хотите удалить эту команду? Это действие необратимо.',
+    onConfirm: async () => {
+      try {
+        setDeleting(true);
+        await deleteTeam(id);
+        showSuccess('Команда успешно удалена');
+        navigate('/teams');
+      } catch (err: unknown) {
+        console.error('Ошибка удаления команды:', err);
+        const apiError = err as { response?: { data?: { detail?: string } } };
+        const detail = apiError?.response?.data?.detail;
+        if (detail && detail.includes('external links')) {
+          showError('Нельзя удалить команду, так как у неё есть связанные данные (участники, встречи или история кейсов)');
+        } else if (detail) {
+          showError(detail);
+        } else {
           showError('Не удалось удалить команду');
-        } finally {
-          setDeleting(false);
         }
-      },
-      onCancel: () => {},
-      confirmText: 'Да',
-      cancelText: 'Нет'
-    });
-  };
+      } finally {
+        setDeleting(false);
+      }
+    },
+    onCancel: () => {},
+    confirmText: 'Да',
+    cancelText: 'Нет'
+  });
+};
 
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },

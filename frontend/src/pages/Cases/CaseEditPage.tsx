@@ -248,24 +248,32 @@ const CaseEditPage = () => {
   };
 
   const handleDelete = async () => {
-    showConfirm({
-      message: 'Вы уверены, что хотите удалить этот кейс? Это действие необратимо.',
-      onConfirm: async () => {
-        try {
-          await deleteCase(id!);
-          console.log('Кейс удален:', id);
-          showSuccess('Кейс успешно удалён');
-          navigate('/cases');
-        } catch (error) {
-          console.error('Ошибка удаления:', error);
+  showConfirm({
+    message: 'Вы уверены, что хотите удалить этот кейс? Это действие необратимо.',
+    onConfirm: async () => {
+      try {
+        await deleteCase(id!);
+        console.log('Кейс удален:', id);
+        showSuccess('Кейс успешно удалён');
+        navigate('/cases');
+      } catch (error: unknown) {
+        console.error('Ошибка удаления:', error);
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        const detail = apiError?.response?.data?.detail;
+        if (detail && detail.includes('external links')) {
+          showError('Нельзя удалить кейс, так как он используется в командах или имеет связанные данные');
+        } else if (detail) {
+          showError(detail);
+        } else {
           showError('Не удалось удалить кейс');
         }
-      },
-      onCancel: () => {},
-      confirmText: 'Да',
-      cancelText: 'Нет'
-    });
-  };
+      }
+    },
+    onCancel: () => {},
+    confirmText: 'Да',
+    cancelText: 'Нет'
+  });
+};
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
