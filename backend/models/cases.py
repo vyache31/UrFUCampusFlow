@@ -88,7 +88,7 @@ class EvaluationForm(Base):
     __tablename__ = "evaluation_form"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id", ondelete="RESTRICT"))
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"))
     creator_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
@@ -102,7 +102,7 @@ class EvaluationFormReactions(Base):
     __tablename__ = "evaluation_form_reactions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    evaluation_form_id: Mapped[str] = mapped_column(ForeignKey("evaluation_form.id"))
+    evaluation_form_id: Mapped[str] = mapped_column(ForeignKey("evaluation_form.id", ondelete="CASCADE"))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     reaction: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -122,7 +122,7 @@ class EvaluationFormComments(Base):
     __tablename__ = "evaluation_form_comments"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    evaluation_form_id: Mapped[str] = mapped_column(ForeignKey("evaluation_form.id"))
+    evaluation_form_id: Mapped[str] = mapped_column(ForeignKey("evaluation_form.id", ondelete="CASCADE"))
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     comment_text: Mapped[str] = mapped_column(String())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
