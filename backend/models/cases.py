@@ -44,13 +44,13 @@ class Cases(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    evaluation_forms = relationship("EvaluationForm", back_populates="case")
+    evaluation_forms = relationship("EvaluationForm", back_populates="case", passive_deletes=True)
     status = relationship("CaseStatuses", back_populates="cases")
     creator = relationship("Users", back_populates="created_cases")
     university = relationship("Universities", back_populates="cases")
     difficulty_level = relationship("DifficultyLevels", back_populates="cases")
     case_semesters = relationship(
-        "CaseSemesters", back_populates="case", cascade="all, delete-orphan"
+        "CaseSemesters", back_populates="case", passive_deletes=True
     )
 
 
@@ -58,7 +58,7 @@ class CaseSemesters(Base):
     __tablename__ = "case_semesters"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"))
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"))
     semester_id: Mapped[int] = mapped_column(ForeignKey("semesters.id"))
 
     case = relationship("Cases", back_populates="case_semesters")
@@ -88,7 +88,7 @@ class EvaluationForm(Base):
     __tablename__ = "evaluation_form"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id"))
+    case_id: Mapped[str] = mapped_column(ForeignKey("cases.id", ondelete="RESTRICT"))
     creator_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
