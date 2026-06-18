@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, UTC
+from sqlalchemy.exc import IntegrityError
 from schemas.team import TeamCreate, TeamUpdate
 from models import Teams
 from repositories.team_repository import TeamRepository
@@ -70,8 +71,12 @@ class TeamService:
 
         if not team:
             return None
+        try:
+            await self.team_repo.delete(team)
+        except IntegrityError as err:
+            if "foreign key constraint" in str(err.orig).lower():
+                raise TeamHasDependenciesError("Team cannot be deleted because it has external links")
 
-        await self.team_repo.delete(team)
         return True
 
     """
@@ -85,3 +90,7 @@ class TeamService:
                 attr = await getter(validate_attrs[field])
                 if not attr:
                     raise ValueError(error)
+
+class TeamHasDependenciesError(Exception):
+    """Команда не может быть удалена, так как есть связанные записи"""
+    pass

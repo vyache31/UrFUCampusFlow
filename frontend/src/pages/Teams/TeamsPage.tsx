@@ -58,32 +58,40 @@ const TeamsPage = () => {
   };
 
   const handleDelete = () => {
-    if (selectedTeamIds.length === 0) return;
-    
-    const confirmMessage = selectedTeamIds.length === 1 
-      ? 'Вы уверены, что хотите удалить выбранную команду? Это действие необратимо.'
-      : `Вы уверены, что хотите удалить ${selectedTeamIds.length} команд? Это действие необратимо.`;
-    
-    showConfirm({
-      message: confirmMessage,
-      onConfirm: async () => {
-        try {
-          for (const teamId of selectedTeamIds) {
-            await deleteTeam(teamId);
-          }
-          await fetchTeams();
-          setSelectedTeamIds([]);
-          showSuccess('Команды успешно удалены');
-        } catch (error) {
-          console.error('Ошибка при удалении:', error);
-          showError('Не удалось удалить некоторые команды.');
+  if (selectedTeamIds.length === 0) return;
+  
+  const confirmMessage = selectedTeamIds.length === 1 
+    ? 'Вы уверены, что хотите удалить выбранную команду? Это действие необратимо.'
+    : `Вы уверены, что хотите удалить ${selectedTeamIds.length} команд? Это действие необратимо.`;
+  
+  showConfirm({
+    message: confirmMessage,
+    onConfirm: async () => {
+      try {
+        for (const teamId of selectedTeamIds) {
+          await deleteTeam(teamId);
         }
-      },
-      onCancel: () => {},
-      confirmText: 'Да',
-      cancelText: 'Нет'
-    });
-  };
+        await fetchTeams();
+        setSelectedTeamIds([]);
+        showSuccess('Команды успешно удалены');
+      } catch (error: unknown) {
+        console.error('Ошибка при удалении:', error);
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        const detail = apiError?.response?.data?.detail;
+        if (detail && detail.includes('external links')) {
+          showError('Нельзя удалить команду, так как у неё есть связанные данные (участники, встречи или история кейсов)');
+        } else if (detail) {
+          showError(detail);
+        } else {
+          showError('Не удалось удалить некоторые команды');
+        }
+      }
+    },
+    onCancel: () => {},
+    confirmText: 'Да',
+    cancelText: 'Нет'
+  });
+};
 
   const handleCreateTeam = () => {
     navigate('/teams/create');

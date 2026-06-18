@@ -29,7 +29,7 @@ class TeamMembers(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     student_id: Mapped[str] = mapped_column(ForeignKey("students.id"))
     position: Mapped[str]
-    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id"))
+    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     left_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -54,17 +54,17 @@ class Teams(Base):
         DateTime(timezone=True), nullable=True
     )
 
-    team_members = relationship("TeamMembers", back_populates="team")
+    team_members = relationship("TeamMembers", back_populates="team", passive_deletes=True)
     university = relationship("Universities", back_populates="teams")
-    case_history = relationship("TeamCaseHistory", back_populates="team")
+    case_history = relationship("TeamCaseHistory", back_populates="team", passive_deletes=True)
 
 
 class TeamCaseHistory(Base):
     __tablename__ = "team_case_history"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, unique=True)
-    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id"), index=True)
-    case_semesters_id: Mapped[str] = mapped_column(ForeignKey("case_semesters.id"))
+    team_id: Mapped[str] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"), index=True)
+    case_semesters_id: Mapped[str] = mapped_column(ForeignKey("case_semesters.id", ondelete="RESTRICT"))
     started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

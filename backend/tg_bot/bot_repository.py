@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from tg_bot.models.bot import BotMode, BotCases, RecruitmentCurators, Interviews
@@ -95,6 +97,16 @@ class BotRepository:
         interview = await self.db.execute(
             select(Interviews)
             .where(Interviews.id == interview_id)
+        )
+
+        return interview.scalar_one_or_none()
+
+    async def get_interview_by_datetime(self, date_time: datetime):
+        interview = await self.db.execute(
+            select(Interviews)
+            .where(
+                Interviews.date_time == date_time
+            )
         )
 
         return interview.scalar_one_or_none()

@@ -111,33 +111,41 @@ const CasesPage = () => {
   };
 
   const handleDelete = async () => {
-    if (selectedCaseIds.length === 0) return;
-    
-    const confirmMessage = selectedCaseIds.length === 1 
-      ? 'Вы уверены, что хотите удалить выбранный кейс? Это действие необратимо.'
-      : `Вы уверены, что хотите удалить ${selectedCaseIds.length} кейсов? Это действие необратимо.`;
-    
-    showConfirm({
-      message: confirmMessage,
-      onConfirm: async () => {
-        try {
-          for (const caseId of selectedCaseIds) {
-            await deleteCase(caseId);
-          }
-          const updatedCases = await getCases(100);
-          setCases(updatedCases);
-          setSelectedCaseIds([]);
-          showSuccess(selectedCaseIds.length === 1 ? 'Кейс успешно удалён' : `Удалено ${selectedCaseIds.length} кейсов`);
-        } catch (error) {
-          console.error('Ошибка при удалении:', error);
+  if (selectedCaseIds.length === 0) return;
+  
+  const confirmMessage = selectedCaseIds.length === 1 
+    ? 'Вы уверены, что хотите удалить выбранный кейс? Это действие необратимо.'
+    : `Вы уверены, что хотите удалить ${selectedCaseIds.length} кейсов? Это действие необратимо.`;
+  
+  showConfirm({
+    message: confirmMessage,
+    onConfirm: async () => {
+      try {
+        for (const caseId of selectedCaseIds) {
+          await deleteCase(caseId);
+        }
+        const updatedCases = await getCases(100);
+        setCases(updatedCases);
+        setSelectedCaseIds([]);
+        showSuccess(selectedCaseIds.length === 1 ? 'Кейс успешно удалён' : `Удалено ${selectedCaseIds.length} кейсов`);
+      } catch (error: unknown) {
+        console.error('Ошибка при удалении:', error);
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        const detail = apiError?.response?.data?.detail;
+        if (detail && detail.includes('external links')) {
+          showError('Нельзя удалить кейс, так как он используется в командах или имеет связанные данные');
+        } else if (detail) {
+          showError(detail);
+        } else {
           showError('Не удалось удалить некоторые кейсы');
         }
-      },
-      onCancel: () => {},
-      confirmText: 'Да',
-      cancelText: 'Нет'
-    });
-  };
+      }
+    },
+    onCancel: () => {},
+    confirmText: 'Да',
+    cancelText: 'Нет'
+  });
+};
 
   // Отправить на оценку
   const handleSendToReview = async () => {
