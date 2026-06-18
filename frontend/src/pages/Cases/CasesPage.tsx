@@ -8,6 +8,7 @@ import BulkActionsBar from '../../components/cases/BulkActions/BulkActionsBar';
 import ActionsDropdown from '../../components/sent-cases/ActionsDropdown';
 import CaseCard from '../../components/cases/CaseCard/CaseCard';
 import { getCases, deleteCase, sendToReview, rejectCase, activateCase, archiveCase, type Case } from '../../services/cases';
+import { getEvaluationFormByCaseId } from '../../services/evaluationComments';
 import { useToast } from '../../context/ToastContext';
 import './casesPage.css';
 
@@ -19,13 +20,38 @@ const CasesPage = () => {
   const [statusFilter, setStatusFilter] = useState('Все кейсы');
   const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
   const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
+  const [evaluationFormIds, setEvaluationFormIds] = useState<Record<string, string>>({});
+
+  const loadEvaluationFormIds = async (casesToLoad: Case[]) => {
+    const formIds: Record<string, string> = {};
+
+    await Promise.all(
+      casesToLoad
+        .filter(caseItem => caseItem.status === 'На оценке')
+        .map(async (caseItem) => {
+          try {
+            const evaluationForm = await getEvaluationFormByCaseId(caseItem.id);
+            formIds[caseItem.id] = evaluationForm.id;
+          } catch (error) {
+            console.error('Форма оценки для кейса не найдена:', caseItem.id, error);
+          }
+        })
+    );
+
+    setEvaluationFormIds(formIds);
+  };
+
+  const loadCases = async () => {
+    const data = await getCases(100);
+    setCases(data);
+    await loadEvaluationFormIds(data);
+  };
 
   useEffect(() => {
     const fetchCases = async () => {
       try {
         setLoading(true);
-        const data = await getCases(100);
-        setCases(data);
+        await loadCases();
       } catch (error) {
         console.error('Ошибка загрузки кейсов:', error);
         showError('Не удалось загрузить кейсы');
@@ -124,8 +150,7 @@ const CasesPage = () => {
         for (const caseId of selectedCaseIds) {
           await deleteCase(caseId);
         }
-        const updatedCases = await getCases(100);
-        setCases(updatedCases);
+        await loadCases();
         setSelectedCaseIds([]);
         showSuccess(selectedCaseIds.length === 1 ? 'Кейс успешно удалён' : `Удалено ${selectedCaseIds.length} кейсов`);
       } catch (error: unknown) {
@@ -155,8 +180,7 @@ const CasesPage = () => {
       for (const caseId of selectedCaseIds) {
         await sendToReview(caseId);
       }
-      const updatedCases = await getCases(100);
-      setCases(updatedCases);
+      await loadCases();
       setSelectedCaseIds([]);
       showSuccess(selectedCaseIds.length === 1 ? 'Кейс отправлен на оценку' : `Отправлено на оценку ${selectedCaseIds.length} кейсов`);
     } catch (error) {
@@ -173,8 +197,7 @@ const CasesPage = () => {
       for (const caseId of selectedCaseIds) {
         await activateCase(caseId);
       }
-      const updatedCases = await getCases(100);
-      setCases(updatedCases);
+      await loadCases();
       setSelectedCaseIds([]);
       showSuccess(selectedCaseIds.length === 1 ? 'Кейс одобрен и стал активным' : `${selectedCaseIds.length} кейсов одобрены и стали активными`);
     } catch (error) {
@@ -191,8 +214,7 @@ const CasesPage = () => {
       for (const caseId of selectedCaseIds) {
         await rejectCase(caseId);
       }
-      const updatedCases = await getCases(100);
-      setCases(updatedCases);
+      await loadCases();
       setSelectedCaseIds([]);
       showSuccess(selectedCaseIds.length === 1 ? 'Кейс отправлен на доработку' : `${selectedCaseIds.length} кейсов отправлены на доработку`);
     } catch (error) {
@@ -209,8 +231,7 @@ const CasesPage = () => {
       for (const caseId of selectedCaseIds) {
         await archiveCase(caseId);
       }
-      const updatedCases = await getCases(100);
-      setCases(updatedCases);
+      await loadCases();
       setSelectedCaseIds([]);
       showSuccess(selectedCaseIds.length === 1 ? 'Кейс архивирован' : `${selectedCaseIds.length} кейсов архивированы`);
     } catch (error) {
@@ -299,6 +320,7 @@ const CasesPage = () => {
             description={caseItem.description || ''}
             status={caseItem.status}
             defaultOpen={false}
+            evaluationFormId={evaluationFormIds[caseItem.id]}
             likes={caseItem.likes || 0}
             dislikes={caseItem.dislikes || 0}
             onOpenFull={() => handleOpenFullCase(caseItem.id)}

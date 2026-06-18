@@ -52,3 +52,27 @@ export const logout = (): void => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
 };
+
+export const getCurrentUserEmail = (): string => {
+  const token = localStorage.getItem('access_token');
+  if (!token) return '';
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.email || payload.sub || '';
+  } catch {
+    return '';
+  }
+};
+
+export const getCurrentUserId = (): string => {
+  const token = localStorage.getItem('access_token');
+  if (!token) return '';
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub || payload.user_id || '';
+  } catch {
+    return '';
+  }
+};
