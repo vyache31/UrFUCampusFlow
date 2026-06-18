@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 import httpx
 from pydantic import ValidationError
 from services.case_service import CaseService
+from services.case_service import CaseHasDependenciesError
 from schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from dependies.case_depends import get_case_service
 from dependies.auth_depends import get_current_auth_user
@@ -81,7 +82,11 @@ async def delete_case(
         user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
-    result = await service.delete_case(case_id=case_id)
+    try:
+        result = await service.delete_case(case_id=case_id)
+    except CaseHasDependenciesError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+
     if not result:
         raise _case_not_found(case_id)
 

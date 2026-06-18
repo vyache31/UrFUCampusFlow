@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 
 from models import Cases, CaseSemesters
@@ -168,8 +168,12 @@ class CaseService:
 
         if not case:
             return None
-
-        await self.case_repo.delete(case)
+        try:
+            await self.case_repo.delete_by_id(case_id)
+        except IntegrityError as err:
+            print(f"ERROR LOG: ", str(err))
+            if "foreign key constraint" in str(err.orig).lower():
+                raise CaseHasDependenciesError("Case cannot be deleted because it has external links")
 
         return True
 
@@ -278,3 +282,7 @@ class CaseService:
         return await self._transit_case_status(
             case_id=case_id, new_status_code="ARCHIVED"
         )
+
+class CaseHasDependenciesError(Exception):
+    """Кейс не может быть удален, так как есть связанные записи"""
+    pass

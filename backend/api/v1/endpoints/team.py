@@ -40,6 +40,8 @@ from services.team_case_history_service import TeamCaseHistoryService
 from services.team_members_service import TeamMembersService
 from typing import List
 
+from services.team_service import TeamHasDependenciesError
+
 router = APIRouter(
     prefix="/teams",
     tags=["Teams"]
@@ -105,7 +107,10 @@ async def delete_team(
         user=Depends(get_current_auth_user),
         service: TeamService = Depends(get_team_service)
 ):
-    result = await service.delete_team(team_id)
+    try:
+        result = await service.delete_team(team_id)
+    except TeamHasDependenciesError as err:
+        raise HTTPException(status_code=409, detail=str(err))
     if not result:
         raise HTTPException(status_code=409, detail='Team not found')
 
