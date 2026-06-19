@@ -1,5 +1,10 @@
 from fastapi import WebSocket
 
+from infrastructure.events.events import (
+    CommentCreatedEvent,
+    LikesUpdatedEvent
+)
+
 
 class WebSocketManager:
     def __init__(self):
@@ -27,3 +32,27 @@ class WebSocketManager:
 
         for ws in dead_connections:
             self.disconnect(ws)
+
+    async def on_comment_created(
+            self,
+            event: CommentCreatedEvent,
+    ) -> None:
+
+        await self.broadcast(
+            {
+                "type": "created_comment",
+                "comment": event.comment
+            }
+        )
+
+    async def on_likes_created(
+            self,
+            event: LikesUpdatedEvent,
+    ) -> None:
+
+        await self.broadcast(
+            {
+                "type": "reaction_updated",
+                "like": event.likes
+            }
+        )
