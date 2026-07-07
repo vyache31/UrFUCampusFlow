@@ -14,6 +14,11 @@ from schemas.evaluation_schemas import (
     EvaluationReactionUpdate,
     ReactionType,
 )
+from infrastructure.container import event_bus
+from infrastructure.events.events import (
+    CommentCreatedEvent, EvaluationCommentWs,
+    LikesUpdatedEvent, LikesUpdatedWs
+)
 
 
 class EvaluationService:
@@ -64,12 +69,25 @@ class EvaluationService:
             created_at=datetime.now(UTC),
         )
 
+        reactions_count = self.get_evaluation_reactions_by_type(schema.reaction.value)
+        like_ws = LikesUpdatedWs(
+            evaluation_form_id=schema.evaluation_form_id,
+            reactions_count=reactions_count,
+            user_id=user_id,
+            reaction=schema.reaction.value
+        )
+
+        event_bus.publish(LikesUpdatedEvent(like_ws))
+
         await self.repo.create_reaction(created_reaction)
 
         return self._to_response_reaction(created_reaction)
 
     async def evaluation_comment_create(
-        self, user_id: str, schema: EvaluationCommentCreate
+        self,
+        user_id: str,
+        user_email: str,
+        schema: EvaluationCommentCreate
     ) -> EvaluationCommentResponse:
         if not await self.repo.get_form_by_id(schema.evaluation_form_id):
             raise ValueError("This form does not exist")
@@ -81,6 +99,17 @@ class EvaluationService:
             comment_text=schema.comment_text,
             created_at=datetime.now(UTC),
         )
+
+        comment_event = EvaluationCommentWs(
+            id=str(uuid.uuid4()),
+            evaluation_form_id=schema.evaluation_form_id,
+            user_id=user_id,
+            user_email=user_email,
+            comment_text=schema.comment_text,
+            created_at=datetime.now(UTC),
+        )
+
+        event_bus.publish(CommentCreatedEvent(comment_event))
 
         await self.repo.create_comment(created_comment)
 

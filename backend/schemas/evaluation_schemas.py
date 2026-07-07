@@ -60,3 +60,19 @@ class EvaluationCommentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class EvaluationCommentWs(BaseModel):
+    id: str
+    evaluation_form_id: str
+    user_id: str
+    user_email: str
+    comment_text: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+class LikesUpdatedWs(BaseModel):
+    evaluation_form_id: str
+    reactions_count: int
+    user_id: str
+    reaction: ReactionType
+

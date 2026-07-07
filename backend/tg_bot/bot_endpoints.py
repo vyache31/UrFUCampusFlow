@@ -10,7 +10,7 @@ from tg_bot.bot_schemas import (
     InterviewCreate
 )
 from tg_bot.bot_depends import get_bot_service
-from dependies.auth_depends import get_current_auth_user
+from dependies.auth_depends import get_current_auth_user, get_current_subject
 from tg_bot.models.bot import (
     BotCases,
     RecruitmentCurators,
@@ -26,7 +26,7 @@ router = APIRouter(
 
 @router.get('/mode')
 async def get_current_mode(
-    user=Depends(get_current_auth_user),
+    subject=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     mode = await service.get_current_mode()
@@ -42,7 +42,7 @@ async def get_current_mode(
 @router.patch('/mode')
 async def change_current_mode(
     schema: BotModeUpdate,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     try:
@@ -63,7 +63,7 @@ async def change_current_mode(
 
 @router.get('/cases')
 async def get_all_bot_cases(
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     return await service.get_all_bot_cases()
@@ -72,7 +72,7 @@ async def get_all_bot_cases(
 @router.get('/cases/{bot_case_id}')
 async def get_botcase_by_case(
     bot_case_id: str,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     return await service.get_bot_case_by_case_id(bot_case_id)
@@ -81,7 +81,7 @@ async def get_botcase_by_case(
 @router.post('/cases')
 async def add_bot_case(
     schema: BotCaseCreate,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     try:
@@ -97,7 +97,7 @@ async def add_bot_case(
 @router.delete('/cases')
 async def delete_bot_case(
     bot_case_id: str,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     try:
@@ -120,7 +120,7 @@ async def delete_bot_case(
 
 @router.get('/curators')
 async def get_all_recruitment_curators(
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     return await service.get_all_recruitment_curators()
@@ -129,7 +129,7 @@ async def get_all_recruitment_curators(
 @router.post('/curators')
 async def add_recruitment_curator(
     schema: RecruitmentCuratorCreate,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     try:
@@ -149,7 +149,7 @@ async def add_recruitment_curator(
 @router.delete('/curators')
 async def delete_recruitment_curator(
     curator_id: str,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     try:
@@ -170,7 +170,7 @@ async def delete_recruitment_curator(
 @router.get('/interviews')
 async def get_all_interviews(
     date_time: Optional[datetime] = None,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     if date_time:
@@ -189,7 +189,7 @@ async def get_all_interviews(
 @router.post('/interviews')
 async def add_interview(
     schema: InterviewCreate,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     try:
@@ -204,7 +204,7 @@ async def add_interview(
 @router.delete('/interviews')
 async def delete_interview(
     interview_id: str,
-    user=Depends(get_current_auth_user),
+    user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
     result = await service.delete_interview(interview_id=interview_id)
@@ -221,7 +221,7 @@ async def delete_interview(
 @router.post('/message')
 async def send_message(
         message: str,
-        user = Depends(get_current_auth_user),
+        user = Depends(get_current_subject),
         service = Depends(get_bot_service)
 ):
     try:

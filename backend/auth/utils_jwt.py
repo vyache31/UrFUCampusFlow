@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 
 import jwt
 from config import settings
@@ -7,9 +8,12 @@ from datetime import timedelta
 
 from schemas.user import UserLoginRequest, UserCreate
 
-TOKEN_TYPE_FIELD = "type"
-TOKEN_TYPE_ACCESS = "access"
-TOKEN_TYPE_REFRESH = "refresh"
+
+class TokenType(Enum):
+    field = "type"
+    user_access = "user_access"
+    refresh = "refresh"
+    service_access = "service_access"
 
 
 def encode_jwt(
@@ -71,12 +75,12 @@ def validate_password(
 
 
 def create_jwt(
-        token_type: str,
+        token_type: TokenType,
         token_data: dict,
         expire_minutes: int = settings.auth_jwt.access_token_expire_minutes,
         expire_timedelta: timedelta | None = None,
 ) -> str:
-    jwt_payload = {TOKEN_TYPE_FIELD: token_type}
+    jwt_payload = {TokenType.field.value: token_type.value}
     jwt_payload.update(token_data)
     return encode_jwt(
         payload=jwt_payload,
@@ -85,16 +89,26 @@ def create_jwt(
     )
 
 
-def create_access_token(schema: UserLoginRequest | UserCreate) -> str:
+def create_user_access_token(schema: UserLoginRequest | UserCreate) -> str:
     jwt_payload = {
         "sub": schema.email,
         "email": schema.email,
     }
     return create_jwt(
-        token_type=TOKEN_TYPE_ACCESS,
+        token_type=TokenType.user_access,
         token_data=jwt_payload,
     )
 
+def create_service_access_token(sub: str) -> str:
+    jwt_payload = {
+        "sub": sub
+    }
+
+    return create_jwt(
+        token_type=TokenType.service_access,
+        token_data=jwt_payload,
+        expire_timedelta=timedelta(days=settings.auth_jwt.access_service_token_expire_days)
+    )
 
 def create_refresh_token(
         schema: UserLoginRequest | UserCreate
@@ -103,7 +117,7 @@ def create_refresh_token(
         "sub": schema.email,
     }
     return create_jwt(
-        token_type=TOKEN_TYPE_REFRESH,
+        token_type=TokenType.refresh,
         token_data=jwt_payload,
         expire_timedelta=timedelta(settings.auth_jwt.refresh_token_expire_days)
     )

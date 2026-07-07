@@ -5,7 +5,7 @@ from services.case_service import CaseService
 from services.case_service import CaseHasDependenciesError
 from schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from dependies.case_depends import get_case_service
-from dependies.auth_depends import get_current_auth_user
+from dependies.auth_depends import get_current_auth_user, get_current_subject
 from schemas.ai_case_schemas import AIGeneratedCaseResponse
 from services.ai_service import AIService
 from dependies.ai_depends import get_ai_service
@@ -48,7 +48,7 @@ async def create_case(
 @router.get('/{case_id}', response_model=CaseResponse)
 async def get_case(
         case_id: str,
-        user=Depends(get_current_auth_user),
+        user=Depends(get_current_subject),
         service: CaseService = Depends(get_case_service)
 ):
     case = await service.get_case_by_id(case_id=case_id)
