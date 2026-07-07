@@ -10,6 +10,7 @@ class AuthJWT(BaseModel):
     public_key_path: Path = BASE_DIR / "auth" / "certs" / "jwt-public.pem"
     algorithm: str = 'RS256'
     access_token_expire_minutes: int = 24*60
+    access_service_token_expire_days: int = 30
     refresh_token_expire_days: int = 30
 
 class Settings(BaseSettings):
@@ -38,7 +39,7 @@ class Settings(BaseSettings):
     GROQ_REQUEST_URL: str
     BACKEND_URL: str
     BOT_TOKEN: str
-    BOT_JWT: str
+    SERVICE_BOT_SECRET: str
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 

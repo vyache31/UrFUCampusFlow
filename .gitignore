@@ -12,7 +12,6 @@ ENV/
 
 # Environment files (секреты)
 *.env
-.env.*
 !example.env
 
 # IDE settings
