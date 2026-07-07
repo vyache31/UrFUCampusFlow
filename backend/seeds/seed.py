@@ -81,15 +81,23 @@ async def seed_user(session: AsyncSession):
         print("USER ALREADY EXISTS → SKIP")
         return
 
-    user = Users(
+    test_user = Users(
         id=str(uuid.uuid4()),
         email="test@alfa.ru",
         role_id=1,
         password_hash=hash_password("password").decode('utf-8'),
         created_at=datetime.now(timezone.utc),
     )
-    print("ADDING USER")
-    session.add(user)
+    curator_user = Users(
+        id=str(uuid.uuid4()),
+        email="curator@alfa.ru",
+        role_id=3,
+        password_hash=hash_password("password").decode('utf-8'),
+        created_at=datetime.now(timezone.utc),
+    )
+    print("ADDING USERS")
+    session.add(test_user)
+    session.add(curator_user)
     await session.flush()
     print("FLUSH DONE")
 
