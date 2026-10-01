@@ -4,7 +4,12 @@ from fastapi import WebSocketDisconnect
 from infrastructure.container import ws_manager
 
 
-@app.websocket("/ws")
+router = APIRouter(
+prefix='',
+    tags = ['WebSocket']
+)
+
+@router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await ws_manager.connect(websocket)
 
@@ -12,4 +17,7 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        await ws_manager.disconnect(websocket)
+        pass
+
+    finally:
+         ws_manager.disconnect(websocket)

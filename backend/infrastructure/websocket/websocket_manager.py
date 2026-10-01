@@ -1,5 +1,5 @@
 from fastapi import WebSocket
-
+from fastapi import WebSocketDisconnect
 from infrastructure.events.events import (
     CommentCreatedEvent,
     LikesUpdatedEvent
@@ -27,7 +27,7 @@ class WebSocketManager:
         for websocket in self.channels:
             try:
                 await websocket.send_json(message)
-            except Exception:
+            except WebSocketDisconnect:
                 dead_connections.append(websocket)
 
         for ws in dead_connections:
@@ -41,7 +41,7 @@ class WebSocketManager:
         await self.broadcast(
             {
                 "type": "created_comment",
-                "comment": event.comment
+                "comment": event.comment.model_dump(mode='json')
             }
         )
 
@@ -53,6 +53,6 @@ class WebSocketManager:
         await self.broadcast(
             {
                 "type": "reaction_updated",
-                "like": event.likes
+                "like": event.likes.model_dump(mode='json')
             }
         )

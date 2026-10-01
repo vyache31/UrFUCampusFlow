@@ -12,5 +12,5 @@ event_bus.subscribe(
 
 event_bus.subscribe(
     LikesUpdatedEvent,
-    ws_manager.on_likes_updated,
+    ws_manager.on_likes_created,
 )

@@ -69,17 +69,20 @@ class EvaluationService:
             created_at=datetime.now(UTC),
         )
 
-        reactions_count = self.get_evaluation_reactions_by_type(schema.reaction.value)
+        await self.repo.create_reaction(created_reaction)
+
+        this_form_reactions = await self.get_evaluation_reactions_by_form_id(schema.evaluation_form_id)
+        reactions_count = len([reaction for reaction in this_form_reactions if reaction.reaction.value == created_reaction.reaction])
+
+
         like_ws = LikesUpdatedWs(
             evaluation_form_id=schema.evaluation_form_id,
             reactions_count=reactions_count,
             user_id=user_id,
-            reaction=schema.reaction.value
+            reaction=schema.reaction
         )
 
-        event_bus.publish(LikesUpdatedEvent(like_ws))
-
-        await self.repo.create_reaction(created_reaction)
+        await event_bus.publish(LikesUpdatedEvent(like_ws))
 
         return self._to_response_reaction(created_reaction)
 
@@ -92,8 +95,10 @@ class EvaluationService:
         if not await self.repo.get_form_by_id(schema.evaluation_form_id):
             raise ValueError("This form does not exist")
 
+        this_comment_uuid = str(uuid.uuid4())
+
         created_comment = EvaluationFormComments(
-            id=str(uuid.uuid4()),
+            id=this_comment_uuid,
             evaluation_form_id=schema.evaluation_form_id,
             user_id=user_id,
             comment_text=schema.comment_text,
@@ -101,7 +106,7 @@ class EvaluationService:
         )
 
         comment_event = EvaluationCommentWs(
-            id=str(uuid.uuid4()),
+            id=this_comment_uuid,
             evaluation_form_id=schema.evaluation_form_id,
             user_id=user_id,
             user_email=user_email,
@@ -109,9 +114,9 @@ class EvaluationService:
             created_at=datetime.now(UTC),
         )
 
-        event_bus.publish(CommentCreatedEvent(comment_event))
-
         await self.repo.create_comment(created_comment)
+
+        await event_bus.publish(CommentCreatedEvent(comment_event))
 
         return self._to_response_comment(created_comment)
 
