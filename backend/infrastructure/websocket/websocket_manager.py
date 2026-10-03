@@ -1,9 +1,17 @@
+import logging
+
 from fastapi import WebSocket
 from fastapi import WebSocketDisconnect
+from starlette.websockets import WebSocketState
+
 from infrastructure.events.events import (
     CommentCreatedEvent,
+    CommentUpdatedEvent,
     LikesUpdatedEvent
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebSocketManager:
@@ -22,16 +30,24 @@ class WebSocketManager:
             self,
             message: dict
     ):
-        dead_connections = []
+        dead_connections: set[WebSocket] = set()
 
-        for websocket in self.channels:
+        for websocket in tuple(self.channels):
+            if (
+                websocket.application_state != WebSocketState.CONNECTED
+                or websocket.client_state == WebSocketState.DISCONNECTED
+            ):
+                dead_connections.add(websocket)
+                continue
+
             try:
                 await websocket.send_json(message)
-            except WebSocketDisconnect:
-                dead_connections.append(websocket)
+            except (WebSocketDisconnect, RuntimeError) as error:
+                logger.debug("Removing disconnected WebSocket: %s", error)
+                dead_connections.add(websocket)
 
-        for ws in dead_connections:
-            self.disconnect(ws)
+        for websocket in dead_connections:
+            self.disconnect(websocket)
 
     async def on_comment_created(
             self,
@@ -41,6 +57,18 @@ class WebSocketManager:
         await self.broadcast(
             {
                 "type": "created_comment",
+                "comment": event.comment.model_dump(mode='json')
+            }
+        )
+
+    async def on_comment_updated(
+            self,
+            event: CommentUpdatedEvent,
+    ) -> None:
+
+        await self.broadcast(
+            {
+                "type": "update_comment",
                 "comment": event.comment.model_dump(mode='json')
             }
         )

@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, WebSocketException
 from fastapi.security import HTTPBearer
 from services.auth_service import AuthService
 from dependies.user_depends import get_user_service
@@ -6,7 +6,7 @@ from services.user_service import UserService
 from auth import utils_jwt
 from models.auth import Users
 from auth.utils_jwt import TokenType
-from jwt.exceptions import ExpiredSignatureError
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 security = HTTPBearer(auto_error=False)
 
@@ -95,6 +95,34 @@ get_current_auth_user = GetterFromToken({TokenType.user_access})
 get_current_auth_user_for_refresh = GetterFromToken({TokenType.refresh})
 get_current_subject = GetterFromToken({TokenType.service_access, TokenType.user_access})
 
+async def get_current_websocket_user(
+    token: str,
+    user_service: UserService = Depends(get_user_service)
+) -> Users:
+
+    try:
+        payload = utils_jwt.decode_jwt(token)
+
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="This token was expired"
+        )
+    except InvalidTokenError:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Invalid token"
+        )
+
+    token_type = payload.get(TokenType.field.value)
+
+    if token_type != TokenType.user_access.value:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason="Invalid token type"
+        )
+
+    return await get_user_by_token_type(payload, user_service)
 
 
 async def require_admin_role(

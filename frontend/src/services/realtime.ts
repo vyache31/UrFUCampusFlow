@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './api';
+import { API_BASE_URL } from './apiConfig';
 
 export type ReactionType = 'LIKE' | 'DISLIKE';
 export type CommentEventType = 'new_comment' | 'created_comment' | 'update_comment' | 'delete_comment';
@@ -33,11 +33,15 @@ export interface CommentRealtimeEvent {
 export type RealtimeEvent = ReactionUpdatedEvent | CommentRealtimeEvent;
 type RealtimeListener = (event: RealtimeEvent) => void;
 
-const buildRealtimeUrl = () => {
-  const url = new URL(API_BASE_URL);
+const buildRealtimeUrl = (): string | null => {
+  const token = localStorage.getItem('access_token');
+  if (!token) return null;
+
+  const url = new URL(API_BASE_URL, window.location.origin);
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   url.pathname = '/ws';
   url.search = '';
+  url.searchParams.set('token', token);
   return url.toString();
 };
 
@@ -154,14 +158,19 @@ class RealtimeClient {
       return;
     }
 
-    this.manuallyClosed = false;
-    this.socket = new WebSocket(buildRealtimeUrl());
+    const realtimeUrl = buildRealtimeUrl();
+    if (!realtimeUrl) return;
 
-    this.socket.onopen = () => {
+    this.manuallyClosed = false;
+    const socket = new WebSocket(realtimeUrl);
+    this.socket = socket;
+
+    socket.onopen = () => {
+      if (this.socket !== socket) return;
       this.reconnectAttempt = 0;
     };
 
-    this.socket.onmessage = (event) => {
+    socket.onmessage = (event) => {
       try {
         const realtimeEvent = normalizeRealtimeEvent(JSON.parse(event.data));
         if (!realtimeEvent) {
@@ -169,13 +178,20 @@ class RealtimeClient {
           return;
         }
 
-        this.listeners.forEach((listener) => listener(realtimeEvent));
+        this.listeners.forEach((listener) => {
+          try {
+            listener(realtimeEvent);
+          } catch (error) {
+            console.error('Ошибка обработчика realtime-события:', error);
+          }
+        });
       } catch (error) {
         console.error('Не удалось обработать realtime-событие:', error);
       }
     };
 
-    this.socket.onclose = () => {
+    socket.onclose = () => {
+      if (this.socket !== socket) return;
       this.socket = null;
 
       if (!this.manuallyClosed && this.listeners.size > 0) {
@@ -183,8 +199,8 @@ class RealtimeClient {
       }
     };
 
-    this.socket.onerror = () => {
-      this.socket?.close();
+    socket.onerror = () => {
+      socket.close();
     };
   }
 

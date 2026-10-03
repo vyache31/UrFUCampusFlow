@@ -8,16 +8,19 @@ from schemas.evaluation_schemas import (
     EvaluationCommentCreate,
     EvaluationCommentResponse,
     EvaluationCommentUpdate,
+    EvaluationCommentWs,
     EvaluationFormResponse,
     EvaluationReactionCreate,
     EvaluationReactionResponse,
     EvaluationReactionUpdate,
+    LikesUpdatedWs,
     ReactionType,
 )
 from infrastructure.container import event_bus
 from infrastructure.events.events import (
-    CommentCreatedEvent, EvaluationCommentWs,
-    LikesUpdatedEvent, LikesUpdatedWs
+    CommentCreatedEvent,
+    CommentUpdatedEvent,
+    LikesUpdatedEvent,
 )
 
 
@@ -25,6 +28,27 @@ class EvaluationService:
     def __init__(self, repo: EvaluationRepository, case_repo: CaseRepository):
         self.repo = repo
         self.case_repo = case_repo
+
+    async def _publish_reaction_updated(
+        self,
+        reaction: EvaluationFormReactions,
+    ) -> None:
+        reaction_type = ReactionType(reaction.reaction)
+        form_reactions = await self.get_evaluation_reactions_by_form_id(
+            reaction.evaluation_form_id
+        )
+        reactions_count = sum(
+            item.reaction == reaction_type for item in form_reactions
+        )
+
+        reaction_event = LikesUpdatedWs(
+            evaluation_form_id=reaction.evaluation_form_id,
+            reactions_count=reactions_count,
+            user_id=reaction.user_id,
+            reaction=reaction_type,
+        )
+
+        await event_bus.publish(LikesUpdatedEvent(reaction_event))
 
     async def create_evaluation_form(
         self, case_id: str, creator_id: str
@@ -70,19 +94,7 @@ class EvaluationService:
         )
 
         await self.repo.create_reaction(created_reaction)
-
-        this_form_reactions = await self.get_evaluation_reactions_by_form_id(schema.evaluation_form_id)
-        reactions_count = len([reaction for reaction in this_form_reactions if reaction.reaction.value == created_reaction.reaction])
-
-
-        like_ws = LikesUpdatedWs(
-            evaluation_form_id=schema.evaluation_form_id,
-            reactions_count=reactions_count,
-            user_id=user_id,
-            reaction=schema.reaction
-        )
-
-        await event_bus.publish(LikesUpdatedEvent(like_ws))
+        await self._publish_reaction_updated(created_reaction)
 
         return self._to_response_reaction(created_reaction)
 
@@ -142,6 +154,7 @@ class EvaluationService:
         reaction.updated_at = datetime.now(UTC)
 
         await self.repo.update_reaction(reaction)
+        await self._publish_reaction_updated(reaction)
 
         return self._to_response_reaction(reaction)
 
@@ -149,6 +162,7 @@ class EvaluationService:
         self,
         comment_id: str,
         user_id: str,
+        user_email: str,
         schema: EvaluationCommentUpdate,
     ) -> EvaluationCommentResponse:
         comment = await self.repo.get_comment_by_id(comment_id)
@@ -167,6 +181,18 @@ class EvaluationService:
         comment.updated_at = datetime.now(UTC)
 
         await self.repo.update_comment(comment)
+
+        comment_event = EvaluationCommentWs(
+            id=comment.id,
+            evaluation_form_id=comment.evaluation_form_id,
+            user_id=comment.user_id,
+            user_email=user_email,
+            comment_text=comment.comment_text,
+            created_at=comment.created_at,
+            updated_at=comment.updated_at,
+        )
+
+        await event_bus.publish(CommentUpdatedEvent(comment_event))
 
         return self._to_response_comment(comment)
 

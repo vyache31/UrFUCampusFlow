@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ReactionIcon, 
@@ -15,6 +15,7 @@ import {
   updateReaction,
   type Reaction 
 } from '../../../services/evaluationReactions';
+import { subscribeToRealtime } from '../../../services/realtime';
 import { useToast } from '../../../context/ToastContext';
 import './CaseCard.css';
 
@@ -67,26 +68,43 @@ const CaseCard = ({
 
   const showReactions = type === 'case' && status === 'На оценке' && evaluationFormId;
 
-  useEffect(() => {
-    if (showReactions && evaluationFormId) {
-      loadReactions();
-    }
-  }, [evaluationFormId]);
+  const loadReactions = useCallback(async () => {
+    if (!evaluationFormId) return;
 
-  const loadReactions = async () => {
     try {
-      const allReactions = await getFormReactions(evaluationFormId!);
+      const allReactions = await getFormReactions(evaluationFormId);
       const likesCount = allReactions.filter(r => r.reaction === 'LIKE').length;
       const dislikesCount = allReactions.filter(r => r.reaction === 'DISLIKE').length;
       setLikes(likesCount);
       setDislikes(dislikesCount);
       
-      const myReaction = await getMyReaction(evaluationFormId!);
+      const myReaction = await getMyReaction(evaluationFormId);
       setUserReaction(myReaction);
     } catch (error) {
       console.error('Ошибка загрузки реакций:', error);
     }
-  };
+  }, [evaluationFormId]);
+
+  useEffect(() => {
+    if (!showReactions) return;
+
+    const loadInitialReactions = async () => {
+      await loadReactions();
+    };
+
+    void loadInitialReactions();
+  }, [loadReactions, showReactions]);
+
+  useEffect(() => {
+    if (!showReactions || !evaluationFormId) return;
+
+    return subscribeToRealtime((event) => {
+      if (event.type !== 'reaction_updated') return;
+      if (event.like.evaluation_form_id !== evaluationFormId) return;
+
+      void loadReactions();
+    });
+  }, [evaluationFormId, loadReactions, showReactions]);
 
   const handleReaction = async (reactionType: 'LIKE' | 'DISLIKE') => {
     if (!evaluationFormId || loadingReaction) return;

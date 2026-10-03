@@ -12,6 +12,10 @@ import {
   type ApiError
 } from '../../services/evaluationComments';
 import { getCurrentUserEmail } from '../../services/auth';
+import {
+  subscribeToRealtime,
+  type RealtimeComment,
+} from '../../services/realtime';
 import { useToast } from '../../context/ToastContext';
 import './caseCommentsPage.css';
 
@@ -34,6 +38,36 @@ const formatDate = (dateStr: string): string => {
   }).replace(' г.', '');
 };
 
+const toDisplayComment = (
+  comment: ApiComment | RealtimeComment,
+  fallbackAuthor = 'Пользователь'
+): DisplayComment => ({
+  id: comment.id,
+  author: comment.user_email || fallbackAuthor,
+  text: comment.comment_text,
+  date: formatDate(comment.created_at),
+  createdAt: comment.created_at,
+});
+
+const upsertComment = (
+  comments: DisplayComment[],
+  comment: DisplayComment
+): DisplayComment[] => {
+  const existingCommentIndex = comments.findIndex(({ id }) => id === comment.id);
+  const nextComments = [...comments];
+
+  if (existingCommentIndex === -1) {
+    nextComments.push(comment);
+  } else {
+    nextComments[existingCommentIndex] = comment;
+  }
+
+  return nextComments.sort(
+    (first, second) =>
+      new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime()
+  );
+};
+
 const CaseCommentsPage = () => {
   const { id } = useParams<{ id: string }>();
   const { showSuccess, showError } = useToast();
@@ -53,6 +87,8 @@ const CaseCommentsPage = () => {
       
       try {
         setLoading(true);
+        setEvaluationFormId(null);
+        setComments([]);
         
         const caseData = await getCaseById(id);
         setCaseTitle(caseData.title);
@@ -62,19 +98,17 @@ const CaseCommentsPage = () => {
           setEvaluationFormId(evaluationForm.id);
           
           const commentsData = await getEvaluationComments(evaluationForm.id);
-          const formattedComments: DisplayComment[] = commentsData.map((comment: ApiComment) => ({
-            id: comment.id,
-            author: comment.user_email || 'Пользователь',
-            text: comment.comment_text,
-            date: formatDate(comment.created_at),
-            createdAt: comment.created_at
-          }));
+          const formattedComments = commentsData.map((comment: ApiComment) =>
+            toDisplayComment(comment)
+          );
           
           formattedComments.sort((a, b) => 
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
           );
           
-          setComments(formattedComments);
+          setComments((currentComments) =>
+            formattedComments.reduce(upsertComment, currentComments)
+          );
         } catch (err: unknown) {
           const error = err as ApiError;
           if (error?.response?.status === 404) {
@@ -95,6 +129,27 @@ const CaseCommentsPage = () => {
     
     fetchData();
   }, [id, showError]);
+
+  useEffect(() => {
+    if (!evaluationFormId) return;
+
+    return subscribeToRealtime((event) => {
+      if (!('comment' in event)) return;
+      if (event.comment.evaluation_form_id !== evaluationFormId) return;
+
+      if (event.type === 'delete_comment') {
+        setComments((currentComments) =>
+          currentComments.filter(({ id: commentId }) => commentId !== event.comment.id)
+        );
+        return;
+      }
+
+      const realtimeComment = toDisplayComment(event.comment);
+      setComments((currentComments) =>
+        upsertComment(currentComments, realtimeComment)
+      );
+    });
+  }, [evaluationFormId]);
 
   useEffect(() => {
     if (commentInputRef.current) {
@@ -118,15 +173,14 @@ const CaseCommentsPage = () => {
       
       const newApiComment = await addEvaluationComment(evaluationFormId, newComment.trim());
       
-      const newDisplayComment: DisplayComment = {
-        id: newApiComment.id,
-        author: currentUserEmail || 'Вы',
-        text: newApiComment.comment_text,
-        date: formatDate(newApiComment.created_at),
-        createdAt: newApiComment.created_at
-      };
+      const newDisplayComment = toDisplayComment(
+        newApiComment,
+        currentUserEmail || 'Вы'
+      );
       
-      setComments([...comments, newDisplayComment]);
+      setComments((currentComments) =>
+        upsertComment(currentComments, newDisplayComment)
+      );
       setNewComment('');
       if (commentInputRef.current) {
         commentInputRef.current.innerText = '';
