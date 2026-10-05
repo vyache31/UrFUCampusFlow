@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
-    iteration, auth, case_status, evaluation
+    iteration, auth, case_status, evaluation, websocket
 from tg_bot import bot_endpoints
 import httpx
 import redis.asyncio as aioredis
@@ -62,3 +62,4 @@ app.include_router(case_status.router)
 app.include_router(difficulty_level.router)
 app.include_router(iteration.router)
 app.include_router(microsoft_oauth.router)
+app.include_router(websocket.router)

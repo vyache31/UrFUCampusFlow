@@ -27,8 +27,10 @@ export const getMyReaction = async (evaluationFormId: string): Promise<Reaction 
   try {
     const response = await api.get(`/evaluation-forms/${evaluationFormId}/reactions/me`);
     return response.data;
-  } catch {
-    return null; 
+  } catch (error) {
+    const apiError = error as ApiError;
+    if (apiError.response?.status === 404) return null;
+    throw error;
   }
 };
 

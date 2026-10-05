@@ -23,6 +23,12 @@ class CommentCreatedEvent:
     def __init__(self, comment: EvaluationCommentWs):
         self.comment: EvaluationCommentWs = comment
 
+
+class CommentUpdatedEvent:
+    def __init__(self, comment: EvaluationCommentWs):
+        self.comment: EvaluationCommentWs = comment
+
+
 class LikesUpdatedEvent:
     def __init__(self, likes: LikesUpdatedWs):
         self.likes: LikesUpdatedWs = likes

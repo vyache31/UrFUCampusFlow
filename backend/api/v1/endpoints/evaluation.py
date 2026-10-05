@@ -241,6 +241,11 @@ async def update_evaluation_comment(
     service: EvaluationService = Depends(get_evaluation_service),
 ):
     try:
-        return await service.evaluation_comment_update(comment_id, user.id, schema)
+        return await service.evaluation_comment_update(
+            comment_id,
+            user.id,
+            user.email,
+            schema,
+        )
     except ValueError as error:
         raise _evaluation_error(error)
