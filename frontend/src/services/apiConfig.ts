@@ -3,7 +3,6 @@ const DEFAULT_API_BASE_URL = 'http://localhost:8000';
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
 if (!configuredApiBaseUrl) {
-  // eslint-disable-next-line no-console
   console.warn(
     '[apiConfig] VITE_API_BASE_URL не задан. Используется значение по умолчанию:',
     DEFAULT_API_BASE_URL,
