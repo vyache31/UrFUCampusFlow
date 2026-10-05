@@ -1,31 +1,23 @@
 import { useNavigate } from 'react-router-dom';
 import './actionButtons.css';
 
+const ACTION_TARGETS = [
+  { label: 'Сформировать отчёт', path: '/report' },
+  { label: 'Создать кейс', path: '/cases/create' },
+  { label: 'Создать команду', path: '/teams/create' },
+  { label: 'Перейти к боту', path: '/bot-management' },
+] as const;
+
 const ActionButtons = () => {
   const navigate = useNavigate();
 
-  const handleReport = () => {
-    navigate('/report');
-  };
-
-  const handleCreateCase = () => {
-    navigate('/cases/create');
-  };
-
-  const handleCreateTeam = () => {
-    navigate('/teams/create');
-  };
-
-  const handleGoToBot = () => {
-    navigate('/bot-management');
-  };
-
   return (
     <div className="action-buttons">
-      <button className="action-btn" onClick={handleReport}>Сформировать отчёт</button>
-      <button className="action-btn" onClick={handleCreateCase}>Создать кейс</button>
-      <button className="action-btn" onClick={handleCreateTeam}>Создать команду</button>
-      <button className="action-btn" onClick={handleGoToBot}>Перейти к боту</button>
+      {ACTION_TARGETS.map(({ label, path }) => (
+        <button key={path} className="action-btn" onClick={() => navigate(path)}>
+          {label}
+        </button>
+      ))}
     </div>
   );
 };

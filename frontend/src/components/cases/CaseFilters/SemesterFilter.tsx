@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SelectorArrowIcon, CheckIcon } from '../../common/Icons/Icons';
 import './caseFilters.css';
 
@@ -8,62 +8,60 @@ interface SemesterFilterProps {
   availableSemesters: string[];
 }
 
-const SemesterFilter = ({ selectedSemesters, onSemesterChange, availableSemesters }: SemesterFilterProps) => {
+const SemesterFilter = ({
+  selectedSemesters,
+  onSemesterChange,
+  availableSemesters,
+}: SemesterFilterProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [tempSelected, setTempSelected] = useState<string[]>(selectedSemesters);
+  const [draft, setDraft] = useState<string[]>(selectedSemesters);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
-        setTempSelected(selectedSemesters);
+        setDraft(selectedSemesters);
       }
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [selectedSemesters]);
 
-  const toggleSemester = (semester: string) => {
-    setTempSelected(prev =>
-      prev.includes(semester) ? prev.filter(s => s !== semester) : [...prev, semester]
+  const toggle = (semester: string) =>
+    setDraft(prev =>
+      prev.includes(semester) ? prev.filter(s => s !== semester) : [...prev, semester],
     );
-  };
 
-  const reset = () => setTempSelected([]);
-  
   const apply = () => {
-    onSemesterChange(tempSelected);
+    onSemesterChange(draft);
     setIsOpen(false);
   };
 
-  const getDisplayText = () => {
+  const reset = () => setDraft([]);
+
+  const displayText = (() => {
     if (selectedSemesters.length === 0) return 'Все семестры';
     if (selectedSemesters.length === 1) return selectedSemesters[0];
     return `Выбрано (${selectedSemesters.length})`;
-  };
+  })();
 
   if (availableSemesters.length === 0) return null;
 
   return (
-    <div 
-      className={`semester-dropdown ${isOpen ? 'open' : ''}`} 
-      ref={dropdownRef}
-    >
-      <button 
-        className="semester-selector" 
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {getDisplayText()}
+    <div className={`semester-dropdown ${isOpen ? 'open' : ''}`} ref={dropdownRef}>
+      <button className="semester-selector" onClick={() => setIsOpen(v => !v)}>
+        {displayText}
         <SelectorArrowIcon />
       </button>
+
       {isOpen && (
         <div className="semester-menu">
-          {availableSemesters.map((semester) => (
+          {availableSemesters.map(semester => (
             <div
               key={semester}
-              className={`semester-item ${tempSelected.includes(semester) ? 'selected' : ''}`}
-              onClick={() => toggleSemester(semester)}
+              className={`semester-item ${draft.includes(semester) ? 'selected' : ''}`}
+              onClick={() => toggle(semester)}
             >
               <span>{semester}</span>
               <div className="custom-checkbox">
@@ -71,6 +69,7 @@ const SemesterFilter = ({ selectedSemesters, onSemesterChange, availableSemester
               </div>
             </div>
           ))}
+
           <div className="semester-menu-buttons">
             <button className="semester-reset" onClick={reset}>Сбросить</button>
             <button className="semester-apply" onClick={apply}>Применить</button>
