@@ -81,11 +81,9 @@ const Toast = ({
           <CloseIcon />
         </button>
       </div>
-
       <div className="toast-body">
         <p className="toast-message">{message}</p>
       </div>
-
       {showConfirm && (
         <div className="toast-footer toast-footer--double">
           <button className="toast-cancel-btn" onClick={handleCancel}>

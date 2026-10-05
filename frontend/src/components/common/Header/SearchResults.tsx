@@ -8,12 +8,10 @@ interface SearchResultsProps {
   onNavigate: NavigateFunction;
 }
 
-const MIN_SEARCH_LENGTH = 2;
+const MIN_QUERY_LENGTH = 2;
 
 const SearchResults = ({ results, query, isSearching, onNavigate }: SearchResultsProps) => {
-  const isQueryValid = query.trim().length >= MIN_SEARCH_LENGTH;
-
-  if (!isQueryValid) return null;
+  if (query.trim().length < MIN_QUERY_LENGTH) return null;
 
   if (!isSearching && results.length === 0) {
     return (
@@ -33,7 +31,9 @@ const SearchResults = ({ results, query, isSearching, onNavigate }: SearchResult
             <div key={`student-${result.id}`} className="search-result-student-card">
               <div className="student-card-header">
                 <span className="result-type student">Участник</span>
-                <span className="student-name">{result.name} #{result.shortId}</span>
+                <span className="student-name">
+                  {result.name} #{result.shortId}
+                </span>
                 <span className="student-group">{result.group}</span>
               </div>
 
@@ -81,13 +81,12 @@ const SearchResults = ({ results, query, isSearching, onNavigate }: SearchResult
           );
         }
 
+        const route = result.type === 'case' ? `/cases/${result.id}` : `/teams/${result.id}`;
         return (
           <div
             key={`${result.type}-${result.id}`}
             className="search-result-item"
-            onClick={() =>
-              onNavigate(result.type === 'case' ? `/cases/${result.id}` : `/teams/${result.id}`)
-            }
+            onClick={() => onNavigate(route)}
           >
             <span className={`result-type ${result.type}`}>
               {result.type === 'case' ? 'Кейс' : 'Команда'}
