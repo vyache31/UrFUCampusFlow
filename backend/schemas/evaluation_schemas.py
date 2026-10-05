@@ -75,4 +75,3 @@ class LikesUpdatedWs(BaseModel):
     reactions_count: int
     user_id: str
     reaction: ReactionType
-
