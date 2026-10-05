@@ -14,6 +14,7 @@ import './teamViewPage.css';
 import { createMeetingsSeries } from '../../services/meetingsSeries';
 import { getTeamCurators, type Curator } from '../../services/curators';
 import { useToast } from '../../context/ToastContext';
+import api from '../../services/api';
 
 
 interface ControlPoint {
@@ -67,13 +68,8 @@ const TeamViewPage = () => {
             let shortTitle = currentCaseData?.case_title || meeting.title;
             if (currentCaseData?.case_id) {
               try {
-                const caseResponse = await fetch(`http://localhost:8000/cases/${currentCaseData.case_id}`, {
-                  headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-                  }
-                });
-                const caseData = await caseResponse.json();
-                shortTitle = caseData.short_title || currentCaseData.case_title;
+                const caseResponse = await api.get(`/cases/${currentCaseData.case_id}`);
+                shortTitle = caseResponse.data.short_title || currentCaseData.case_title;
               } catch (error) {
                 console.error('Ошибка загрузки кейса:', error);
                 shortTitle = currentCaseData?.case_title || meeting.title;
