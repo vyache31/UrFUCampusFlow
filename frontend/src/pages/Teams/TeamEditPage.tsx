@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
+import EditableField from '../../components/common/EditableField/EditableField';
 import { SaveIcon, PlusIcon, DeleteIcon } from '../../components/common/Icons/Icons';
 import { getTeamById, updateTeam, deleteTeam } from '../../services/teams';
 import { getTeamMembers, addTeamMember, endTeamMember, type TeamMember } from '../../services/teamMembers';
@@ -33,103 +34,60 @@ interface LocalCase {
   isExisting: boolean;
 }
 
+const FIELD_LIMITS = {
+  name: 100,
+  description: 2000,
+  notes: 2000,
+};
+
 const TeamEditPage = () => {
   const { id } = useParams<{ id: string }>();
   const { showSuccess, showError, showConfirm } = useToast();
   const navigate = useNavigate();
-  
-  const nameRef = useRef<HTMLDivElement>(null);
-  const descriptionRef = useRef<HTMLDivElement>(null);
-  const notesRef = useRef<HTMLDivElement>(null);
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     notes: '',
     status: ''
   });
-  
+
   const [members, setMembers] = useState<LocalMember[]>([]);
   const [originalMembers, setOriginalMembers] = useState<LocalMember[]>([]);
   const [teamCase, setTeamCase] = useState<LocalCase | null>(null);
   const [originalCaseId, setOriginalCaseId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
 
   const [curators, setCurators] = useState<Curator[]>([]);
   const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
 
-  // Функция для обновления содержимого contentEditable элементов
-  const updateEditableContent = () => {
-    if (nameRef.current && nameRef.current.innerText !== formData.name) {
-      nameRef.current.innerText = formData.name;
-      updateEmptyClass(nameRef.current);
-    }
-    if (descriptionRef.current && descriptionRef.current.innerText !== formData.description) {
-      descriptionRef.current.innerText = formData.description;
-      updateEmptyClass(descriptionRef.current);
-    }
-    if (notesRef.current && notesRef.current.innerText !== formData.notes) {
-      notesRef.current.innerText = formData.notes;
-      updateEmptyClass(notesRef.current);
-    }
-  };
-
-  // Функция для обновления класса empty
-  const updateEmptyClass = (element: HTMLDivElement | null) => {
-    if (!element) return;
-    const isEmpty = element.innerText.trim() === '';
-    if (isEmpty) {
-      element.classList.add('empty');
-    } else {
-      element.classList.remove('empty');
-    }
-  };
-
   useEffect(() => {
     const fetchTeamData = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
-        
+
         const [teamData, membersData, historyData] = await Promise.all([
           getTeamById(id),
           getTeamMembers(id).catch(() => []),
           getTeamHistory(id).catch(() => []),
         ]);
-        
-        const newFormData = {
+
+        setFormData({
           name: teamData.name,
           description: teamData.description || '',
           notes: teamData.notes || '',
           status: teamData.status
-        };
-        
-        setFormData(newFormData);
-        
-        // Обновляем contentEditable элементы после установки состояния
-        setTimeout(() => {
-          if (nameRef.current) {
-            nameRef.current.innerText = newFormData.name;
-            updateEmptyClass(nameRef.current);
-          }
-          if (descriptionRef.current) {
-            descriptionRef.current.innerText = newFormData.description;
-            updateEmptyClass(descriptionRef.current);
-          }
-          if (notesRef.current) {
-            notesRef.current.innerText = newFormData.notes;
-            updateEmptyClass(notesRef.current);
-          }
-        }, 0);
-        
+        });
+
         const existingMembers: LocalMember[] = membersData.map((member: TeamMember) => ({
           tempId: member.id,
           studentId: member.student_id,
@@ -141,9 +99,9 @@ const TeamEditPage = () => {
         }));
         setMembers(existingMembers);
         setOriginalMembers(JSON.parse(JSON.stringify(existingMembers)));
-        
+
         const currentActiveCase = historyData.find((h: TeamCaseHistory) => h.is_current === true);
-        
+
         if (currentActiveCase) {
           setTeamCase({
             tempId: currentActiveCase.id,
@@ -157,14 +115,14 @@ const TeamEditPage = () => {
           setTeamCase(null);
           setOriginalCaseId(null);
         }
-        
+
       } catch (err) {
         console.error('Ошибка загрузки данных команды:', err);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchTeamData();
   }, [id]);
 
@@ -196,7 +154,7 @@ const TeamEditPage = () => {
 
   const handleUnassignCurator = (assignmentId: string) => {
     if (!id) return;
-    
+
     showConfirm({
       message: 'Открепить куратора от команды?',
       onConfirm: async () => {
@@ -217,52 +175,8 @@ const TeamEditPage = () => {
 
   const existingCuratorIds = curators.map(c => c.user_id);
 
-  const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
-    if (!element) return;
-    
-    const checkHeight = () => {
-      const scrollHeight = element.scrollHeight;
-      if (scrollHeight > maxHeight) {
-        element.style.maxHeight = maxHeight + 'px';
-        element.style.overflowY = 'auto';
-        element.classList.add('with-scroll');
-      } else {
-        element.style.maxHeight = 'none';
-        element.style.overflowY = 'visible';
-        element.classList.remove('with-scroll');
-      }
-    };
-    
-    element.addEventListener('input', checkHeight);
-    element.addEventListener('paste', () => setTimeout(checkHeight, 10));
-    const observer = new MutationObserver(checkHeight);
-    observer.observe(element, { childList: true, subtree: true, characterData: true });
-    setTimeout(checkHeight, 100);
-  };
-
-  useEffect(() => {
-    if (!loading) {
-      setupScrollableEditable(nameRef.current, 53);
-      setupScrollableEditable(descriptionRef.current, 250);
-      setupScrollableEditable(notesRef.current, 250);
-      
-      // Обновляем содержимое после того как DOM готов
-      updateEditableContent();
-    }
-  }, [loading]);
-
-  // Следим за изменением formData и обновляем contentEditable
-  useEffect(() => {
-    if (!loading) {
-      updateEditableContent();
-    }
-  }, [formData.name, formData.description, formData.notes, loading]);
-
-  const handleContentChange = (field: string, element: HTMLDivElement | null) => {
-    if (!element) return;
-    const value = element.innerText;
+  const updateField = (field: string) => (value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    updateEmptyClass(element);
   };
 
   const handleStatusChange = (status: string) => {
@@ -294,7 +208,7 @@ const TeamEditPage = () => {
       showError('У команды уже есть активный кейс. Сначала завершите текущий кейс.');
       return;
     }
-    
+
     if (teamCase && !teamCase.isExisting) {
       showConfirm({
         message: 'Заменить текущий выбранный кейс?',
@@ -313,7 +227,7 @@ const TeamEditPage = () => {
       });
       return;
     }
-    
+
     const newCase: LocalCase = {
       tempId: Date.now().toString(),
       caseSemesterId: caseSemesterId,
@@ -323,19 +237,13 @@ const TeamEditPage = () => {
     setTeamCase(newCase);
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData('text/plain');
-    document.execCommand('insertText', false, text);
-  };
-
   const handleRemoveMember = (tempId: string) => {
     setMembers(members.filter(m => m.tempId !== tempId));
   };
 
   const handleRemoveCase = () => {
     if (!teamCase) return;
-    
+
     if (teamCase.isExisting) {
       showConfirm({
         message: 'Вы уверены, что хотите завершить текущий кейс? Он переместится в историю команды.',
@@ -354,16 +262,16 @@ const TeamEditPage = () => {
 
   const handleSave = async () => {
     if (!id) return;
-    
+
     if (!formData.name.trim()) {
       setErrors({ name: 'Введите название команды' });
       showError('Введите название команды');
       return;
     }
-    
+
     try {
       setSaving(true);
-      
+
       await updateTeam(id, {
         name: formData.name,
         description: formData.description,
@@ -371,11 +279,11 @@ const TeamEditPage = () => {
         status: formData.status,
         university_id: 1
       });
-      
+
       const originalMemberIds = originalMembers.map(m => m.memberId).filter((id): id is string => !!id);
       const currentMemberIds = members.filter(m => m.isExisting).map(m => m.memberId).filter((id): id is string => !!id);
       const removedMemberIds = originalMemberIds.filter(id => !currentMemberIds.includes(id));
-      
+
       for (const memberId of removedMemberIds) {
         try {
           await endTeamMember(id, memberId);
@@ -383,7 +291,7 @@ const TeamEditPage = () => {
           console.error(`Ошибка завершения членства ${memberId}:`, err);
         }
       }
-      
+
       const newMembers = members.filter(m => !m.isExisting);
       for (const member of newMembers) {
         try {
@@ -396,10 +304,10 @@ const TeamEditPage = () => {
           console.error(`Ошибка добавления участника ${member.name}:`, err);
         }
       }
-      
+
       const hasExistingCase = originalCaseId !== null;
       const hasNewCase = teamCase !== null;
-      
+
       if (hasExistingCase && !hasNewCase) {
         try {
           await endCurrentCase(id);
@@ -407,7 +315,7 @@ const TeamEditPage = () => {
           console.error('Ошибка завершения кейса:', err);
         }
       }
-      
+
       if (!hasExistingCase && hasNewCase && !teamCase.isExisting) {
         try {
           await assignCaseToTeam(id, {
@@ -419,11 +327,11 @@ const TeamEditPage = () => {
           console.error(`Ошибка добавления кейса:`, err);
         }
       }
-      
+
       if (hasExistingCase && hasNewCase && !teamCase.isExisting) {
         try {
           await endCurrentCase(id);
-          
+
           await assignCaseToTeam(id, {
             case_semesters_id: teamCase.caseSemesterId,
             started_at: new Date().toISOString(),
@@ -433,7 +341,7 @@ const TeamEditPage = () => {
           console.error(`Ошибка замены кейса:`, err);
         }
       }
-      
+
       showSuccess('Команда успешно обновлена');
       navigate(`/teams/${id}`);
     } catch (err) {
@@ -446,36 +354,36 @@ const TeamEditPage = () => {
   };
 
   const handleDelete = () => {
-  if (!id) return;
-  
-  showConfirm({
-    message: 'Вы уверены, что хотите удалить эту команду? Это действие необратимо.',
-    onConfirm: async () => {
-      try {
-        setDeleting(true);
-        await deleteTeam(id);
-        showSuccess('Команда успешно удалена');
-        navigate('/teams');
-      } catch (err: unknown) {
-        console.error('Ошибка удаления команды:', err);
-        const apiError = err as { response?: { data?: { detail?: string } } };
-        const detail = apiError?.response?.data?.detail;
-        if (detail && detail.includes('external links')) {
-          showError('Нельзя удалить команду, так как у неё есть связанные данные (участники, встречи или история кейсов)');
-        } else if (detail) {
-          showError(detail);
-        } else {
-          showError('Не удалось удалить команду');
+    if (!id) return;
+
+    showConfirm({
+      message: 'Вы уверены, что хотите удалить эту команду? Это действие необратимо.',
+      onConfirm: async () => {
+        try {
+          setDeleting(true);
+          await deleteTeam(id);
+          showSuccess('Команда успешно удалена');
+          navigate('/teams');
+        } catch (err: unknown) {
+          console.error('Ошибка удаления команды:', err);
+          const apiError = err as { response?: { data?: { detail?: string } } };
+          const detail = apiError?.response?.data?.detail;
+          if (detail && detail.includes('external links')) {
+            showError('Нельзя удалить команду, так как у неё есть связанные данные (участники, встречи или история кейсов)');
+          } else if (detail) {
+            showError(detail);
+          } else {
+            showError('Не удалось удалить команду');
+          }
+        } finally {
+          setDeleting(false);
         }
-      } finally {
-        setDeleting(false);
-      }
-    },
-    onCancel: () => {},
-    confirmText: 'Да',
-    cancelText: 'Нет'
-  });
-};
+      },
+      onCancel: () => {},
+      confirmText: 'Да',
+      cancelText: 'Нет'
+    });
+  };
 
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
@@ -517,30 +425,25 @@ const TeamEditPage = () => {
       <div className="edit-form">
         <div className="form-field" data-field="name">
           <label className="form-label">Название команды</label>
-          <div
-            ref={nameRef}
-            className="editable-box"
-            contentEditable
-            suppressContentEditableWarning
-            onInput={() => handleContentChange('name', nameRef.current)}
-            onBlur={() => handleContentChange('name', nameRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите название команды"
+          <EditableField
+            value={formData.name}
+            onChange={updateField('name')}
+            placeholder="Введите название команды"
+            maxLength={FIELD_LIMITS.name}
+            maxHeight={53}
           />
           {errors.name && <div className="error-message">{errors.name}</div>}
         </div>
 
         <div className="form-field" data-field="description">
           <label className="form-label">Описание команды</label>
-          <div
-            ref={descriptionRef}
-            className="editable-box description-box"
-            contentEditable
-            suppressContentEditableWarning
-            onInput={() => handleContentChange('description', descriptionRef.current)}
-            onBlur={() => handleContentChange('description', descriptionRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите описание команды"
+          <EditableField
+            value={formData.description}
+            onChange={updateField('description')}
+            placeholder="Введите описание команды"
+            maxLength={FIELD_LIMITS.description}
+            maxHeight={250}
+            className="description-box"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
         </div>
@@ -566,7 +469,7 @@ const TeamEditPage = () => {
                     <span className="member-role">{member.role}</span>
                     <span className="member-group">{member.group || '—'}</span>
                   </div>
-                  <button 
+                  <button
                     className="remove-btn"
                     onClick={() => handleRemoveMember(member.tempId)}
                   >
@@ -581,15 +484,13 @@ const TeamEditPage = () => {
         {/* Заметки */}
         <div className="form-field" data-field="notes">
           <label className="form-label">Заметки</label>
-          <div
-            ref={notesRef}
-            className="editable-box notes-box"
-            contentEditable
-            suppressContentEditableWarning
-            onInput={() => handleContentChange('notes', notesRef.current)}
-            onBlur={() => handleContentChange('notes', notesRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите заметки"
+          <EditableField
+            value={formData.notes}
+            onChange={updateField('notes')}
+            placeholder="Введите заметки"
+            maxLength={FIELD_LIMITS.notes}
+            maxHeight={250}
+            className="notes-box"
           />
           {errors.notes && <div className="error-message">{errors.notes}</div>}
         </div>
@@ -612,7 +513,7 @@ const TeamEditPage = () => {
                   <span className="case-title">{teamCase.title}</span>
                 </div>
                 <div className="case-actions">
-                  <button 
+                  <button
                     className="remove-btn"
                     onClick={handleRemoveCase}
                     title={teamCase.isExisting ? "Завершить кейс" : "Удалить"}
@@ -643,7 +544,7 @@ const TeamEditPage = () => {
               {curators.map((curator) => (
                 <div key={curator.id} className="curator-item">
                   <span className="curator-name">{curator.email || `Куратор ${curator.user_id?.slice(-4)}`}</span>
-                  <button 
+                  <button
                     className="remove-btn"
                     onClick={() => handleUnassignCurator(curator.id)}
                   >
@@ -695,7 +596,7 @@ const TeamEditPage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        usedCaseSemesterIds={teamCase ? [teamCase.caseSemesterId] : []} 
+        usedCaseSemesterIds={teamCase ? [teamCase.caseSemesterId] : []}
       />
     </div>
   );

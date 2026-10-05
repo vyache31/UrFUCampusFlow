@@ -1,236 +1,140 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
+import EditableField from '../../components/common/EditableField/EditableField';
 import { SaveIcon, GenerateIcon } from '../../components/common/Icons/Icons';
-import { createCase, deleteCase } from '../../services/cases';
+import { createCase } from '../../services/cases';
 import { generateWithAI } from '../../services/ai';
 import GenerationLoader from '../../components/GenerationLoader/GenerationLoader';
 import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
+interface FormState {
+  title: string;
+  shortTitle: string;
+  description: string;
+  expectedResult: string;
+  criteria: string;
+}
+
+const FIELD_LIMITS: Record<keyof FormState, number> = {
+  title: 100,
+  shortTitle: 50,
+  description: 2000,
+  expectedResult: 1000,
+  criteria: 2000,
+};
+
+const FIELD_PLACEHOLDERS: Record<keyof FormState, string> = {
+  title: 'Введите название кейса',
+  shortTitle: 'Введите короткое название (будет отображаться в карточке)',
+  description: 'Введите описание кейса',
+  expectedResult: 'Введите предполагаемый результат',
+  criteria: 'Введите критерии оценки',
+};
+
+const FIELD_LABELS: Record<keyof FormState, string> = {
+  title: 'Название кейса',
+  shortTitle: 'Короткое название',
+  description: 'Описание кейса',
+  expectedResult: 'Предполагаемый результат',
+  criteria: 'Критерии оценки',
+};
+
+const INITIAL_FORM: FormState = {
+  title: '',
+  shortTitle: '',
+  description: '',
+  expectedResult: '',
+  criteria: '',
+};
+
 const CaseCreatePage = () => {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
-  
-  const titleRef = useRef<HTMLDivElement>(null);
-  const shortTitleRef = useRef<HTMLDivElement>(null);
-  const descriptionRef = useRef<HTMLDivElement>(null);
-  const expectedResultRef = useRef<HTMLDivElement>(null);
-  const criteriaRef = useRef<HTMLDivElement>(null);
-  
-  const [formData, setFormData] = useState({
-    title: '',
-    shortTitle: '',
-    description: '',
-    expectedResult: '',
-    criteria: ''
-  });
 
-  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'submit', string>>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [tempCaseId, setTempCaseId] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const fieldLimits: Record<string, number> = {
-    title: 100,
-    shortTitle: 50,
-    description: 2000,
-    expectedResult: 1000,
-    criteria: 2000,
+  const updateField = (field: keyof FormState) => (value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
-    if (!element) return;
-    
-    const checkHeight = () => {
-      const scrollHeight = element.scrollHeight;
-      if (scrollHeight > maxHeight) {
-        element.style.maxHeight = maxHeight + 'px';
-        element.style.overflowY = 'auto';
-        element.classList.add('with-scroll');
-      } else {
-        element.style.maxHeight = 'none';
-        element.style.overflowY = 'visible';
-        element.classList.remove('with-scroll');
-      }
-    };
-    
-    element.addEventListener('input', checkHeight);
-    element.addEventListener('paste', () => setTimeout(checkHeight, 10));
-    element.addEventListener('keydown', () => setTimeout(checkHeight, 10));
-    const observer = new MutationObserver(checkHeight);
-    observer.observe(element, { childList: true, subtree: true, characterData: true });
-    setTimeout(checkHeight, 100);
+  const validate = (): boolean => {
+    const nextErrors: Partial<Record<keyof FormState, string>> = {};
+    if (!form.title.trim()) nextErrors.title = 'Введите название кейса';
+    if (!form.description.trim()) nextErrors.description = 'Введите описание кейса';
+    if (!form.expectedResult.trim()) nextErrors.expectedResult = 'Введите предполагаемый результат';
+    if (!form.criteria.trim()) nextErrors.criteria = 'Введите критерии оценки';
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  useEffect(() => {
-    setupScrollableEditable(titleRef.current, 53);
-    setupScrollableEditable(shortTitleRef.current, 53); 
-    setupScrollableEditable(descriptionRef.current, 116);
-    setupScrollableEditable(expectedResultRef.current, 95);
-    setupScrollableEditable(criteriaRef.current, 137);
-  }, []);
-
-  const handleBeforeInput = (e: React.FormEvent<HTMLDivElement>, field: string) => {
-    const target = e.currentTarget;
-    const maxLength = fieldLimits[field];
-    if (!maxLength) return;
-    
-    const currentLength = target.innerText.length;
-    const inputEvent = e.nativeEvent as InputEvent;
-    const insertedText = inputEvent.data || '';
-    
-    if (currentLength + insertedText.length > maxLength) {
-      e.preventDefault();
-      setErrors(prev => ({ ...prev, [field]: `Максимум ${maxLength} символов` }));
-    } else if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const handleContentChange = (field: string, element: HTMLDivElement | null) => {
-    if (!element) return;
-    const value = element.innerText;
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const updateEmptyClass = (element: HTMLDivElement | null) => {
-    if (!element) return;
-    const isEmpty = element.innerText.trim() === '';
-    if (isEmpty) {
-      element.classList.add('empty');
-    } else {
-      element.classList.remove('empty');
-    }
-  };
-
-  useEffect(() => {
-    const elements = [titleRef, shortTitleRef, descriptionRef, expectedResultRef, criteriaRef];
-    elements.forEach(ref => {
-      const el = ref.current;
-      if (el) {
-        el.addEventListener('input', () => updateEmptyClass(el));
-        updateEmptyClass(el);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (tempCaseId) {
-        deleteCase(tempCaseId).catch(console.error);
-      }
-    };
-  }, [tempCaseId]);
-
-  const setEditableContent = (ref: React.RefObject<HTMLDivElement | null>, text: string) => {
-    if (ref.current) {
-      ref.current.innerText = text;
-      updateEmptyClass(ref.current);
+  const handleSave = async () => {
+    if (!validate()) return;
+    try {
+      setIsSaving(true);
+      await createCase({
+        title: form.title,
+        short_title: form.shortTitle,
+        project_goals: form.description,
+        required_result: form.expectedResult,
+        grade_criteria: form.criteria,
+        difficulty_level_id: 1,
+        university_id: 1,
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        creator_id: localStorage.getItem('user_id') ?? '',
+      });
+      showSuccess('Кейс успешно создан!');
+      navigate('/cases');
+    } catch (error) {
+      console.error('Ошибка создания кейса:', error);
+      showError('Не удалось создать кейс');
+      setErrors({ submit: 'Не удалось создать кейс' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    
     try {
-      const creator_id = localStorage.getItem('user_id') || 'b494bae1-fddf-4adc-a04e-fed2e4de25ea';
-      
+      const creatorId = localStorage.getItem('user_id') ?? '';
       const tempCase = await createCase({
-        title: "Генерация кейса",
-        project_goals: "Требуется генерация",
+        title: 'Генерация кейса',
+        project_goals: 'Требуется генерация',
         difficulty_level_id: 1,
         university_id: 1,
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        creator_id: creator_id,
+        creator_id: creatorId,
       });
-      
-      setTempCaseId(tempCase.id);
-      
+
       const generated = await generateWithAI(tempCase.id);
-      
       const shortTitle = generated.project_description.slice(0, 50);
       const fullTitle = generated.project_description.slice(0, 100);
-      
-      const newFormData = {
+
+      setForm({
         title: fullTitle,
-        shortTitle: shortTitle,
+        shortTitle,
         description: generated.project_description,
         expectedResult: generated.project_idea,
         criteria: generated.technical_details,
-      };
-      
-      setFormData(newFormData);
-      
-      setEditableContent(titleRef, fullTitle);
-      setEditableContent(shortTitleRef, shortTitle);
-      setEditableContent(descriptionRef, generated.project_description);
-      setEditableContent(expectedResultRef, generated.project_idea);
-      setEditableContent(criteriaRef, generated.technical_details);
-      
+      });
+
+      const { deleteCase } = await import('../../services/cases');
       await deleteCase(tempCase.id);
-      setTempCaseId(null);
-      
-      showSuccess('Кейс успешно сгенерирован! Вы можете отредактировать и сохранить.');
-      
+      showSuccess('Кейс успешно сгенерирован! Отредактируйте и сохраните.');
     } catch (error) {
       console.error('Ошибка генерации:', error);
-      showError('Не удалось сгенерировать кейс. Попробуйте позже.');
+      showError('Не удалось сгенерировать кейс');
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData('text/plain');
-    document.execCommand('insertText', false, text);
-  };
-
-  const handleSave = async () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.title.trim()) newErrors.title = 'Введите название кейса';
-    if (!formData.description.trim()) newErrors.description = 'Введите описание кейса';
-    if (!formData.expectedResult.trim()) newErrors.expectedResult = 'Введите предполагаемый результат';
-    if (!formData.criteria.trim()) newErrors.criteria = 'Введите критерии оценки';
-    
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-    
-    try {
-      setSaving(true);
-      
-      const creator_id = localStorage.getItem('user_id') || 'b494bae1-fddf-4adc-a04e-fed2e4de25ea';
-      
-      const caseForAPI = {
-        title: formData.title,
-        short_title: formData.shortTitle,
-        project_goals: formData.description,
-        required_result: formData.expectedResult,
-        grade_criteria: formData.criteria,
-        difficulty_level_id: 1,
-        university_id: 1,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        creator_id: creator_id,
-      };
-      
-      await createCase(caseForAPI);
-      showSuccess('Кейс успешно создан!');
-      navigate('/cases');
-    } catch (error) {
-      console.error('Ошибка создания кейса:', error);
-      showError('Не удалось создать кейс. Попробуйте позже.');
-      setErrors({ submit: 'Не удалось создать кейс' });
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -248,97 +152,37 @@ const CaseCreatePage = () => {
       <div className="create-header">
         <h1 className="page-title">Создание кейса</h1>
         <div className="create-actions">
-          <button 
-            className="generate-btn" 
-            onClick={handleGenerate} 
-            disabled={isGenerating}
-          >
+          <button className="generate-btn" onClick={handleGenerate} disabled={isGenerating}>
             <GenerateIcon />
             <span>{isGenerating ? 'Генерация...' : 'Сгенерировать'}</span>
           </button>
-          <button className="save-btn" onClick={handleSave} disabled={saving}>
+          <button className="save-btn" onClick={handleSave} disabled={isSaving}>
             <SaveIcon />
-            <span>{saving ? 'Сохранение...' : 'Сохранить'}</span>
+            <span>{isSaving ? 'Сохранение...' : 'Сохранить'}</span>
           </button>
         </div>
       </div>
 
       <div className="create-form">
-        <div className="form-field" data-field="title">
-          <label className="form-label">Название кейса</label>
-          <div
-            ref={titleRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'title')}
-            onInput={() => handleContentChange('title', titleRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите название кейса"
-          />
-          {errors.title && <div className="error-message">{errors.title}</div>}
-        </div>
-        
-        <div className="form-field" data-field="shortTitle">
-          <label className="form-label">Короткое название</label>
-          <div
-            ref={shortTitleRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'shortTitle')}
-            onInput={() => handleContentChange('shortTitle', shortTitleRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите короткое название (будет отображаться в карточке)"
-          />
-          {errors.shortTitle && <div className="error-message">{errors.shortTitle}</div>}
-        </div>
-
-        <div className="form-field" data-field="description">
-          <label className="form-label">Описание кейса</label>
-          <div
-            ref={descriptionRef}
-            className="editable-box description-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'description')}
-            onInput={() => handleContentChange('description', descriptionRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите описание кейса"
-          />
-          {errors.description && <div className="error-message">{errors.description}</div>}
-        </div>
-
-        <div className="form-field" data-field="expectedResult">
-          <label className="form-label">Предполагаемый результат</label>
-          <div
-            ref={expectedResultRef}
-            className="editable-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'expectedResult')}
-            onInput={() => handleContentChange('expectedResult', expectedResultRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите предполагаемый результат"
-          />
-          {errors.expectedResult && <div className="error-message">{errors.expectedResult}</div>}
-        </div>
-
-        <div className="form-field" data-field="criteria">
-          <label className="form-label">Критерии оценки</label>
-          <div
-            ref={criteriaRef}
-            className="editable-box criteria-box empty"
-            contentEditable
-            suppressContentEditableWarning
-            onBeforeInput={(e) => handleBeforeInput(e, 'criteria')}
-            onInput={() => handleContentChange('criteria', criteriaRef.current)}
-            onPaste={handlePaste}
-            data-placeholder="Введите критерии оценки"
-          />
-          {errors.criteria && <div className="error-message">{errors.criteria}</div>}
-        </div>
-
+        {(Object.keys(FIELD_LABELS) as Array<keyof FormState>).map(field => (
+          <div key={field} className="form-field" data-field={field}>
+            <label className="form-label">{FIELD_LABELS[field]}</label>
+            <EditableField
+              value={form[field]}
+              onChange={updateField(field)}
+              placeholder={FIELD_PLACEHOLDERS[field]}
+              maxLength={FIELD_LIMITS[field]}
+              maxHeight={
+                field === 'description' ? 116
+                : field === 'expectedResult' ? 95
+                : field === 'criteria' ? 137
+                : 53
+              }
+              className={field === 'criteria' ? 'criteria-box' : ''}
+            />
+            {errors[field] && <div className="error-message">{errors[field]}</div>}
+          </div>
+        ))}
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
 
