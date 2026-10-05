@@ -1,0 +1,7 @@
+from .case_repository_protocol import CaseRepositoryProtocol
+from .case_semesters_repository_protocol import CaseSemestersRepositoryProtocol
+from .case_status_repository_protocol import CaseStatusRepositoryProtocol
+from .difficulty_level_repository_protocol import DifficultyLevelRepositoryProtocol
+from .semesters_repository_protocol import SemestersRepositoryProtocol
+from .university_info_repository_protocol import UniversityInfoRepositoryProtocol
+from .user_repository_protocol import UserRepositoryProtocol
