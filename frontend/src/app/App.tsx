@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { ToastProvider } from '../context/ToastContext';
 import DashboardPage from '../pages/Dashboard/DashboardPage';
 import CasesPage from '../pages/Cases/CasesPage';
@@ -17,31 +18,40 @@ import OutlookCallbackPage from '../pages/OutlookCallback/OutlookCallbackPage';
 import SSOPage from '../pages/Login/SSOPage';
 import TeamCaseHistoryPage from '../pages/Teams/TeamCaseHistoryPage';
 
-function App() {
-  return (
-    <ToastProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/cases" element={<CasesPage />} />
-          <Route path="/cases/:id" element={<CaseViewPage />} />
-          <Route path="/cases/:id/edit" element={<CaseEditPage />} />
-          <Route path="/cases/create" element={<CaseCreatePage />} />
-          <Route path="/cases/:id/comments" element={<CaseCommentsPage />} />
-          <Route path="/report" element={<ReportPage />} /> 
-          <Route path="/teams" element={<TeamsPage />} />
-          <Route path="/teams/create" element={<TeamCreatePage />} />
-          <Route path="/teams/:id" element={<TeamViewPage />} />
-          <Route path="/teams/:id/edit" element={<TeamEditPage />} />
-          <Route path="/bot-management" element={<BotManagementPage />} />
-          <Route path="/outlook/callback" element={<OutlookCallbackPage />} />
-          <Route path="/sso" element={<SSOPage />} />
-          <Route path="/teams/:id/history" element={<TeamCaseHistoryPage />} />
-        </Routes>
-      </BrowserRouter>
-    </ToastProvider>
-  );
+interface AppRoute {
+  path: string;
+  element: ReactElement;
 }
+
+const ROUTES: AppRoute[] = [
+  { path: '/', element: <DashboardPage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/cases', element: <CasesPage /> },
+  { path: '/cases/create', element: <CaseCreatePage /> },
+  { path: '/cases/:id', element: <CaseViewPage /> },
+  { path: '/cases/:id/edit', element: <CaseEditPage /> },
+  { path: '/cases/:id/comments', element: <CaseCommentsPage /> },
+  { path: '/report', element: <ReportPage /> },
+  { path: '/teams', element: <TeamsPage /> },
+  { path: '/teams/create', element: <TeamCreatePage /> },
+  { path: '/teams/:id', element: <TeamViewPage /> },
+  { path: '/teams/:id/edit', element: <TeamEditPage /> },
+  { path: '/teams/:id/history', element: <TeamCaseHistoryPage /> },
+  { path: '/bot-management', element: <BotManagementPage /> },
+  { path: '/outlook/callback', element: <OutlookCallbackPage /> },
+  { path: '/sso', element: <SSOPage /> },
+];
+
+const App = () => (
+  <ToastProvider>
+    <BrowserRouter>
+      <Routes>
+        {ROUTES.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
+      </Routes>
+    </BrowserRouter>
+  </ToastProvider>
+);
 
 export default App;
