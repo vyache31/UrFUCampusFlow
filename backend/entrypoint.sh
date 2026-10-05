@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-CERT_DIR="/backend/auth/certs"
+CERT_DIR="/backend/infrastructure/security/certs"
 PRIVATE="$CERT_DIR/jwt-private.pem"
 PUBLIC="$CERT_DIR/jwt-public.pem"
 
