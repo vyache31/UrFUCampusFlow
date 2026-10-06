@@ -1,96 +1,114 @@
 import uuid
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+
 from sqlalchemy.exc import IntegrityError
-from presentation.api.schemas.team import TeamCreate, TeamUpdate
+
+from application.interfaces.uow.team_uow_protocol import TeamUoWProtocol
 from infrastructure.db.models import Teams
-from infrastructure.db.repositories.team_repository import TeamRepository
+from presentation.api.schemas.team import TeamCreate, TeamUpdate
 
 
 class TeamService:
+    def __init__(self, uow: TeamUoWProtocol):
+        self.uow = uow
 
-    def __init__(self, team_repo: TeamRepository):
-        self.team_repo = team_repo
-        # self.semester_repo = semester_repo
-        # self.university_repo = university_repo
-        # self.case_repo = case_repo
+    @staticmethod
+    async def _validate_refs(
+        uow: TeamUoWProtocol,
+        validate_attrs: dict,
+    ) -> None:
+        if "university_id" not in validate_attrs:
+            return
 
-        """
-        Словарь атрибутов, существование которых нужно проверять
-        при обновлении объекта Team. Он будет использован в
-        маппинге validate_refs() в самом конце файла
-        """
-        self.validators = {
-            # "role_id": (self.role_repo.get_by_id, "Role not found"),
-            "university_id": (self.team_repo.verify_university, "University not found"),
-        }
-
-    async def create_team(self, schema: TeamCreate):
-        is_exist = await self.team_repo.get_by_name(schema.name)
-        if is_exist:
-            raise ValueError("Team already exist")
-
-        await self.validate_refs({"university_id": schema.university_id})
-
-        team = Teams(
-            id=str(uuid.uuid4()),
-            name=schema.name,
-            description=schema.description,
-            notes=schema.notes,
-            university_id=schema.university_id,
-            status=schema.status,
-            created_at=datetime.now(UTC)
+        university = await uow.university_info_repository.get_by_id(
+            validate_attrs["university_id"]
         )
 
-        return await self.team_repo.create(team)
+        if not university:
+            raise ValueError("University not found")
 
-    async def get_team(self, team_id: str):
-        return await self.team_repo.get_by_id(team_id)
+    async def create_team(self, schema: TeamCreate) -> Teams:
+        async with self.uow as uow:
+            existing_team = await uow.team_repository.get_by_name(schema.name)
 
-    async def get_all_teams(self, limit: int = 10):
-        return await self.team_repo.get_all(limit)
+            if existing_team:
+                raise ValueError("Team already exist")
 
-    async def update_team(self, team_id: str, schema: TeamUpdate):
-        team = await self.team_repo.get_by_id(team_id)
+            await self._validate_refs(
+                uow,
+                {"university_id": schema.university_id},
+            )
 
-        if not team:
-            return None
+            team = Teams(
+                id=str(uuid.uuid4()),
+                name=schema.name,
+                description=schema.description,
+                notes=schema.notes,
+                university_id=schema.university_id,
+                status=schema.status,
+                created_at=datetime.now(UTC),
+            )
 
-        update_data = schema.dict(exclude_unset=True)  # берет только те поля, которые реально передал фронт
+            team = await uow.team_repository.create(team)
 
-        await self.validate_refs(update_data)
+            await uow.commit()
 
-        for field, value in update_data.items():
-            setattr(team, field, value)
-        team.updated_at = datetime.now(UTC)
+            return team
 
-        await self.team_repo.update()
-        return team
+    async def get_team(self, team_id: str) -> Teams | None:
+        async with self.uow as uow:
+            return await uow.team_repository.get_by_id(team_id)
 
-    async def delete_team(self, team_id: str) -> bool:
-        team = await self.team_repo.get_by_id(team_id)
+    async def get_all_teams(self, limit: int = 10) -> list[Teams]:
+        async with self.uow as uow:
+            teams = await uow.team_repository.get_all(limit)
+            return list(teams)
 
-        if not team:
-            return None
-        try:
-            await self.team_repo.delete(team)
-        except IntegrityError as err:
-            if "foreign key constraint" in str(err.orig).lower():
-                raise TeamHasDependenciesError("Team cannot be deleted because it has external links")
+    async def update_team(
+        self,
+        team_id: str,
+        schema: TeamUpdate,
+    ) -> Teams | None:
+        async with self.uow as uow:
+            team = await uow.team_repository.get_by_id(team_id)
 
-        return True
+            if not team:
+                return None
 
-    """
-    Используется для того, чтобы не писать 3+ одинаковых if'ов
-    при валидации в team_update()
-    """
+            update_data = schema.model_dump(exclude_unset=True)
+            await self._validate_refs(uow, update_data)
 
-    async def validate_refs(self, validate_attrs: dict):
-        for field, (getter, error) in self.validators.items():
-            if field in validate_attrs:
-                attr = await getter(validate_attrs[field])
-                if not attr:
-                    raise ValueError(error)
+            for field, value in update_data.items():
+                setattr(team, field, value)
+
+            team.updated_at = datetime.now(UTC)
+
+            await uow.team_repository.update()
+            await uow.commit()
+
+            return team
+
+    async def delete_team(self, team_id: str) -> bool | None:
+        async with self.uow as uow:
+            team = await uow.team_repository.get_by_id(team_id)
+
+            if not team:
+                return None
+
+            try:
+                await uow.team_repository.delete(team)
+                await uow.commit()
+            except IntegrityError as err:
+                if "foreign key constraint" in str(err.orig).lower():
+                    raise TeamHasDependenciesError(
+                        "Team cannot be deleted because it has external links"
+                    ) from err
+                raise
+
+            return True
+
 
 class TeamHasDependenciesError(Exception):
     """Команда не может быть удалена, так как есть связанные записи"""
+
     pass

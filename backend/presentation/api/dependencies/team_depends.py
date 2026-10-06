@@ -1,11 +1,7 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.db.database import get_db
-from infrastructure.db.repositories.team_repository import TeamRepository
 from application.services.team_service import TeamService
+from infrastructure.db.database import SessionLocal
+from infrastructure.db.uow.team_uow import SqlAlchemyTeamUoW
 
 
-def get_team_service(db: AsyncSession = Depends(get_db)):
-    rep = TeamRepository(db)
-
-    return TeamService(rep)
+def get_team_service() -> TeamService:
+    return TeamService(SqlAlchemyTeamUoW(SessionLocal))
