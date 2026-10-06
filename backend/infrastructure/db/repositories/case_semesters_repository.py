@@ -10,7 +10,7 @@ class CaseSemestersRepository:
 
     async def create(self, case_semesters: CaseSemesters) -> CaseSemesters:
         self.db.add(case_semesters)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(case_semesters)
 
         return case_semesters

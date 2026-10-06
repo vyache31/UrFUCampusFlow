@@ -1,9 +1,15 @@
 import uuid
 from datetime import UTC, datetime
 
-from infrastructure.db.models import EvaluationForm, EvaluationFormComments, EvaluationFormReactions
-from infrastructure.db.repositories.case_repository import CaseRepository
-from infrastructure.db.repositories.evaluation_repository import EvaluationRepository
+from application.interfaces.repositories import (
+    CaseRepositoryProtocol,
+    EvaluationRepositoryProtocol,
+)
+from infrastructure.db.models import (
+    EvaluationForm,
+    EvaluationFormComments,
+    EvaluationFormReactions,
+)
 from presentation.api.schemas.evaluation_schemas import (
     EvaluationCommentCreate,
     EvaluationCommentResponse,
@@ -25,7 +31,11 @@ from infrastructure.events.events import (
 
 
 class EvaluationService:
-    def __init__(self, repo: EvaluationRepository, case_repo: CaseRepository):
+    def __init__(
+        self,
+        repo: EvaluationRepositoryProtocol,
+        case_repo: CaseRepositoryProtocol,
+    ):
         self.repo = repo
         self.case_repo = case_repo
 

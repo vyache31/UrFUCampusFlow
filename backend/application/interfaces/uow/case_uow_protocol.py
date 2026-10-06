@@ -9,6 +9,7 @@ from application.interfaces.repositories import (
     UserRepositoryProtocol,
     UniversityInfoRepositoryProtocol,
     DifficultyLevelRepositoryProtocol,
+    EvaluationRepositoryProtocol,
 )
 
 
@@ -20,6 +21,7 @@ class CaseUoWProtocol(Protocol):
     user_repository: UserRepositoryProtocol
     university_info_repository: UniversityInfoRepositoryProtocol
     difficulty_level_repository: DifficultyLevelRepositoryProtocol
+    evaluation_repository: EvaluationRepositoryProtocol
 
     async def __aenter__(self) -> Self:
         ...

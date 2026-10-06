@@ -1,11 +1,11 @@
-from infrastructure.db.repositories.semesters_repository import SemestersRepository
 from infrastructure.db.models import Semesters
+from application.interfaces.repositories.semesters_repository_protocol import SemestersRepositoryProtocol
 from datetime import datetime, UTC
 
 
 class SemestersService:
 
-    def __init__(self, rep: SemestersRepository):
+    def __init__(self, rep: SemestersRepositoryProtocol):
         self.rep = rep
 
     @staticmethod

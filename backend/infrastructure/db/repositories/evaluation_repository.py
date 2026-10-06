@@ -86,7 +86,7 @@ class EvaluationRepository:
     async def create_form(self, form: EvaluationForm) -> EvaluationForm:
         self.db.add(form)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(form)
 
         return form

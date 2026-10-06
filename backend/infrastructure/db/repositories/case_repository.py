@@ -44,6 +44,7 @@ class CaseRepository:
             select(Cases)
             .where(Cases.id == case_id)
             .options(*CASE_LOAD_OPTIONS)
+            .execution_options(populate_existing=True)
         )
 
         result = await self.db.execute(stmt)
@@ -51,23 +52,21 @@ class CaseRepository:
 
     async def create(self, case: Cases) -> Cases:
         self.db.add(case)
-        await self.db.commit()
+        await self.db.flush()
 
         return await self.get_by_id(case_id=str(case.id))
 
     async def delete(self, case: Cases) -> None:
         await self.db.delete(case)
-        await self.db.commit()
+        await self.db.flush()
 
     async def delete_by_id(self, case_id: str) -> None:
         await self.db.execute(
             delete(Cases).where(Cases.id == case_id)
         )
 
-        await self.db.commit()
-
     async def update(self) -> None:
-        await self.db.commit()
+        await self.db.flush()
 
     async def get_by_creator(self, creator_id: str):
         cases = await self.db.execute(

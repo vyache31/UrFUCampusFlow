@@ -11,6 +11,7 @@ from application.interfaces.repositories import (
     UserRepositoryProtocol,
     UniversityInfoRepositoryProtocol,
     DifficultyLevelRepositoryProtocol,
+    EvaluationRepositoryProtocol,
 )
 from infrastructure.db.repositories import (
     CaseRepository,
@@ -20,6 +21,7 @@ from infrastructure.db.repositories import (
     UserRepository,
     UniversityInfoRepository,
     DifficultyLevelRepository,
+    EvaluationRepository,
 )
 
 
@@ -31,6 +33,7 @@ class SqlAlchemyCaseUoW:
     user_repository: UserRepositoryProtocol
     university_info_repository: UniversityInfoRepositoryProtocol
     difficulty_level_repository: DifficultyLevelRepositoryProtocol
+    evaluation_repository: EvaluationRepositoryProtocol
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
@@ -44,6 +47,7 @@ class SqlAlchemyCaseUoW:
         self.user_repository = UserRepository(self.session)
         self.university_info_repository = UniversityInfoRepository(self.session)
         self.difficulty_level_repository = DifficultyLevelRepository(self.session)
+        self.evaluation_repository = EvaluationRepository(self.session)
 
         return self
 

@@ -13,7 +13,7 @@ class SemestersRepository:
     async def create(self, semester: Semesters) -> Semesters:
         self.db.add(semester)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(semester)
 
         return semester

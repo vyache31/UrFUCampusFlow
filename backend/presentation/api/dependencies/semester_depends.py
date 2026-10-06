@@ -1,20 +1,21 @@
-from infrastructure.db.database import get_db
-from infrastructure.db.models import Semesters
-from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.db.repositories.semesters_repository import SemestersRepository
-from application.services.semesters_service import SemestersService
 from fastapi import Depends
 
+from application.interfaces.uow.semesters_uow_protocol import SemestersUoWProtocol
+from application.services.semesters_service import SemestersService
+from infrastructure.db.database import SessionLocal
+from infrastructure.db.models import Semesters
+from infrastructure.db.uow.semesters_uow import SqlAlchemySemestersUoW
 
-def get_semester_service(
-        db: AsyncSession = Depends(get_db)
-) -> SemestersService:
-    rep = SemestersRepository(db)
 
-    return SemestersService(rep)
+def get_semesters_uow() -> SemestersUoWProtocol:
+    return SqlAlchemySemestersUoW(SessionLocal)
 
 
 async def get_current_semester(
-        service: SemestersService = Depends(get_semester_service)
+    uow: SemestersUoWProtocol = Depends(get_semesters_uow),
 ) -> Semesters:
-    return await service.get_or_create_current()
+    async with uow:
+        service = SemestersService(uow.semesters_repository)
+        semester = await service.get_or_create_current()
+        await uow.commit()
+        return semester

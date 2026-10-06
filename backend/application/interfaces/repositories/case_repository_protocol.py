@@ -4,6 +4,9 @@ from infrastructure.db.models.cases import Cases
 
 
 class CaseRepositoryProtocol(Protocol):
+    async def get_all(self, limit: int = 10) -> list[Cases]:
+        ...
+
     async def get_by_id(self, case_id: str) -> Cases | None:
         ...
 
@@ -14,4 +17,7 @@ class CaseRepositoryProtocol(Protocol):
         ...
 
     async def get_by_title(self, title: str) -> Cases | None:
+        ...
+
+    async def delete_by_id(self, case_id: str) -> None:
         ...
