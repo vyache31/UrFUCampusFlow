@@ -1,5 +1,4 @@
-from types import TracebackType
-from typing import Protocol, Self
+from typing import Protocol
 
 from application.interfaces.repositories import (
     CaseRepositoryProtocol,
@@ -11,9 +10,10 @@ from application.interfaces.repositories import (
     DifficultyLevelRepositoryProtocol,
     EvaluationRepositoryProtocol,
 )
+from application.interfaces.uow.uow_protocol import UoWProtocol
 
 
-class CaseUoWProtocol(Protocol):
+class CaseUoWProtocol(UoWProtocol, Protocol):
     case_repository: CaseRepositoryProtocol
     case_semesters_repository: CaseSemestersRepositoryProtocol
     case_statuses_repository: CaseStatusRepositoryProtocol
@@ -22,20 +22,3 @@ class CaseUoWProtocol(Protocol):
     university_info_repository: UniversityInfoRepositoryProtocol
     difficulty_level_repository: DifficultyLevelRepositoryProtocol
     evaluation_repository: EvaluationRepositoryProtocol
-
-    async def __aenter__(self) -> Self:
-        ...
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        ...
-
-    async def commit(self) -> None:
-        ...
-
-    async def rollback(self) -> None:
-        ...
