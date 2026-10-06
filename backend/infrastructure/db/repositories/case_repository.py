@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
@@ -17,7 +19,7 @@ class CaseRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all(self, limit: int = 10):
+    async def get_all(self, limit: int = 10) -> Sequence[Cases]:
         cases = await self.db.execute(
             select(Cases)
             .options(

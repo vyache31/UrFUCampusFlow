@@ -10,9 +10,8 @@ from application.services.const.case_status_workflow import (
     ALLOWED_CASE_STATUS_TRANSITIONS,
     CASE_STATUS_DRAFT,
 )
-from application.services.evaluation_service import EvaluationService
 from application.services.semesters_service import SemestersService
-from infrastructure.db.models import Cases, CaseSemesters
+from infrastructure.db.models import Cases, CaseSemesters, EvaluationForm
 from presentation.api.schemas.case import CaseCreate, CaseResponse, CaseUpdate
 
 
@@ -276,14 +275,13 @@ class CaseService:
             if not case:
                 return None
 
-            evaluation_service = EvaluationService(
-                uow.evaluation_repository,
-                uow.case_repository,
-            )
-            await evaluation_service.create_evaluation_form(
+            evaluation_form = EvaluationForm(
+                id=str(uuid.uuid4()),
                 case_id=case_id,
                 creator_id=case.creator_id,
+                created_at=datetime.now(UTC),
             )
+            await uow.evaluation_repository.create_form(evaluation_form)
             response = self._to_response(case)
 
             await uow.commit()

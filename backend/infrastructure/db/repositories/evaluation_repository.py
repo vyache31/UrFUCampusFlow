@@ -1,7 +1,11 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.db.models import EvaluationForm, EvaluationFormComments, EvaluationFormReactions
+from infrastructure.db.models import (
+    EvaluationForm,
+    EvaluationFormComments,
+    EvaluationFormReactions,
+)
 
 
 class EvaluationRepository:
@@ -13,7 +17,7 @@ class EvaluationRepository:
     ) -> EvaluationFormReactions:
         self.db.add(reaction)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(reaction)
 
         return reaction
@@ -62,7 +66,7 @@ class EvaluationRepository:
     async def update_reaction(
         self, reaction: EvaluationFormReactions
     ) -> EvaluationFormReactions | None:
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(reaction)
 
         return reaction
@@ -81,7 +85,7 @@ class EvaluationRepository:
 
     async def delete_reaction(self, reaction: EvaluationFormReactions) -> None:
         await self.db.delete(reaction)
-        await self.db.commit()
+        await self.db.flush()
 
     async def create_form(self, form: EvaluationForm) -> EvaluationForm:
         self.db.add(form)
@@ -122,7 +126,7 @@ class EvaluationRepository:
     ) -> EvaluationFormComments:
         self.db.add(comment)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(comment)
 
         return comment
@@ -150,11 +154,11 @@ class EvaluationRepository:
     async def update_comment(
         self, comment: EvaluationFormComments
     ) -> EvaluationFormComments | None:
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(comment)
 
         return comment
 
     async def delete_comment(self, comment: EvaluationFormComments) -> None:
         await self.db.delete(comment)
-        await self.db.commit()
+        await self.db.flush()
