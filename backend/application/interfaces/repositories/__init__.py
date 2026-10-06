@@ -6,3 +6,5 @@ from .evaluation_repository_protocol import EvaluationRepositoryProtocol
 from .semesters_repository_protocol import SemestersRepositoryProtocol
 from .university_info_repository_protocol import UniversityInfoRepositoryProtocol
 from .user_repository_protocol import UserRepositoryProtocol
+from .team_repository_protocol import TeamRepositoryProtocol
+from .team_case_history_repository_protocol import TeamCaseHistoryRepositoryProtocol

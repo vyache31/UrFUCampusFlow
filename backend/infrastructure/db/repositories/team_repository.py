@@ -8,7 +8,7 @@ class TeamRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, team_id: str):
+    async def get_by_id(self, team_id: str) -> Teams | None:
         result = await self.db.execute(select(Teams).where(Teams.id == team_id))
 
         return result.scalar_one_or_none()

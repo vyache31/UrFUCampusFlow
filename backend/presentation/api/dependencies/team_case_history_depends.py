@@ -1,9 +1,12 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from infrastructure.db.database import get_db
+from infrastructure.db.database import SessionLocal, get_db
 from infrastructure.db.models import TeamCaseHistory
 from infrastructure.db.repositories.team_case_history_repository import TeamCaseHistoryRepository
+from infrastructure.db.uow.team_case_history_uow import (
+    SqlAlchemyTeamCaseHistoryUoW,
+)
 from application.services.team_case_history_service import TeamCaseHistoryService
 
 
@@ -13,12 +16,8 @@ def get_team_case_history_repo(
     return TeamCaseHistoryRepository(db)
 
 
-def get_team_case_history_service(
-    db: AsyncSession = Depends(get_db),
-) -> TeamCaseHistoryService:
-    team_case_history_repo = TeamCaseHistoryRepository(db)
-
-    return TeamCaseHistoryService(team_case_history_repo)
+def get_team_case_history_service() -> TeamCaseHistoryService:
+    return TeamCaseHistoryService(SqlAlchemyTeamCaseHistoryUoW(SessionLocal))
 
 
 async def get_current_team_case_history_by_team_id(

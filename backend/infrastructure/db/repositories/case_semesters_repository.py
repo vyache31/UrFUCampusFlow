@@ -26,3 +26,14 @@ class CaseSemestersRepository:
         )
 
         return case_semester.scalar_one_or_none()
+
+    async def get_by_id(
+        self,
+        case_semesters_id: str,
+    ) -> CaseSemesters | None:
+        case_semester = await self.db.execute(
+            select(CaseSemesters)
+            .where(CaseSemesters.id == case_semesters_id)
+        )
+
+        return case_semester.scalar_one_or_none()
