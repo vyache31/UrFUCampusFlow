@@ -250,14 +250,17 @@ async def unassign_curator_from_team(
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
     try:
-        assignment = await service.get_assignment_by_id(assignment_id)
-
-        if assignment.team_case_history_id != current_team_case_history.id:
-            raise HTTPException(status_code=404, detail='Curator assignment not found')
-
-        return await service.unassign_curator(assignment_id)
+        assignment = await service.unassign_curator(
+            assignment_id=assignment_id,
+            team_case_history_id=current_team_case_history.id,
+        )
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
+
+    if not assignment:
+        raise HTTPException(status_code=404, detail='Curator assignment not found')
+
+    return assignment
 
 
 @router.get('/{team_id}/curators', response_model=list[CuratorAssignmentResponse])

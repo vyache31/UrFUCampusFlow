@@ -1,14 +1,9 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from infrastructure.db.database import get_db
-from infrastructure.db.repositories.curator_assignments_repository import CuratorAssignmentsRepository
 from application.services.curator_assignment_service import CuratorAssignmentService
+from infrastructure.db.database import SessionLocal
+from infrastructure.db.uow.curator_assignment_uow import (
+    SqlAlchemyCuratorAssignmentUoW,
+)
 
 
-def get_curator_assignment_service(
-        db: AsyncSession = Depends(get_db)
-) -> CuratorAssignmentService:
-    repo = CuratorAssignmentsRepository(db)
-
-    return CuratorAssignmentService(repo)
+def get_curator_assignment_service() -> CuratorAssignmentService:
+    return CuratorAssignmentService(SqlAlchemyCuratorAssignmentUoW(SessionLocal))

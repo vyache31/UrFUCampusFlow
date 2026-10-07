@@ -1,119 +1,157 @@
 import uuid
 from datetime import UTC, datetime
 
+from application.interfaces.uow.curator_assignment_uow_protocol import (
+    CuratorAssignmentUoWProtocol,
+)
 from infrastructure.db.models import CuratorAssignment
-from infrastructure.db.repositories.curator_assignments_repository import CuratorAssignmentsRepository
-from presentation.api.schemas.curators_schemas import CuratorAssignmentCreate, CuratorAssignmentResponse
+from presentation.api.schemas.curators_schemas import (
+    CuratorAssignmentCreate,
+    CuratorAssignmentResponse,
+)
 
 
 class CuratorAssignmentService:
-    def __init__(self, repo: CuratorAssignmentsRepository):
-        self.repo = repo
+    def __init__(self, uow: CuratorAssignmentUoWProtocol):
+        self.uow = uow
 
     async def assign_curator(
-        self, schema: CuratorAssignmentCreate
+        self,
+        schema: CuratorAssignmentCreate,
     ) -> CuratorAssignmentResponse:
-        if not await self.repo.verify_curator_user(schema.user_id):
-            raise ValueError('Curator user not found')
+        async with self.uow as uow:
+            user = await uow.user_repository.get_by_id(schema.user_id)
 
-        if not await self.repo.verify_team_case_history(schema.team_case_history_id):
-            raise ValueError('Team case history not found')
+            if not user or not user.role or user.role.code != "CURATOR":
+                raise ValueError("Curator user not found")
 
-        existing_assignment = await self.repo.get_current_by_user_and_team_case_history(
-            user_id=schema.user_id,
-            team_case_history_id=schema.team_case_history_id,
-        )
+            team_case_history = await uow.team_case_history_repository.get_by_id(
+                schema.team_case_history_id
+            )
 
-        if existing_assignment:
-            raise ValueError('Curator already has current assignment for this team case history')
+            if not team_case_history:
+                raise ValueError("Team case history not found")
 
-        curator_assignment = CuratorAssignment(
-            id=str(uuid.uuid4()),
-            user_id=schema.user_id,
-            team_case_history_id=schema.team_case_history_id,
-            assigned_at=datetime.now(UTC),
-            unassigned_at=None,
-            is_current=True,
-        )
+            repository = uow.curator_assignments_repository
+            existing_assignment = await (
+                repository.get_current_by_user_and_team_case_history(
+                    user_id=schema.user_id,
+                    team_case_history_id=schema.team_case_history_id,
+                )
+            )
 
-        await self.repo.create(curator_assignment)
+            if existing_assignment:
+                raise ValueError(
+                    "Curator already has current assignment for this team case history"
+                )
 
-        return self._to_response(curator_assignment)
+            curator_assignment = CuratorAssignment(
+                id=str(uuid.uuid4()),
+                user_id=schema.user_id,
+                team_case_history_id=schema.team_case_history_id,
+                assigned_at=datetime.now(UTC),
+                unassigned_at=None,
+                is_current=True,
+            )
+
+            curator_assignment = await repository.create(curator_assignment)
+            await uow.commit()
+
+            return self._to_response(curator_assignment)
 
     async def unassign_curator(
-        self, assignment_id: str
-    ) -> CuratorAssignmentResponse:
-        assignment = await self.repo.get_by_id(assignment_id)
+        self,
+        assignment_id: str,
+        team_case_history_id: str,
+    ) -> CuratorAssignmentResponse | None:
+        async with self.uow as uow:
+            assignment = await uow.curator_assignments_repository.get_by_id(
+                assignment_id
+            )
 
-        if not assignment:
-            raise ValueError('Curator assignment not found')
+            if (
+                not assignment
+                or assignment.team_case_history_id != team_case_history_id
+            ):
+                return None
 
-        if not assignment.is_current:
-            raise ValueError('Curator assignment is already ended')
+            if not assignment.is_current:
+                raise ValueError("Curator assignment is already ended")
 
-        assignment.is_current = False
-        assignment.unassigned_at = datetime.now(UTC)
+            assignment.is_current = False
+            assignment.unassigned_at = datetime.now(UTC)
 
-        await self.repo.update(assignment)
+            assignment = await uow.curator_assignments_repository.update(assignment)
+            await uow.commit()
 
-        return self._to_response(assignment)
+            return self._to_response(assignment)
 
     async def get_assignment_by_id(
-        self, assignment_id: str
+        self,
+        assignment_id: str,
     ) -> CuratorAssignmentResponse:
-        assignment = await self.repo.get_by_id(assignment_id)
+        async with self.uow as uow:
+            assignment = await uow.curator_assignments_repository.get_by_id(
+                assignment_id
+            )
 
-        if not assignment:
-            raise ValueError('Curator assignment not found')
+            if not assignment:
+                raise ValueError("Curator assignment not found")
 
-        return self._to_response(assignment)
+            return self._to_response(assignment)
 
     async def get_by_user_id(
-        self, user_id: str
+        self,
+        user_id: str,
     ) -> list[CuratorAssignmentResponse]:
-        assignments = await self.repo.get_by_user_id(user_id)
+        async with self.uow as uow:
+            assignments = await uow.curator_assignments_repository.get_by_user_id(
+                user_id
+            )
 
-        return [
-            self._to_response(assignment)
-            for assignment in assignments
-        ]
+            return [self._to_response(assignment) for assignment in assignments]
 
     async def get_by_team_case_history_id(
-        self, team_case_history_id: str
+        self,
+        team_case_history_id: str,
     ) -> list[CuratorAssignmentResponse]:
-        assignments = await self.repo.get_by_team_case_history_id(
-            team_case_history_id
-        )
+        async with self.uow as uow:
+            assignments = (
+                await uow.curator_assignments_repository.get_by_team_case_history_id(
+                    team_case_history_id
+                )
+            )
 
-        return [
-            self._to_response(assignment)
-            for assignment in assignments
-        ]
+            return [self._to_response(assignment) for assignment in assignments]
 
     async def get_current_by_team_case_history_id(
-        self, team_case_history_id: str
+        self,
+        team_case_history_id: str,
     ) -> list[CuratorAssignmentResponse]:
-        assignments = await self.repo.get_current_by_team_case_history_id(
-            team_case_history_id
-        )
+        async with self.uow as uow:
+            repository = uow.curator_assignments_repository
+            assignments = await repository.get_current_by_team_case_history_id(
+                team_case_history_id
+            )
 
-        return [
-            self._to_response(assignment)
-            for assignment in assignments
-        ]
+            return [self._to_response(assignment) for assignment in assignments]
 
     async def get_current_by_user_and_team_case_history(
-        self, user_id: str, team_case_history_id: str
+        self,
+        user_id: str,
+        team_case_history_id: str,
     ) -> CuratorAssignmentResponse:
-        assignment = await self.repo.get_current_by_user_and_team_case_history(
-            user_id=user_id,
-            team_case_history_id=team_case_history_id,
-        )
+        async with self.uow as uow:
+            repository = uow.curator_assignments_repository
+            assignment = await repository.get_current_by_user_and_team_case_history(
+                user_id=user_id,
+                team_case_history_id=team_case_history_id,
+            )
 
-        if not assignment:
-            raise ValueError('Current curator assignment not found')
+            if not assignment:
+                raise ValueError("Current curator assignment not found")
 
-        return self._to_response(assignment)
+            return self._to_response(assignment)
 
     @staticmethod
     def _to_response(assignment: CuratorAssignment) -> CuratorAssignmentResponse:

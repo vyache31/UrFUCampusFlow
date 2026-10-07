@@ -1,6 +1,9 @@
 from .case_repository_protocol import CaseRepositoryProtocol
 from .case_semesters_repository_protocol import CaseSemestersRepositoryProtocol
 from .case_status_repository_protocol import CaseStatusRepositoryProtocol
+from .curator_assignments_repository_protocol import (
+    CuratorAssignmentsRepositoryProtocol,
+)
 from .difficulty_level_repository_protocol import DifficultyLevelRepositoryProtocol
 from .evaluation_repository_protocol import EvaluationRepositoryProtocol
 from .semesters_repository_protocol import SemestersRepositoryProtocol
