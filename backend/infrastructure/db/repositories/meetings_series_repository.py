@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,17 +13,11 @@ class MeetingsSeriesRepository:
 
     async def create(self, series: MeetingsSeries) -> MeetingsSeries:
         self.db.add(series)
-
-        await self.db.commit()
-        await self.db.refresh(series)
-
+        await self.db.flush()
         return await self.get_by_id(series.id)
 
     async def update(self, series: MeetingsSeries) -> MeetingsSeries | None:
-
-        await self.db.commit()
-        await self.db.refresh(series)
-
+        await self.db.flush()
         return series
 
     async def get_by_id(self, series_id: str) -> MeetingsSeries | None:
@@ -45,16 +39,12 @@ class MeetingsSeriesRepository:
             .where(MeetingsSeries.team_case_history_id == team_case_history_id)
         )
 
-        return series.scalars().all()
+        return list(series.scalars().all())
 
     async def delete(self, series: MeetingsSeries) -> None:
         await self.db.delete(series)
 
-        await self.db.commit()
-
     async def delete_by_id(self, series_id: str) -> None:
-        await self.db.execute(
-            delete(MeetingsSeries).where(MeetingsSeries.id == series_id)
-        )
-
-        await self.db.commit()
+        series = await self.get_by_id(series_id)
+        if series is not None:
+            await self.db.delete(series)

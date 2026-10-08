@@ -4,8 +4,15 @@ from .case_status_repository_protocol import CaseStatusRepositoryProtocol
 from .curator_assignments_repository_protocol import (
     CuratorAssignmentsRepositoryProtocol,
 )
+from .curator_meetings_attendance_repository_protocol import (
+    CuratorMeetingsAttendanceRepositoryProtocol,
+)
 from .difficulty_level_repository_protocol import DifficultyLevelRepositoryProtocol
 from .evaluation_repository_protocol import EvaluationRepositoryProtocol
+from .meeting_tasks_repository_protocol import MeetingTaskRepositoryProtocol
+from .meetings_repository_protocol import MeetingsRepositoryProtocol
+from .meetings_series_repository_protocol import MeetingsSeriesRepositoryProtocol
+from .microsoft_oauth_repository_protocol import MicrosoftOAuthRepositoryProtocol
 from .semesters_repository_protocol import SemestersRepositoryProtocol
 from .student_repository_protocol import StudentRepositoryProtocol
 from .team_members_repository_protocol import TeamMembersRepositoryProtocol

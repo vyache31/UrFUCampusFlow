@@ -3,12 +3,14 @@ import uuid
 
 import httpx
 
-from infrastructure.integrations.microsoft_graph_client import GraphClient
+from application.interfaces.integrations import (
+    MicrosoftAccessTokenProviderProtocol,
+    MicrosoftGraphClientProtocol,
+)
+from application.interfaces.uow.meetings_uow_protocol import MeetingsUoWProtocol
 from infrastructure.db.models import Meetings, MeetingTask
-from infrastructure.db.repositories.meetings_repository import MeetingsRepository
 from presentation.api.schemas.outlook_meetings import MeetingCreate, MeetingResponse, MeetingUpdate
 from application.services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
-from application.services.microsoft_oauth_service import MicrosoftOAuthService
 
 
 logger = logging.getLogger(__name__)
@@ -17,55 +19,13 @@ logger = logging.getLogger(__name__)
 class MeetingsService:
     def __init__(
         self,
-        meetings_repo: MeetingsRepository,
-        graph_client: GraphClient,
-        oauth_service: MicrosoftOAuthService,
-        curator_attendance_service: CuratorMeetingAttendanceService,
+        uow: MeetingsUoWProtocol,
+        graph_client: MicrosoftGraphClientProtocol,
+        oauth_service: MicrosoftAccessTokenProviderProtocol,
     ):
-        self.meetings_repo = meetings_repo
+        self.uow = uow
         self.graph_client = graph_client
         self.oauth_service = oauth_service
-        self.curator_attendance_service = curator_attendance_service
-
-    @staticmethod
-    def _handle_meeting_data(meeting_data: MeetingCreate) -> dict:
-        return MeetingsService._build_graph_event_data(
-            title=meeting_data.title,
-            notes=meeting_data.notes,
-            start_at=meeting_data.start_at,
-            end_at=meeting_data.end_at,
-            location=meeting_data.location,
-            event_link=meeting_data.event_link,
-        )
-
-    @staticmethod
-    def _build_graph_event_data(
-        title: str,
-        notes: str | None,
-        start_at,
-        end_at,
-        location: str | None,
-        event_link: str | None,
-    ) -> dict:
-        data = {
-            "subject": title,
-            "body": {"contentType": "HTML", "content": notes},
-            "start": {
-                "dateTime": str(start_at.isoformat()),
-                "timeZone": "Ekaterinburg Standard Time",
-            },
-            "end": {
-                "dateTime": str(end_at.isoformat()),
-                "timeZone": "Ekaterinburg Standard Time",
-            },
-            "location": {"displayName": location or ""},
-            "isOnlineMeeting": False,
-        }
-
-        if event_link is not None:
-            data["onlineMeetingUrl"] = event_link
-
-        return data
 
     @staticmethod
     def _has_calendar_conflicts(
@@ -82,11 +42,6 @@ class MeetingsService:
             return True
 
         return False
-
-    async def _build_headers(self, user_id: str) -> dict:
-        access_token = await self.oauth_service.get_actual_access_token(user_id)
-
-        return {"Authorization": f"Bearer {access_token}"}
 
     @staticmethod
     def _is_missing_graph_event(err: httpx.HTTPStatusError) -> bool:
@@ -110,58 +65,58 @@ class MeetingsService:
         current_team_case_history_id: str,
         meeting_data: MeetingCreate,
     ) -> MeetingResponse:
-        headers = await self._build_headers(user_id)
-
-        correct_timeline = meeting_data.start_at < meeting_data.end_at
-
-        if not correct_timeline:
+        if meeting_data.start_at >= meeting_data.end_at:
             raise ValueError("Meeting start time should be earlier than ending time")
-
-        calendar_view = await self.graph_client.list_calendar_view(
-            params={
-                "startDateTime": str(meeting_data.start_at.isoformat()),
-                "endDateTime": str(meeting_data.end_at.isoformat()),
-            },
-            headers=headers,
-        )
-
-        events = calendar_view.get("value", [])
-        if self._has_calendar_conflicts(events):
-            raise ValueError("This time slot is not empty. Try another time.")
-
-        payload = await self.graph_client.create_event(
-            event_info=self._handle_meeting_data(meeting_data), headers=headers
-        )
-
-        created_meeting = Meetings(
-            id=str(uuid.uuid4()),
-            team_case_history_id=current_team_case_history_id,
-            title=meeting_data.title,
-            location=meeting_data.location,
-            start_at=meeting_data.start_at,
-            end_at=meeting_data.end_at,
-            outlook_event_id=payload["id"],
-            event_link=meeting_data.event_link or payload.get("webLink", ""),
-            notes=meeting_data.notes,
-            timezone=meeting_data.timezone,
-        )
-
-        created_meeting.tasks = [
-            MeetingTask(
-                id=str(uuid.uuid4()),
-                title=task.title,
-                description=task.description,
-                is_completed=False,
+        async with self.uow as uow:
+            history = await uow.team_case_history_repository.get_by_id(
+                current_team_case_history_id
             )
-            for task in meeting_data.tasks
-        ]
+            if history is None:
+                raise ValueError("TeamCaseHistory entry not found")
 
-        meeting = await self.meetings_repo.create(created_meeting)
-        await self.curator_attendance_service.create_default_for_meeting(
-            meeting_id=meeting.id
-        )
+            access_token = await self.oauth_service.get_actual_access_token(user_id)
+            calendar_view = await self.graph_client.list_calendar_view(
+                params={
+                    "startDateTime": str(meeting_data.start_at.isoformat()),
+                    "endDateTime": str(meeting_data.end_at.isoformat()),
+                },
+                access_token=access_token,
+            )
+            events = calendar_view.get("value", [])
+            if self._has_calendar_conflicts(events):
+                raise ValueError("This time slot is not empty. Try another time.")
 
-        return self.to_response(meeting)
+            payload = await self.graph_client.create_meeting(
+                meeting_data=meeting_data, access_token=access_token
+            )
+            created_meeting = Meetings(
+                id=str(uuid.uuid4()),
+                team_case_history_id=current_team_case_history_id,
+                title=meeting_data.title,
+                location=meeting_data.location,
+                start_at=meeting_data.start_at,
+                end_at=meeting_data.end_at,
+                outlook_event_id=payload["id"],
+                event_link=meeting_data.event_link or payload.get("webLink", ""),
+                notes=meeting_data.notes,
+                timezone=meeting_data.timezone,
+            )
+            created_meeting.tasks = [
+                MeetingTask(
+                    id=str(uuid.uuid4()),
+                    title=task.title,
+                    description=task.description,
+                    is_completed=False,
+                )
+                for task in meeting_data.tasks
+            ]
+            meeting = await uow.meetings_repository.create(created_meeting)
+            await CuratorMeetingAttendanceService.create_default_for_meeting_in_uow(
+                uow, meeting.id
+            )
+            response = self.to_response(meeting)
+            await uow.commit()
+            return response
 
     async def update_meeting(
         self,
@@ -170,111 +125,104 @@ class MeetingsService:
         meeting_id: str,
         meeting_data: MeetingUpdate,
     ) -> MeetingResponse | None:
-        meeting = await self.meetings_repo.get_by_id(meeting_id)
+        async with self.uow as uow:
+            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            if not meeting or meeting.team_case_history_id != current_team_case_history_id:
+                return None
 
-        if not meeting or meeting.team_case_history_id != current_team_case_history_id:
-            return None
+            update_data = meeting_data.model_dump(exclude_unset=True)
+            if not update_data:
+                return self.to_response(meeting)
 
-        update_data = meeting_data.model_dump(exclude_unset=True)
+            for field in ("title", "start_at", "end_at"):
+                if field in update_data and update_data[field] is None:
+                    raise ValueError(f"{field} can not be empty")
 
-        if not update_data:
-            return self.to_response(meeting)
+            start_at = update_data.get("start_at", meeting.start_at)
+            end_at = update_data.get("end_at", meeting.end_at)
+            if start_at >= end_at:
+                raise ValueError("Meeting start time should be earlier than ending time")
 
-        for field in ("title", "start_at", "end_at"):
-            if field in update_data and update_data[field] is None:
-                raise ValueError(f"{field} can not be empty")
+            access_token = await self.oauth_service.get_actual_access_token(user_id)
+            if "start_at" in update_data or "end_at" in update_data:
+                calendar_view = await self.graph_client.list_calendar_view(
+                    params={
+                        "startDateTime": str(start_at.isoformat()),
+                        "endDateTime": str(end_at.isoformat()),
+                    },
+                    access_token=access_token,
+                )
+                events = calendar_view.get("value", [])
+                if self._has_calendar_conflicts(
+                    events, ignored_event_id=meeting.outlook_event_id
+                ):
+                    raise ValueError("This time slot is not empty. Try another time.")
 
-        start_at = update_data.get("start_at", meeting.start_at)
-        end_at = update_data.get("end_at", meeting.end_at)
-
-        if start_at >= end_at:
-            raise ValueError("Meeting start time should be earlier than ending time")
-
-        headers = await self._build_headers(user_id)
-
-        if "start_at" in update_data or "end_at" in update_data:
-            calendar_view = await self.graph_client.list_calendar_view(
-                params={
-                    "startDateTime": str(start_at.isoformat()),
-                    "endDateTime": str(end_at.isoformat()),
-                },
-                headers=headers,
-            )
-
-            events = calendar_view.get("value", [])
-            if self._has_calendar_conflicts(
-                events, ignored_event_id=meeting.outlook_event_id
-            ):
-                raise ValueError("This time slot is not empty. Try another time.")
-
-        title = update_data.get("title", meeting.title)
-        location = update_data.get("location", meeting.location)
-        event_link = update_data.get("event_link") or meeting.event_link
-        notes = update_data.get("notes", meeting.notes)
-
-        await self.graph_client.update_event(
-            event_id=meeting.outlook_event_id,
-            event_info=self._build_graph_event_data(
+            title = update_data.get("title", meeting.title)
+            location = update_data.get("location", meeting.location)
+            event_link = update_data.get("event_link") or meeting.event_link
+            notes = update_data.get("notes", meeting.notes)
+            await self.graph_client.update_meeting(
+                event_id=meeting.outlook_event_id,
                 title=title,
                 notes=notes,
                 start_at=start_at,
                 end_at=end_at,
                 location=location,
                 event_link=event_link,
-            ),
-            headers=headers,
-        )
+                access_token=access_token,
+            )
 
-        meeting.title = title
-        meeting.location = location
-        meeting.start_at = start_at
-        meeting.end_at = end_at
-        meeting.event_link = event_link
-        meeting.notes = notes
-
-        meeting = await self.meetings_repo.update(meeting)
-
-        return self.to_response(meeting)
+            meeting.title = title
+            meeting.location = location
+            meeting.start_at = start_at
+            meeting.end_at = end_at
+            meeting.event_link = event_link
+            meeting.notes = notes
+            meeting = await uow.meetings_repository.update(meeting)
+            response = self.to_response(meeting)
+            await uow.commit()
+            return response
 
     async def delete_meeting(
         self, user_id: str, current_team_case_history_id: str, meeting_id: str
     ) -> bool | None:
-        meeting = await self.meetings_repo.get_by_id(meeting_id)
+        async with self.uow as uow:
+            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            if not meeting or meeting.team_case_history_id != current_team_case_history_id:
+                return None
 
-        if not meeting or meeting.team_case_history_id != current_team_case_history_id:
-            return None
-
-        headers = await self._build_headers(user_id)
-
-        try:
-            await self.graph_client.delete_event(
-                event_id=meeting.outlook_event_id, headers=headers
-            )
-        except httpx.HTTPStatusError as err:
-            if not self._is_missing_graph_event(err):
-                logger.error(
-                    "Failed to delete Outlook event %s: %s %s",
-                    meeting.outlook_event_id,
-                    err.response.status_code,
-                    err.response.text,
+            access_token = await self.oauth_service.get_actual_access_token(user_id)
+            try:
+                await self.graph_client.delete_event(
+                    event_id=meeting.outlook_event_id, access_token=access_token
                 )
-                raise
+            except httpx.HTTPStatusError as err:
+                if not self._is_missing_graph_event(err):
+                    logger.error(
+                        "Failed to delete Outlook event %s: %s %s",
+                        meeting.outlook_event_id,
+                        err.response.status_code,
+                        err.response.text,
+                    )
+                    raise
 
-        await self.meetings_repo.delete(meeting)
-
-        return True
+            await uow.meetings_repository.delete(meeting)
+            await uow.commit()
+            return True
 
     async def get_by_team_case_history_id(
         self, team_case_history_id: str
     ) -> list[MeetingResponse]:
-        meetings = await self.meetings_repo.get_by_team_case_history_id(
-            team_case_history_id
-        )
-
-        return [self.to_response(meeting) for meeting in meetings]
+        async with self.uow as uow:
+            meetings = await uow.meetings_repository.get_by_team_case_history_id(
+                team_case_history_id
+            )
+            return [self.to_response(meeting) for meeting in meetings]
 
     async def get_by_id(self, meeting_id: str) -> Meetings | None:
-        return await self.meetings_repo.get_by_id(meeting_id)
+        async with self.uow as uow:
+            return await uow.meetings_repository.get_by_id(meeting_id)
 
     @staticmethod
     def to_response(meeting: Meetings) -> MeetingResponse:

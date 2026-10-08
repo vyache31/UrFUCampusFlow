@@ -1,17 +1,20 @@
-from infrastructure.db.repositories.meeting_tasks_repository import MeetingTaskRepository
-from infrastructure.db.repositories.meetings_repository import MeetingsRepository
-from infrastructure.db.models import MeetingTask
+from application.interfaces.uow.meeting_tasks_uow_protocol import MeetingTasksUoWProtocol
+from infrastructure.db.models import MeetingTask, Meetings
 from presentation.api.schemas.outlook_meetings import MeetingTaskCreate, MeetingTaskUpdate, MeetingTaskResponse
 import uuid
 
 class MeetingTasksService:
-    def __init__(self, repo: MeetingTaskRepository, meetings_repo: MeetingsRepository):
-        self.repo = repo
-        self.meetings_repo = meetings_repo
+    def __init__(self, uow: MeetingTasksUoWProtocol):
+        self.uow = uow
 
 
-    async def _get_meeting_for_current_history(self, meeting_id: str, current_team_case_history_id: str):
-        meeting = await self.meetings_repo.get_by_id(meeting_id)
+    async def _get_meeting_for_current_history(
+        self,
+        uow: MeetingTasksUoWProtocol,
+        meeting_id: str,
+        current_team_case_history_id: str,
+    ) -> Meetings:
+        meeting = await uow.meetings_repository.get_by_id(meeting_id)
 
         if not meeting or meeting.team_case_history_id != current_team_case_history_id:
             raise ValueError('This meeting does not exist')
@@ -19,8 +22,10 @@ class MeetingTasksService:
         return meeting
 
 
-    async def _get_task_for_meeting(self, task_id: str, meeting_id: str) -> MeetingTask:
-        task = await self.repo.get_by_id(task_id)
+    async def _get_task_for_meeting(
+        self, uow: MeetingTasksUoWProtocol, task_id: str, meeting_id: str
+    ) -> MeetingTask:
+        task = await uow.meeting_tasks_repository.get_by_id(task_id)
 
         if not task or task.meeting_id != meeting_id:
             raise ValueError('This task does not exist')
@@ -34,19 +39,19 @@ class MeetingTasksService:
             meeting_id: str,
             current_team_case_history_id: str
     ) -> MeetingTaskResponse:
-        await self._get_meeting_for_current_history(meeting_id, current_team_case_history_id)
-
-        meeting_task = MeetingTask(
-            id=str(uuid.uuid4()),
-            title=schema.title,
-            description=schema.description,
-            meeting_id=meeting_id,
-            is_completed=False
-        )
-
-        await self.repo.create(meeting_task)
-
-        return self.to_response(meeting_task)
+        async with self.uow as uow:
+            await self._get_meeting_for_current_history(uow, meeting_id, current_team_case_history_id)
+            meeting_task = MeetingTask(
+                id=str(uuid.uuid4()),
+                title=schema.title,
+                description=schema.description,
+                meeting_id=meeting_id,
+                is_completed=False
+            )
+            await uow.meeting_tasks_repository.create(meeting_task)
+            response = self.to_response(meeting_task)
+            await uow.commit()
+            return response
 
 
     async def update_task(
@@ -56,20 +61,18 @@ class MeetingTasksService:
             task_id: str,
             current_team_case_history_id: str
     ) -> MeetingTaskResponse:
-        await self._get_meeting_for_current_history(meeting_id, current_team_case_history_id)
-        task = await self._get_task_for_meeting(task_id, meeting_id)
-
-        update_data = schema.model_dump(exclude_unset=True)
-
-        if 'title' in update_data and update_data['title'] is None:
-            raise ValueError('Task title can not be empty')
-
-        for field, value in update_data.items():
-            setattr(task, field, value)
-
-        await self.repo.update(task)
-
-        return self.to_response(task)
+        async with self.uow as uow:
+            await self._get_meeting_for_current_history(uow, meeting_id, current_team_case_history_id)
+            task = await self._get_task_for_meeting(uow, task_id, meeting_id)
+            update_data = schema.model_dump(exclude_unset=True)
+            if 'title' in update_data and update_data['title'] is None:
+                raise ValueError('Task title can not be empty')
+            for field, value in update_data.items():
+                setattr(task, field, value)
+            await uow.meeting_tasks_repository.update(task)
+            response = self.to_response(task)
+            await uow.commit()
+            return response
 
 
     async def delete_task(
@@ -78,12 +81,12 @@ class MeetingTasksService:
             task_id: str,
             current_team_case_history_id: str
     ) -> bool:
-        await self._get_meeting_for_current_history(meeting_id, current_team_case_history_id)
-        task = await self._get_task_for_meeting(task_id, meeting_id)
-
-        await self.repo.delete(task)
-
-        return True
+        async with self.uow as uow:
+            await self._get_meeting_for_current_history(uow, meeting_id, current_team_case_history_id)
+            task = await self._get_task_for_meeting(uow, task_id, meeting_id)
+            await uow.meeting_tasks_repository.delete(task)
+            await uow.commit()
+            return True
 
 
     async def get_all_meeting_tasks(
@@ -91,16 +94,10 @@ class MeetingTasksService:
             meeting_id: str,
             current_team_case_history_id: str
     ) -> list[MeetingTaskResponse]:
-        await self._get_meeting_for_current_history(meeting_id, current_team_case_history_id)
-
-        tasks = await self.repo.get_by_meeting_id(meeting_id)
-
-        tasks_list = [
-            self.to_response(task)
-            for task in tasks
-        ]
-
-        return tasks_list
+        async with self.uow as uow:
+            await self._get_meeting_for_current_history(uow, meeting_id, current_team_case_history_id)
+            tasks = await uow.meeting_tasks_repository.get_by_meeting_id(meeting_id)
+            return [self.to_response(task) for task in tasks]
 
 
     @staticmethod

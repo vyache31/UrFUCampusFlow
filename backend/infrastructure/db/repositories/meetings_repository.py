@@ -15,23 +15,17 @@ class MeetingsRepository:
 
     async def create(self, meeting: Meetings) -> Meetings:
         self.db.add(meeting)
-
-        await self.db.commit()
-        await self.db.refresh(meeting)
-
+        await self.db.flush()
         return await self.get_by_id(meeting.id)
 
     async def create_many(self, meetings: list[Meetings]) -> list[Meetings]:
         self.db.add_all(meetings)
-        await self.db.commit()
+        await self.db.flush()
 
         return meetings
 
-    async def update(self, meeting: Meetings) -> Meetings | None:
-
-        await self.db.commit()
-        await self.db.refresh(meeting)
-
+    async def update(self, meeting: Meetings) -> Meetings:
+        await self.db.flush()
         return meeting
 
     async def get_by_id(self, meeting_id: str) -> Meetings | None:
@@ -52,7 +46,7 @@ class MeetingsRepository:
             .where(Meetings.start_at == start_date)
         )
 
-        return meetings.scalars().all()
+        return list(meetings.scalars().all())
 
     async def get_by_team_case_history_id(
         self, team_case_history_id: str
@@ -63,7 +57,7 @@ class MeetingsRepository:
             .where(Meetings.team_case_history_id == team_case_history_id)
         )
 
-        return meetings.scalars().all()
+        return list(meetings.scalars().all())
 
     async def get_by_series_id(self, series_id: str) -> list[Meetings]:
         meetings = await self.db.execute(
@@ -72,21 +66,16 @@ class MeetingsRepository:
             .where(Meetings.meetings_series_id == series_id)
         )
 
-        return meetings.scalars().all()
+        return list(meetings.scalars().all())
 
     async def delete(self, meeting: Meetings) -> None:
         await self.db.delete(meeting)
-
-        await self.db.commit()
 
     async def delete_by_series_id(self, series_id: str) -> None:
         await self.db.execute(
             delete(Meetings).where(Meetings.meetings_series_id == series_id)
         )
 
-        await self.db.commit()
 
     async def delete_by_id(self, meeting_id: str) -> None:
         await self.db.execute(delete(Meetings).where(Meetings.id == meeting_id))
-
-        await self.db.commit()

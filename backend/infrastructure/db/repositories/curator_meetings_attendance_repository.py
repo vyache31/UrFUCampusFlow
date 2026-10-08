@@ -18,9 +18,7 @@ class CuratorMeetingsAttendanceRepository:
         self, attendance: CuratorMeetingsAttendance
     ) -> CuratorMeetingsAttendance:
         self.db.add(attendance)
-        await self.db.commit()
-        await self.db.refresh(attendance)
-
+        await self.db.flush()
         return await self.get_by_id(attendance.id)
 
     async def create_many(
@@ -28,7 +26,7 @@ class CuratorMeetingsAttendanceRepository:
     ) -> list[CuratorMeetingsAttendance]:
         self.db.add_all(attendances)
 
-        await self.db.commit()
+        await self.db.flush()
 
         return attendances
 
@@ -50,7 +48,7 @@ class CuratorMeetingsAttendanceRepository:
             .where(CuratorMeetingsAttendance.meeting_id == meeting_id)
         )
 
-        return attendance.scalars().all()
+        return list(attendance.scalars().all())
 
     async def get_by_curator_assignment_id(
         self, curator_assignment_id: str
@@ -63,7 +61,7 @@ class CuratorMeetingsAttendanceRepository:
             )
         )
 
-        return attendance.scalars().all()
+        return list(attendance.scalars().all())
 
     async def get_by_meeting_and_curator_assignment(
         self, meeting_id: str, curator_assignment_id: str
@@ -83,14 +81,11 @@ class CuratorMeetingsAttendanceRepository:
     async def update(
         self, attendance: CuratorMeetingsAttendance
     ) -> CuratorMeetingsAttendance:
-        await self.db.commit()
-        await self.db.refresh(attendance)
-
+        await self.db.flush()
         return attendance
 
     async def delete(self, attendance: CuratorMeetingsAttendance) -> None:
         await self.db.delete(attendance)
-        await self.db.commit()
 
     async def delete_by_id(self, attendance_id: str) -> None:
         await self.db.execute(
@@ -98,4 +93,3 @@ class CuratorMeetingsAttendanceRepository:
                 CuratorMeetingsAttendance.id == attendance_id
             )
         )
-        await self.db.commit()

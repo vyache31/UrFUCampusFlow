@@ -377,17 +377,17 @@ async def get_meeting_curator_attendance(
         meeting_id: str,
         user=Depends(get_current_auth_user),
         current_team_case_history=Depends(get_current_team_case_history_by_team_id),
-        meetings_service: MeetingsService = Depends(get_meetings_service),
         attendance_service: CuratorMeetingAttendanceService = Depends(
             get_curator_meetings_attendance_service
         ),
 ):
-    meeting = await meetings_service.get_by_id(meeting_id)
-
-    if not meeting or meeting.team_case_history_id != current_team_case_history.id:
-        raise HTTPException(status_code=404, detail='Meeting not found')
-
-    return await attendance_service.get_by_meeting_id(meeting_id)
+    try:
+        return await attendance_service.get_by_meeting_id(
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id,
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err
 
 
 @router.patch(
@@ -401,28 +401,19 @@ async def update_meeting_curator_attendance(
         schema: CuratorMeetingAttendanceUpdate,
         user=Depends(get_current_auth_user),
         current_team_case_history=Depends(get_current_team_case_history_by_team_id),
-        meetings_service: MeetingsService = Depends(get_meetings_service),
         attendance_service: CuratorMeetingAttendanceService = Depends(
             get_curator_meetings_attendance_service
         ),
 ):
-    meeting = await meetings_service.get_by_id(meeting_id)
-
-    if not meeting or meeting.team_case_history_id != current_team_case_history.id:
-        raise HTTPException(status_code=404, detail='Meeting not found')
-
     try:
-        attendance = await attendance_service.get_by_id(attendance_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail='Curator attendance not found')
-
-    if attendance.meeting_id != meeting_id:
-        raise HTTPException(status_code=404, detail='Curator attendance not found')
-
-    return await attendance_service.mark_attendance(
-        attendance_id=attendance_id,
-        schema=schema,
-    )
+        return await attendance_service.mark_attendance(
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id,
+            attendance_id=attendance_id,
+            schema=schema,
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err
 
 
 @router.post('/{team_id}/meetings-series', response_model=MeetingsSeriesResponse)

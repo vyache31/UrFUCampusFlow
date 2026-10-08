@@ -10,18 +10,12 @@ class MeetingTaskRepository:
 
     async def create(self, task: MeetingTask) -> MeetingTask:
         self.db.add(task)
-
-        await self.db.commit()
-        await self.db.refresh(task)
-
+        await self.db.flush()
         return task
 
 
-    async def update(self, task: MeetingTask) -> MeetingTask | None:
-
-        await self.db.commit()
-        await self.db.refresh(task)
-
+    async def update(self, task: MeetingTask) -> MeetingTask:
+        await self.db.flush()
         return task
 
 
@@ -42,9 +36,8 @@ class MeetingTaskRepository:
             .where(MeetingTask.meeting_id == meeting_id)
         )
 
-        return tasks.scalars().all()
+        return list(tasks.scalars().all())
 
 
     async def delete(self, task: MeetingTask) -> None:
         await self.db.delete(task)
-        await self.db.commit()

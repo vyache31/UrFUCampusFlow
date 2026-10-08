@@ -1,11 +1,8 @@
 import uuid
 
 from infrastructure.db.models import CuratorMeetingsAttendance
-from infrastructure.db.repositories.curator_assignments_repository import CuratorAssignmentsRepository
-from infrastructure.db.repositories.curator_meetings_attendance_repository import (
-    CuratorMeetingsAttendanceRepository,
-)
-from infrastructure.db.repositories.meetings_repository import MeetingsRepository
+from application.interfaces.uow.curator_meeting_attendance_uow_protocol import CuratorMeetingAttendanceUoWProtocol
+from application.interfaces.uow.meetings_uow_protocol import MeetingsUoWProtocol
 from presentation.api.schemas.curators_schemas import (
     CuratorMeetingAttendanceResponse,
     CuratorMeetingAttendanceUpdate,
@@ -13,30 +10,35 @@ from presentation.api.schemas.curators_schemas import (
 
 
 class CuratorMeetingAttendanceService:
-    def __init__(
-        self,
-        repo: CuratorMeetingsAttendanceRepository,
-        curator_assignments_repo: CuratorAssignmentsRepository,
-        meetings_repo: MeetingsRepository,
-    ) -> None:
-        self.repo = repo
-        self.curator_assignments_repo = curator_assignments_repo
-        self.meetings_repo = meetings_repo
+    def __init__(self, uow: CuratorMeetingAttendanceUoWProtocol) -> None:
+        self.uow = uow
 
     async def create_default_for_meeting(
         self, meeting_id: str
     ) -> list[CuratorMeetingAttendanceResponse]:
-        meeting = await self.meetings_repo.get_by_id(meeting_id)
+        async with self.uow as uow:
+            result = await self.create_default_for_meeting_in_uow(uow, meeting_id)
+            await uow.commit()
+            return result
+
+    @staticmethod
+    async def create_default_for_meeting_in_uow(
+        uow: CuratorMeetingAttendanceUoWProtocol | MeetingsUoWProtocol,
+        meeting_id: str,
+    ) -> list[CuratorMeetingAttendanceResponse]:
+        meeting = await uow.meetings_repository.get_by_id(meeting_id)
 
         if not meeting:
             raise ValueError("This meeting not found")
 
         current_assignments = await (
-            self.curator_assignments_repo.get_current_by_team_case_history_id(
+            uow.curator_assignments_repository.get_current_by_team_case_history_id(
                 meeting.team_case_history_id
             )
         )
-        existing_attendances = await self.repo.get_by_meeting_id(meeting_id)
+        existing_attendances = await uow.attendance_repository.get_by_meeting_id(
+            meeting_id
+        )
         existing_assignment_ids = {
             attendance.curator_assignment_id
             for attendance in existing_attendances
@@ -54,77 +56,77 @@ class CuratorMeetingAttendanceService:
         ]
 
         if new_attendances:
-            await self.repo.create_many(new_attendances)
+            await uow.attendance_repository.create_many(new_attendances)
 
         attendances = existing_attendances + new_attendances
 
         return [
-            self._to_response(attendance)
+            CuratorMeetingAttendanceService._to_response(attendance)
             for attendance in attendances
         ]
 
     async def get_by_id(
         self, attendance_id: str
     ) -> CuratorMeetingAttendanceResponse:
-        attendance = await self.repo.get_by_id(attendance_id)
-
-        if not attendance:
-            raise ValueError("Curator meeting attendance not found")
-
-        return self._to_response(attendance)
+        async with self.uow as uow:
+            attendance = await uow.attendance_repository.get_by_id(attendance_id)
+            if not attendance:
+                raise ValueError("Curator meeting attendance not found")
+            return self._to_response(attendance)
 
     async def get_by_meeting_id(
-        self, meeting_id: str
+        self, meeting_id: str, current_team_case_history_id: str
     ) -> list[CuratorMeetingAttendanceResponse]:
-        attendances = await self.repo.get_by_meeting_id(meeting_id)
-
-        return [
-            self._to_response(attendance)
-            for attendance in attendances
-        ]
+        async with self.uow as uow:
+            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            if not meeting or meeting.team_case_history_id != current_team_case_history_id:
+                raise ValueError("Meeting not found")
+            attendances = await uow.attendance_repository.get_by_meeting_id(meeting_id)
+            return [self._to_response(attendance) for attendance in attendances]
 
     async def get_by_curator_assignment_id(
         self, curator_assignment_id: str
     ) -> list[CuratorMeetingAttendanceResponse]:
-        attendances = await self.repo.get_by_curator_assignment_id(
-            curator_assignment_id
-        )
-
-        return [
-            self._to_response(attendance)
-            for attendance in attendances
-        ]
+        async with self.uow as uow:
+            attendances = await uow.attendance_repository.get_by_curator_assignment_id(
+                curator_assignment_id
+            )
+            return [self._to_response(attendance) for attendance in attendances]
 
     async def get_by_meeting_and_curator_assignment(
         self, meeting_id: str, curator_assignment_id: str
     ) -> CuratorMeetingAttendanceResponse:
-        attendance = await self.repo.get_by_meeting_and_curator_assignment(
-            meeting_id=meeting_id,
-            curator_assignment_id=curator_assignment_id,
-        )
-
-        if not attendance:
-            raise ValueError("Curator meeting attendance not found")
-
-        return self._to_response(attendance)
-
-    async def mark_attendance(
-        self, attendance_id: str, schema: CuratorMeetingAttendanceUpdate
-    ) -> CuratorMeetingAttendanceResponse:
-        attendance = await self.repo.get_by_id(attendance_id)
-
-        if not attendance:
-            raise ValueError("Curator meeting attendance not found")
-
-        update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
-
-        if "is_present" not in update_data:
+        async with self.uow as uow:
+            attendance = await uow.attendance_repository.get_by_meeting_and_curator_assignment(
+                meeting_id=meeting_id,
+                curator_assignment_id=curator_assignment_id,
+            )
+            if not attendance:
+                raise ValueError("Curator meeting attendance not found")
             return self._to_response(attendance)
 
-        attendance.is_present = update_data["is_present"]
-        attendance = await self.repo.update(attendance)
-
-        return self._to_response(attendance)
+    async def mark_attendance(
+        self,
+        meeting_id: str,
+        current_team_case_history_id: str,
+        attendance_id: str,
+        schema: CuratorMeetingAttendanceUpdate,
+    ) -> CuratorMeetingAttendanceResponse:
+        async with self.uow as uow:
+            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            if not meeting or meeting.team_case_history_id != current_team_case_history_id:
+                raise ValueError("Meeting not found")
+            attendance = await uow.attendance_repository.get_by_id(attendance_id)
+            if not attendance or attendance.meeting_id != meeting_id:
+                raise ValueError("Curator meeting attendance not found")
+            update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
+            if "is_present" not in update_data:
+                return self._to_response(attendance)
+            attendance.is_present = update_data["is_present"]
+            attendance = await uow.attendance_repository.update(attendance)
+            response = self._to_response(attendance)
+            await uow.commit()
+            return response
 
     @staticmethod
     def _to_response(

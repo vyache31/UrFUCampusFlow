@@ -1,48 +1,28 @@
-from presentation.api.dependencies.oauth_depends import get_oauth_service
-from presentation.api.dependencies.http_client_dependency import get_microsoft_graph_client
-from infrastructure.db.repositories.curator_assignments_repository import CuratorAssignmentsRepository
-from infrastructure.db.repositories.curator_meetings_attendance_repository import (
-    CuratorMeetingsAttendanceRepository,
-)
-from infrastructure.db.repositories.meetings_repository import MeetingsRepository
-from application.services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
-from application.services.microsoft_oauth_service import MicrosoftOAuthService
-from application.services.meetings_service import MeetingsService
-from infrastructure.integrations.microsoft_graph_client import GraphClient
-from infrastructure.db.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 
+from application.services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
+from application.services.meetings_service import MeetingsService
+from application.services.microsoft_oauth_service import MicrosoftOAuthService
+from infrastructure.db.database import SessionLocal
+from infrastructure.db.uow.curator_meeting_attendance_uow import SqlAlchemyCuratorMeetingAttendanceUoW
+from infrastructure.db.uow.meetings_uow import SqlAlchemyMeetingsUoW
+from infrastructure.integrations.microsoft_graph_client import GraphClient
+from presentation.api.dependencies.http_client_dependency import get_microsoft_graph_client
+from presentation.api.dependencies.oauth_depends import get_oauth_service
 
-def get_meetings_repository(db: AsyncSession = Depends(get_db)) -> MeetingsRepository:
-    return MeetingsRepository(db)
 
-
-def get_curator_meetings_attendance_service(
-        db: AsyncSession = Depends(get_db),
-        meetings_repo: MeetingsRepository = Depends(get_meetings_repository),
-) -> CuratorMeetingAttendanceService:
-    curator_attendance_repo = CuratorMeetingsAttendanceRepository(db)
-    curator_assignments_repo = CuratorAssignmentsRepository(db)
-
+def get_curator_meetings_attendance_service() -> CuratorMeetingAttendanceService:
     return CuratorMeetingAttendanceService(
-        repo=curator_attendance_repo,
-        curator_assignments_repo=curator_assignments_repo,
-        meetings_repo=meetings_repo,
+        SqlAlchemyCuratorMeetingAttendanceUoW(SessionLocal)
     )
 
 
 def get_meetings_service(
-        meetings_repo: MeetingsRepository = Depends(get_meetings_repository),
-        oauth_service: MicrosoftOAuthService = Depends(get_oauth_service),
-        graph_client: GraphClient = Depends(get_microsoft_graph_client),
-        curator_attendance_service: CuratorMeetingAttendanceService = Depends(
-            get_curator_meetings_attendance_service
-        ),
+    oauth_service: MicrosoftOAuthService = Depends(get_oauth_service),
+    graph_client: GraphClient = Depends(get_microsoft_graph_client),
 ) -> MeetingsService:
     return MeetingsService(
-        meetings_repo=meetings_repo,
+        uow=SqlAlchemyMeetingsUoW(SessionLocal),
         oauth_service=oauth_service,
         graph_client=graph_client,
-        curator_attendance_service=curator_attendance_service,
     )

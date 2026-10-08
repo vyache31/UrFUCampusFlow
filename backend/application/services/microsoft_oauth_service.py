@@ -1,6 +1,6 @@
 from infrastructure.integrations.microsoft_oauth_client import OAuthClient
-from infrastructure.integrations.microsoft_graph_client import GraphClient
-from infrastructure.db.repositories.microsoft_oauth_repository import MicrosoftOAuthRepository
+from application.interfaces.integrations import MicrosoftGraphClientProtocol
+from application.interfaces.uow.microsoft_oauth_uow_protocol import MicrosoftOAuthUoWProtocol
 from presentation.api.schemas.microsoft_oauth import ConnectResponse, OAuthCallbackResponse, OAuthStatusResponse
 from infrastructure.db.models import MicrosoftOAuth
 from datetime import datetime, timedelta, UTC
@@ -13,13 +13,13 @@ import json
 class MicrosoftOAuthService:
 
     def __init__(
-            self, rep: MicrosoftOAuthRepository,
+            self, uow: MicrosoftOAuthUoWProtocol,
             oauth_client: OAuthClient,
-            graph_client: GraphClient,
+            graph_client: MicrosoftGraphClientProtocol,
             redis_session: aioredis.Redis
         ):
 
-        self.rep = rep
+        self.uow = uow
         self.oauth_client = oauth_client
         self.graph_client = graph_client
         self.redis = redis_session
@@ -61,6 +61,7 @@ class MicrosoftOAuthService:
 
     async def update_oauth(
             self,
+            uow: MicrosoftOAuthUoWProtocol,
             oauth: MicrosoftOAuth,
             token_payload: dict,
             user_info: dict,
@@ -80,97 +81,93 @@ class MicrosoftOAuthService:
         oauth.provider_user_id = user_info['id']
 
 
-        await self.rep.update_oauth(oauth)
+        await uow.microsoft_oauth_repository.update_oauth(oauth)
 
 
     async def handle_callback(self, user_id: str, code: str) -> OAuthCallbackResponse:
         token_payload = await self.oauth_client.exchange_code_for_token(code)
 
-        headers = {
-            "Authorization": f"Bearer {token_payload['access_token']}"
-        }
+        user_info = await self.graph_client.get_provider_user_info(
+            access_token=token_payload['access_token']
+        )
+        async with self.uow as uow:
+            repo = uow.microsoft_oauth_repository
+            provider_oauth = await repo.get_oauth_by_provider_user_id(user_info['id'])
+            if oauth := await repo.get_oauth_by_user_id(user_id):
+                if provider_oauth and provider_oauth.user_id != user_id:
+                    raise ValueError('This connection already exists')
+                await self.update_oauth(
+                    uow=uow, oauth=oauth, token_payload=token_payload, user_info=user_info
+                )
+                response = OAuthCallbackResponse(
+                    id=oauth.id,
+                    user_id=oauth.user_id,
+                    microsoft_email=oauth.microsoft_email,
+                    scope=oauth.scope,
+                    connected_at=oauth.connected_at,
+                    last_refreshed_at=oauth.last_refreshed_at,
+                    is_active=oauth.is_active
+                )
+                await uow.commit()
+                return response
 
-        user_info = await self.graph_client.get_provider_user_info(headers=headers)
-        provider_oauth = await self.rep.get_oauth_by_provider_user_id(user_info['id'])
-
-        if oauth := await self.rep.get_oauth_by_user_id(user_id):
-            if provider_oauth and provider_oauth.user_id != user_id:
+            if provider_oauth:
                 raise ValueError('This connection already exists')
-            await self.update_oauth(
-                oauth=oauth,
-                token_payload=token_payload,
-                user_info=user_info
+
+            creating_time = datetime.now(UTC)
+            oauth_object = MicrosoftOAuth(
+                id=str(uuid.uuid4()),
+                user_id=user_id,
+                provider_user_id=user_info['id'],
+                microsoft_email=user_info['mail'] if user_info['mail'] else None,
+                encrypted_refresh_token=encryption.encrypt_token(token_payload['refresh_token']),
+                encrypted_access_token=encryption.encrypt_token(token_payload['access_token']),
+                access_token_expires_at=creating_time + timedelta(seconds=token_payload['expires_in']),
+                scope=token_payload['scope'],
+                connected_at=creating_time,
+                is_active=True,
             )
-
-            return OAuthCallbackResponse(
-                id=oauth.id,
-                user_id=oauth.user_id,
-                microsoft_email=oauth.microsoft_email,
-                scope=oauth.scope,
-                connected_at=oauth.connected_at,
-                last_refreshed_at=oauth.last_refreshed_at,
-                is_active=oauth.is_active
+            created_object = await repo.create_oauth(oauth_object)
+            response = OAuthCallbackResponse(
+                id=created_object.id,
+                user_id=created_object.user_id,
+                microsoft_email=created_object.microsoft_email,
+                scope=created_object.scope,
+                connected_at=created_object.connected_at,
+                last_refreshed_at=created_object.last_refreshed_at,
+                is_active=created_object.is_active
             )
-
-        if provider_oauth:
-            raise ValueError('This connection already exists')
-
-        creating_time = datetime.now(UTC)
-
-        oauth_object = MicrosoftOAuth(
-            id=str(uuid.uuid4()),
-            user_id=user_id,
-            provider_user_id=user_info['id'],
-            microsoft_email=user_info['mail'] if user_info['mail'] else None,
-            encrypted_refresh_token=encryption.encrypt_token(token_payload['refresh_token']),
-            encrypted_access_token=encryption.encrypt_token(token_payload['access_token']),
-            access_token_expires_at=creating_time + timedelta(seconds=token_payload['expires_in']),
-            scope=token_payload['scope'],
-            connected_at=creating_time,
-            is_active=True,
-        )
-
-        created_object = await self.rep.create_oauth(oauth_object)
-
-        return OAuthCallbackResponse(
-            id=created_object.id,
-            user_id=created_object.user_id,
-            microsoft_email=created_object.microsoft_email,
-            scope=created_object.scope,
-            connected_at=created_object.connected_at,
-            last_refreshed_at=created_object.last_refreshed_at,
-            is_active=created_object.is_active
-        )
+            await uow.commit()
+            return response
 
 
     async def get_status(self, user_id: str) -> OAuthStatusResponse:
-        oauth = await self.rep.get_oauth_by_user_id(user_id)
-
-        if not oauth:
-            raise ValueError('This user has not existing connections')
-
-        return OAuthStatusResponse(
-            is_active=oauth.is_active
-        )
+        async with self.uow as uow:
+            oauth = await uow.microsoft_oauth_repository.get_oauth_by_user_id(user_id)
+            if not oauth:
+                raise ValueError('This user has not existing connections')
+            return OAuthStatusResponse(is_active=oauth.is_active)
 
 
     async def disconnect_oauth(self, user_id: str) -> OAuthStatusResponse:
-        oauth = await self.rep.get_oauth_by_user_id(user_id)
-
-        if not oauth:
-            raise ValueError('This user has not existing connections')
-
-        oauth.is_active = False
-        oauth.updated_at = datetime.now(UTC)
-
-        await self.rep.update_oauth(oauth)
-
-        return OAuthStatusResponse(
-            is_active=oauth.is_active
-        )
+        async with self.uow as uow:
+            oauth = await uow.microsoft_oauth_repository.get_oauth_by_user_id(user_id)
+            if not oauth:
+                raise ValueError('This user has not existing connections')
+            oauth.is_active = False
+            oauth.updated_at = datetime.now(UTC)
+            await uow.microsoft_oauth_repository.update_oauth(oauth)
+            response = OAuthStatusResponse(is_active=oauth.is_active)
+            await uow.commit()
+            return response
 
 
-    async def refresh_tokens(self, oauth: MicrosoftOAuth, time: datetime | None = None) -> MicrosoftOAuth:
+    async def refresh_tokens(
+        self,
+        uow: MicrosoftOAuthUoWProtocol,
+        oauth: MicrosoftOAuth,
+        time: datetime | None = None,
+    ) -> MicrosoftOAuth:
 
         if time is None:
             time = datetime.now(UTC)
@@ -185,31 +182,31 @@ class MicrosoftOAuthService:
         oauth.access_token_expires_at = time + timedelta(seconds=token_payload['expires_in'])
         oauth.updated_at = time
 
-        await self.rep.update_oauth(oauth)
+        await uow.microsoft_oauth_repository.update_oauth(oauth)
 
         return oauth
 
 
-    async def ensure_actual_tokens(self, oauth: MicrosoftOAuth) -> MicrosoftOAuth:
+    async def ensure_actual_tokens(
+        self, uow: MicrosoftOAuthUoWProtocol, oauth: MicrosoftOAuth
+    ) -> MicrosoftOAuth:
 
         if oauth.access_token_expires_at <= datetime.now(UTC) + timedelta(minutes=3):
-            oauth = await self.refresh_tokens(oauth)
+            oauth = await self.refresh_tokens(uow, oauth)
 
         return oauth
 
 
     async def get_actual_access_token(self, user_id: str) -> str:
-        oauth = await self.rep.get_oauth_by_user_id(user_id)
-
-        if not oauth:
-            raise ValueError('This OAuth connection does not exist')
-
-        if not oauth.is_active:
-            raise ValueError('This OAuth connection is inactive')
-
-        oauth_with_updated_tokens = await self.ensure_actual_tokens(oauth)
-
-        encrypted_access_token = oauth_with_updated_tokens.encrypted_access_token
-
-        decrypted_access_token = encryption.decrypt_token(encrypted_access_token)
-        return decrypted_access_token
+        async with self.uow as uow:
+            oauth = await uow.microsoft_oauth_repository.get_oauth_by_user_id(user_id)
+            if not oauth:
+                raise ValueError('This OAuth connection does not exist')
+            if not oauth.is_active:
+                raise ValueError('This OAuth connection is inactive')
+            original_expiry = oauth.access_token_expires_at
+            oauth = await self.ensure_actual_tokens(uow, oauth)
+            access_token = encryption.decrypt_token(oauth.encrypted_access_token)
+            if oauth.access_token_expires_at != original_expiry:
+                await uow.commit()
+            return access_token

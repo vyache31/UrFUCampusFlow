@@ -1,6 +1,7 @@
 import httpx
 from fastapi import Request, Depends
 from infrastructure.integrations.microsoft_graph_client import GraphClient
+from infrastructure.integrations.microsoft_graph_mapper import MicrosoftGraphMapper
 
 def get_http_session(request: Request) -> httpx.AsyncClient:
     session = getattr(request.app.state, 'http_client', None)
@@ -18,4 +19,4 @@ def get_graph_client(
 def get_microsoft_graph_client(
         client: httpx.AsyncClient = Depends(get_http_session)
 ) -> GraphClient:
-    return GraphClient(session=client)
+    return GraphClient(session=client, mapper=MicrosoftGraphMapper())
