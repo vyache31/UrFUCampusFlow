@@ -93,8 +93,9 @@ class CaseService:
 
             case = await uow.case_repository.create(case)
 
-            semesters_service = SemestersService(uow.semesters_repository)
-            semester = await semesters_service.get_or_create_current()
+            semester = await SemestersService.get_or_create_for_date(
+                uow.semesters_repository, datetime.now(UTC)
+            )
 
             case_semester_existing_connection = (
                 await uow.case_semesters_repository.get_by_case_and_semester(

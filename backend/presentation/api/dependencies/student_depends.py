@@ -1,11 +1,7 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from infrastructure.db.database import get_db
-from infrastructure.db.repositories.student_repository import StudentRepository
 from application.services.student_service import StudentService
+from infrastructure.db.database import SessionLocal
+from infrastructure.db.uow.student_uow import SqlAlchemyStudentUoW
 
 
-def get_student_service(db: AsyncSession = Depends(get_db)):
-    rep = StudentRepository(db)
-
-    return StudentService(rep)
+def get_student_service() -> StudentService:
+    return StudentService(SqlAlchemyStudentUoW(SessionLocal))

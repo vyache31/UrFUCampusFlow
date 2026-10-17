@@ -1,5 +1,8 @@
+from collections.abc import Sequence
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+
 from infrastructure.db.models import Students, Universities
 
 
@@ -9,7 +12,7 @@ class StudentRepository:
         self.db = db
 
 
-    async def get_all(self, limit: int = 10):
+    async def get_all(self, limit: int = 10) -> Sequence[Students]:
         students = await self.db.execute(
             select(Students)
             .limit(limit)
@@ -38,19 +41,18 @@ class StudentRepository:
 
     async def create_student(self, student: Students) -> Students:
         self.db.add(student)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(student)
 
         return student
 
 
     async def update(self) -> None:
-        await self.db.commit()
+        await self.db.flush()
 
 
     async def delete(self, student: Students) -> None:
         await self.db.delete(student)
-        await self.db.commit()
 
 
     async def delete_by_id(self, student_id: str) -> None:
@@ -58,5 +60,3 @@ class StudentRepository:
             delete(Students)
             .where(Students.id == student_id)
         )
-
-        await self.db.commit()
