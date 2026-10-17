@@ -27,25 +27,22 @@ class DifficultyLevelRepository:
 
     async def create(self, level: DifficultyLevels) -> DifficultyLevels:
         self.db.add(level)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(level)
 
         return level
 
     async def update(self, level: DifficultyLevels) -> DifficultyLevels:
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(level)
 
         return level
 
     async def delete(self, level: DifficultyLevels) -> None:
         await self.db.delete(level)
-        await self.db.commit()
 
     async def delete_by_id(self, level_id: int) -> None:
         await self.db.execute(
             delete(DifficultyLevels)
             .where(DifficultyLevels.id == level_id)
         )
-
-        await self.db.commit()

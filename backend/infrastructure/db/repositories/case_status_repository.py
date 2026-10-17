@@ -35,25 +35,22 @@ class CaseStatusRepository:
 
     async def create(self, status: CaseStatuses) -> CaseStatuses:
         self.db.add(status)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(status)
 
         return status
 
     async def update(self, status: CaseStatuses) -> CaseStatuses:
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(status)
 
         return status
 
     async def delete(self, status: CaseStatuses) -> None:
         await self.db.delete(status)
-        await self.db.commit()
 
     async def delete_by_id(self, status_id: int) -> None:
         await self.db.execute(
             delete(CaseStatuses)
             .where(CaseStatuses.id == status_id)
         )
-
-        await self.db.commit()

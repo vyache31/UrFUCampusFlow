@@ -1,12 +1,14 @@
+from collections.abc import Sequence
+
+from application.interfaces.uow.university_info_uow_protocol import UniversityInfoUoWProtocol
 from infrastructure.db.models import Universities
 from presentation.api.schemas.university import UniversityCreate, UniversityUpdate
-from infrastructure.db.repositories.university_info_repository import UniversityInfoRepository
 
 
 class UniversityInfoService:
 
-    def __init__(self, rep: UniversityInfoRepository):
-        self.rep = rep
+    def __init__(self, uow: UniversityInfoUoWProtocol):
+        self.uow = uow
 
     async def create_university(self, schema: UniversityCreate) -> Universities:
         university = Universities(
@@ -14,37 +16,45 @@ class UniversityInfoService:
             contact_email=schema.contact_email
         )
 
-        return await self.rep.create(university)
+        async with self.uow as uow:
+            university = await uow.university_info_repository.create(university)
+            await uow.commit()
+            return university
 
 
     async def update_university(self, uni_id: int, schema: UniversityUpdate) -> Universities | None:
-        university = await self.rep.get_by_id(uni_id)
-        if not university:
-            return None
+        async with self.uow as uow:
+            university = await uow.university_info_repository.get_by_id(uni_id)
+            if not university:
+                return None
 
-        update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
+            update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
 
-        for key, value in update_data.items():
-            setattr(university, key, value)
+            for key, value in update_data.items():
+                setattr(university, key, value)
 
-        return await self.rep.update(university)
+            university = await uow.university_info_repository.update(university)
+            await uow.commit()
+            return university
 
 
     async def delete_university(self, uni_id: int) -> bool:
-        university = await self.rep.get_by_id(uni_id)
+        async with self.uow as uow:
+            university = await uow.university_info_repository.get_by_id(uni_id)
+            if not university:
+                return False
 
-        if not university:
-            return None
-
-        await self.rep.delete(university)
-        return True
+            await uow.university_info_repository.delete(university)
+            await uow.commit()
+            return True
 
 
     async def get_university_by_id(self, uni_id: int) -> Universities | None:
-        return await self.rep.get_by_id(uni_id)
+        async with self.uow as uow:
+            return await uow.university_info_repository.get_by_id(uni_id)
 
 
-    async def get_all_universities(self, limit: int = 10) -> list[Universities]:
-
-        return await self.rep.get_all(limit=limit)
+    async def get_all_universities(self, limit: int = 10) -> Sequence[Universities]:
+        async with self.uow as uow:
+            return await uow.university_info_repository.get_all(limit=limit)
 

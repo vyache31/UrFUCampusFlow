@@ -28,23 +28,21 @@ class UniversityInfoRepository:
 
     async def create(self, university: Universities) -> Universities:
         self.db.add(university)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(university)
 
         return university
 
 
     async def update(self, university: Universities) -> Universities:
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(university)
 
         return university
 
 
-    async def delete(self, university: Universities):
+    async def delete(self, university: Universities) -> None:
         await self.db.delete(university)
-
-        await self.db.commit()
 
 
     async def delete_by_id(self, uni_id: int) -> None:
@@ -52,5 +50,3 @@ class UniversityInfoRepository:
             delete(Universities)
             .where(Universities.id == uni_id)
         )
-
-        await self.db.commit()

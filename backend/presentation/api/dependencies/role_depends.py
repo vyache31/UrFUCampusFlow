@@ -1,12 +1,7 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from infrastructure.db.database import get_db
-from infrastructure.db.repositories.role_repository import RoleRepository
 from application.services.role_service import RoleService
+from infrastructure.db.database import SessionLocal
+from infrastructure.db.uow.role_uow import SqlAlchemyRoleUoW
 
 
-def get_role_service(db: AsyncSession = Depends(get_db)):
-    rep = RoleRepository(db)
-
-    return RoleService(rep)
+def get_role_service() -> RoleService:
+    return RoleService(SqlAlchemyRoleUoW(SessionLocal))

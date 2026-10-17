@@ -1,12 +1,14 @@
+from collections.abc import Sequence
+
+from application.interfaces.uow.role_uow_protocol import RoleUoWProtocol
 from infrastructure.db.models import Roles
 from presentation.api.schemas.role import RoleCreate, RoleUpdate
-from infrastructure.db.repositories.role_repository import RoleRepository
 
 
 class RoleService:
 
-    def __init__(self, rep: RoleRepository):
-        self.rep = rep
+    def __init__(self, uow: RoleUoWProtocol):
+        self.uow = uow
 
     async def create_role(self, schema: RoleCreate) -> Roles:
         role = Roles(
@@ -14,30 +16,40 @@ class RoleService:
             role_name=schema.role_name
         )
 
-        return await self.rep.create(role)
+        async with self.uow as uow:
+            role = await uow.role_repository.create(role)
+            await uow.commit()
+            return role
 
     async def get_role_by_id(self, role_id: int) -> Roles | None:
-        return await self.rep.get_by_id(role_id)
+        async with self.uow as uow:
+            return await uow.role_repository.get_by_id(role_id)
 
-    async def get_all_roles(self, limit: int = 10) -> list[Roles]:
-        return await self.rep.get_all(limit=limit)
+    async def get_all_roles(self, limit: int = 10) -> Sequence[Roles]:
+        async with self.uow as uow:
+            return await uow.role_repository.get_all(limit=limit)
 
     async def update_role(self, role_id: int, schema: RoleUpdate) -> Roles | None:
-        role = await self.rep.get_by_id(role_id)
-        if not role:
-            return None
+        async with self.uow as uow:
+            role = await uow.role_repository.get_by_id(role_id)
+            if not role:
+                return None
 
-        update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
+            update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
 
-        for key, value in update_data.items():
-            setattr(role, key, value)
+            for key, value in update_data.items():
+                setattr(role, key, value)
 
-        return await self.rep.update(role)
+            role = await uow.role_repository.update(role)
+            await uow.commit()
+            return role
 
     async def delete_role(self, role_id: int) -> bool:
-        role = await self.rep.get_by_id(role_id)
-        if not role:
-            return None
+        async with self.uow as uow:
+            role = await uow.role_repository.get_by_id(role_id)
+            if not role:
+                return False
 
-        await self.rep.delete(role)
-        return True
+            await uow.role_repository.delete(role)
+            await uow.commit()
+            return True

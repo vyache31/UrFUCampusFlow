@@ -1,12 +1,14 @@
+from collections.abc import Sequence
+
+from application.interfaces.uow.difficulty_level_uow_protocol import DifficultyLevelUoWProtocol
 from infrastructure.db.models import DifficultyLevels
 from presentation.api.schemas.difficulty_level import DifficultyLevelCreate, DifficultyLevelUpdate
-from infrastructure.db.repositories.difficulty_level_repository import DifficultyLevelRepository
 
 
 class DifficultyLevelService:
 
-    def __init__(self, rep: DifficultyLevelRepository):
-        self.rep = rep
+    def __init__(self, uow: DifficultyLevelUoWProtocol):
+        self.uow = uow
 
     async def create_difficulty_level(self, schema: DifficultyLevelCreate) -> DifficultyLevels:
         level = DifficultyLevels(
@@ -14,30 +16,40 @@ class DifficultyLevelService:
             level_name=schema.level_name
         )
 
-        return await self.rep.create(level)
+        async with self.uow as uow:
+            level = await uow.difficulty_level_repository.create(level)
+            await uow.commit()
+            return level
 
     async def get_difficulty_level_by_id(self, level_id: int) -> DifficultyLevels | None:
-        return await self.rep.get_by_id(level_id)
+        async with self.uow as uow:
+            return await uow.difficulty_level_repository.get_by_id(level_id)
 
-    async def get_all_difficulty_levels(self, limit: int = 10) -> list[DifficultyLevels]:
-        return await self.rep.get_all(limit=limit)
+    async def get_all_difficulty_levels(self, limit: int = 10) -> Sequence[DifficultyLevels]:
+        async with self.uow as uow:
+            return await uow.difficulty_level_repository.get_all(limit=limit)
 
     async def update_difficulty_level(self, level_id: int, schema: DifficultyLevelUpdate) -> DifficultyLevels | None:
-        level = await self.rep.get_by_id(level_id)
-        if not level:
-            return None
+        async with self.uow as uow:
+            level = await uow.difficulty_level_repository.get_by_id(level_id)
+            if not level:
+                return None
 
-        update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
+            update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
 
-        for key, value in update_data.items():
-            setattr(level, key, value)
+            for key, value in update_data.items():
+                setattr(level, key, value)
 
-        return await self.rep.update(level)
+            level = await uow.difficulty_level_repository.update(level)
+            await uow.commit()
+            return level
 
     async def delete_difficulty_level(self, level_id: int) -> bool:
-        level = await self.rep.get_by_id(level_id)
-        if not level:
-            return None
+        async with self.uow as uow:
+            level = await uow.difficulty_level_repository.get_by_id(level_id)
+            if not level:
+                return False
 
-        await self.rep.delete(level)
-        return True
+            await uow.difficulty_level_repository.delete(level)
+            await uow.commit()
+            return True

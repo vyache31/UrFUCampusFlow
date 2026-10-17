@@ -27,25 +27,22 @@ class RoleRepository:
 
     async def create(self, role: Roles) -> Roles:
         self.db.add(role)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(role)
 
         return role
 
     async def update(self, role: Roles) -> Roles:
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(role)
 
         return role
 
     async def delete(self, role: Roles) -> None:
         await self.db.delete(role)
-        await self.db.commit()
 
     async def delete_by_id(self, role_id: int) -> None:
         await self.db.execute(
             delete(Roles)
             .where(Roles.id == role_id)
         )
-
-        await self.db.commit()
