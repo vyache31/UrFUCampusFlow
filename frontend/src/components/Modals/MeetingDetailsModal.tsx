@@ -1,29 +1,59 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CloseIcon } from '../common/Icons/Icons';
-import { getMeetingTasks, updateMeetingTask, type MeetingTask } from '../../services/meetings';
+import { CloseIcon, DeleteIcon, PlusIcon } from '../common/Icons/Icons';
+import {
+  createMeetingTask,
+  deleteMeetingTask,
+  getMeetingTasks,
+  updateTeamMeeting,
+  updateMeetingTask,
+  type Meeting,
+  type MeetingTask,
+} from '../../services/meetings';
+import { getMeetingAttendance, updateMeetingAttendance, type CuratorAttendance, getTeamCurators, type Curator } from '../../services/curators';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
 interface MeetingDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  meeting: {
-    id: string;
-    title: string;
-    team_name?: string;
-    case_title?: string;
-    start_at: string;
-    end_at: string;
-    location?: string | null;
-    event_link?: string | null;
-    notes?: string | null;
-  };
+  meeting: Meeting;
   teamId: string;
   onTaskUpdate?: () => void;
+  onMeetingUpdate?: (meeting: Meeting) => void;
 }
 
-const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }: MeetingDetailsModalProps) => {
+const MeetingDetailsModal = ({
+  isOpen,
+  onClose,
+  meeting,
+  teamId,
+  onTaskUpdate,
+  onMeetingUpdate,
+}: MeetingDetailsModalProps) => {
+  const { showError, showSuccess } = useToast();
   const [tasks, setTasks] = useState<MeetingTask[]>([]);
+  const [attendance, setAttendance] = useState<CuratorAttendance[]>([]);
+  const [curators, setCurators] = useState<Curator[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [notes, setNotes] = useState(meeting.notes ?? '');
+  const [notesDraft, setNotesDraft] = useState(meeting.notes ?? '');
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const currentNotes = meeting.notes ?? '';
+    setNotes(currentNotes);
+    setNotesDraft(currentNotes);
+    setIsEditingNotes(false);
+  }, [isOpen, meeting.id, meeting.notes]);
 
   const fetchTasks = useCallback(async () => {
     if (!meeting.id || !teamId) return;
@@ -33,16 +63,55 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
       setTasks(data);
     } catch (error) {
       console.error('Ошибка загрузки поручений:', error);
+      showError('Не удалось загрузить поручения');
     } finally {
       setLoading(false);
     }
-  }, [meeting.id, teamId]);
+  }, [meeting.id, teamId, showError]);
+
+  const fetchAttendance = useCallback(async () => {
+    if (!meeting.id || !teamId) return;
+    try {
+      setLoadingAttendance(true);
+      const data = await getMeetingAttendance(teamId, meeting.id);
+      setAttendance(data);
+    } catch (error) {
+      console.error('Ошибка загрузки посещаемости:', error);
+      showError('Не удалось загрузить посещаемость');
+    } finally {
+      setLoadingAttendance(false);
+    }
+  }, [meeting.id, teamId, showError]);
+
+  const fetchCurators = useCallback(async () => {
+    if (!teamId) return;
+    try {
+      const data = await getTeamCurators(teamId);
+      setCurators(data.filter(c => c.is_current === true));
+    } catch (error) {
+      console.error('Ошибка загрузки кураторов:', error);
+    }
+  }, [teamId]);
 
   useEffect(() => {
     if (isOpen && meeting.id && teamId) {
-      fetchTasks();
+      const loadData = async () => {
+        await Promise.all([
+          fetchTasks(),
+          fetchAttendance(),
+          fetchCurators()
+        ]);
+      };
+      loadData();
     }
-  }, [isOpen, meeting.id, teamId, fetchTasks]);
+  }, [isOpen, meeting.id, teamId, fetchTasks, fetchAttendance, fetchCurators]);
+
+  const getCuratorEmail = (assignmentId: string): string => {
+    const curator = curators.find(c => c.id === assignmentId);
+    if (curator?.email) return curator.email;
+    if (curator?.user_id) return `Куратор ${curator.user_id.slice(-4)}`;
+    return `Куратор ${assignmentId.slice(-4)}`;
+  };
 
   const handleTaskToggle = async (taskId: string, currentStatus: boolean) => {
     try {
@@ -53,7 +122,82 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
       if (onTaskUpdate) onTaskUpdate();
     } catch (error) {
       console.error('Ошибка обновления задачи:', error);
-      alert('Не удалось обновить статус поручения');
+      showError('Не удалось обновить статус поручения');
+    }
+  };
+
+  const handleCreateTask = async () => {
+    const title = taskTitle.trim();
+    if (!title) {
+      showError('Введите название поручения');
+      return;
+    }
+
+    try {
+      setCreatingTask(true);
+      const createdTask = await createMeetingTask(teamId, meeting.id, {
+        title,
+        description: taskDescription.trim() || undefined,
+      });
+      setTasks(prev => [...prev, createdTask]);
+      setTaskTitle('');
+      setTaskDescription('');
+      setIsTaskFormOpen(false);
+      showSuccess('Поручение добавлено');
+      onTaskUpdate?.();
+    } catch (error) {
+      console.error('Ошибка создания поручения:', error);
+      showError('Не удалось добавить поручение');
+    } finally {
+      setCreatingTask(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      setDeletingTaskId(taskId);
+      await deleteMeetingTask(teamId, meeting.id, taskId);
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+      showSuccess('Поручение удалено');
+      onTaskUpdate?.();
+    } catch (error) {
+      console.error('Ошибка удаления поручения:', error);
+      showError('Не удалось удалить поручение');
+    } finally {
+      setDeletingTaskId(null);
+    }
+  };
+
+  const handleAttendanceToggle = async (attendanceId: string, currentStatus: boolean) => {
+    try {
+      await updateMeetingAttendance(teamId, meeting.id, attendanceId, !currentStatus);
+      setAttendance(prev => prev.map(a =>
+        a.id === attendanceId ? { ...a, is_present: !currentStatus } : a
+      ));
+      showSuccess('Статус посещаемости обновлён');
+    } catch (error) {
+      console.error('Ошибка обновления посещаемости:', error);
+      showError('Не удалось обновить статус посещаемости');
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    try {
+      setSavingNotes(true);
+      const updatedMeeting = await updateTeamMeeting(teamId, meeting.id, {
+        notes: notesDraft.trim() || null,
+      });
+      const updatedNotes = updatedMeeting.notes ?? '';
+      setNotes(updatedNotes);
+      setNotesDraft(updatedNotes);
+      setIsEditingNotes(false);
+      onMeetingUpdate?.(updatedMeeting);
+      showSuccess('Заметки обновлены');
+    } catch (error) {
+      console.error('Ошибка обновления заметок:', error);
+      showError('Не удалось обновить заметки');
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -90,16 +234,6 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
           <div className="meeting-details-title">{meeting.title}</div>
           
           <div className="meeting-details-field">
-            <span className="meeting-details-label">Команда:</span>
-            <span className="meeting-details-value">{meeting.team_name || '—'}</span>
-          </div>
-          
-          <div className="meeting-details-field">
-            <span className="meeting-details-label">Кейс:</span>
-            <span className="meeting-details-value">{meeting.case_title || '—'}</span>
-          </div>
-          
-          <div className="meeting-details-field">
             <span className="meeting-details-label">Дата:</span>
             <span className="meeting-details-value">{date}</span>
           </div>
@@ -123,15 +257,134 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
             </div>
           )}
           
-          {meeting.notes && (
-            <div className="meeting-details-field">
-              <span className="meeting-details-label">Заметки:</span>
-              <span className="meeting-details-value notes-value">{meeting.notes}</span>
+          <div className="meeting-details-field meeting-notes-field">
+            <span className="meeting-details-label">Заметки:</span>
+            <div className="meeting-notes-content">
+              {isEditingNotes ? (
+                <div className="meeting-notes-editor">
+                  <textarea
+                    className="meeting-notes-textarea"
+                    value={notesDraft}
+                    onChange={(event) => setNotesDraft(event.target.value)}
+                    placeholder="Добавьте заметки к встрече"
+                    disabled={savingNotes}
+                    autoFocus
+                  />
+                  <div className="meeting-notes-actions">
+                    <button
+                      type="button"
+                      className="meeting-notes-cancel-button"
+                      onClick={() => {
+                        setNotesDraft(notes);
+                        setIsEditingNotes(false);
+                      }}
+                      disabled={savingNotes}
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      type="button"
+                      className="meeting-notes-save-button"
+                      onClick={handleSaveNotes}
+                      disabled={savingNotes}
+                    >
+                      {savingNotes ? 'Сохранение...' : 'Сохранить'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="meeting-notes-view">
+                  <span className={`meeting-details-value notes-value ${notes ? '' : 'empty'}`}>
+                    {notes || 'Заметок пока нет'}
+                  </span>
+                  <button
+                    type="button"
+                    className="meeting-notes-edit-button"
+                    onClick={() => setIsEditingNotes(true)}
+                  >
+                    Редактировать
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="meeting-attendance-section">
+            <div className="meeting-attendance-title">Посещаемость кураторов</div>
+            <div className="meeting-attendance-list-wrapper">
+              {loadingAttendance ? (
+                <div className="meeting-attendance-loading">Загрузка...</div>
+              ) : attendance.length > 0 ? (
+                <div className="meeting-attendance-list">
+                  {attendance.map((item) => (
+                    <div key={item.id} className="meeting-attendance-item">
+                      <div 
+                        className={`attendance-checkbox ${item.is_present ? 'checked' : ''}`}
+                        onClick={() => handleAttendanceToggle(item.id, item.is_present)}
+                      >
+                        {item.is_present && <span className="checkmark">✓</span>}
+                      </div>
+                      <span className="curator-name">{getCuratorEmail(item.curator_assignment_id)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="meeting-attendance-empty">Нет назначенных кураторов</div>
+              )}
+            </div>
+          </div>
 
           <div className="meeting-tasks-section">
-            <div className="meeting-tasks-title">Поручения</div>
+            <div className="meeting-tasks-header">
+              <div className="meeting-tasks-title">Поручения</div>
+              <button
+                type="button"
+                className="meeting-task-add-button"
+                onClick={() => setIsTaskFormOpen(prev => !prev)}
+                aria-label="Добавить поручение"
+              >
+                <PlusIcon />
+                <span>Добавить</span>
+              </button>
+            </div>
+
+            {isTaskFormOpen && (
+              <div className="meeting-task-create-form">
+                <input
+                  className="meeting-task-create-input"
+                  value={taskTitle}
+                  onChange={(event) => setTaskTitle(event.target.value)}
+                  placeholder="Название поручения"
+                  disabled={creatingTask}
+                />
+                <textarea
+                  className="meeting-task-create-input meeting-task-create-description"
+                  value={taskDescription}
+                  onChange={(event) => setTaskDescription(event.target.value)}
+                  placeholder="Описание (необязательно)"
+                  disabled={creatingTask}
+                />
+                <div className="meeting-task-create-actions">
+                  <button
+                    type="button"
+                    className="meeting-task-cancel-button"
+                    onClick={() => setIsTaskFormOpen(false)}
+                    disabled={creatingTask}
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    className="meeting-task-save-button"
+                    onClick={handleCreateTask}
+                    disabled={creatingTask || !taskTitle.trim()}
+                  >
+                    {creatingTask ? 'Добавление...' : 'Добавить'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="meeting-tasks-list-wrapper">
               {loading ? (
                 <div className="meeting-tasks-loading">Загрузка...</div>
@@ -153,6 +406,15 @@ const MeetingDetailsModal = ({ isOpen, onClose, meeting, teamId, onTaskUpdate }:
                           <div className="task-description">{task.description}</div>
                         )}
                       </div>
+                      <button
+                        type="button"
+                        className="meeting-task-delete-button"
+                        onClick={() => handleDeleteTask(task.id)}
+                        disabled={deletingTaskId === task.id}
+                        aria-label={`Удалить поручение ${task.title}`}
+                      >
+                        <DeleteIcon />
+                      </button>
                     </div>
                   ))}
                 </div>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { CloseIcon, PlusIcon } from '../common/Icons/Icons';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
 interface ControlPoint {
@@ -23,6 +24,7 @@ const ControlPointsModal = ({
   initialPoints = [],
   onPointsChange
 }: ControlPointsModalProps) => {
+  const { showError } = useToast();
   const [controlPoints, setControlPoints] = useState<ControlPoint[]>(initialPoints);
   const [newPointName, setNewPointName] = useState('');
   const [newPointScore, setNewPointScore] = useState('');
@@ -48,7 +50,7 @@ const ControlPointsModal = ({
       setNewPointName('');
       setNewPointScore('');
     } else {
-      alert('Введите название контрольной точки');
+      showError('Введите название контрольной точки');
     }
   };
 

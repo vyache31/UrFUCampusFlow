@@ -3,17 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, GenerateIcon } from '../../components/common/Icons/Icons';
-import { createCase } from '../../services/cases';
+import { createCase, deleteCase } from '../../services/cases';
+import { generateWithAI } from '../../services/ai';
+import GenerationLoader from '../../components/GenerationLoader/GenerationLoader';
+import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
 const CaseCreatePage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   
   const titleRef = useRef<HTMLDivElement>(null);
+  const shortTitleRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
   const expectedResultRef = useRef<HTMLDivElement>(null);
   const criteriaRef = useRef<HTMLDivElement>(null);
-  const shortTitleRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -24,6 +28,8 @@ const CaseCreatePage = () => {
   });
 
   const [saving, setSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [tempCaseId, setTempCaseId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fieldLimits: Record<string, number> = {
@@ -113,6 +119,79 @@ const CaseCreatePage = () => {
     });
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (tempCaseId) {
+        deleteCase(tempCaseId).catch(console.error);
+      }
+    };
+  }, [tempCaseId]);
+
+  const setEditableContent = (ref: React.RefObject<HTMLDivElement | null>, text: string) => {
+    if (ref.current) {
+      ref.current.innerText = text;
+      updateEmptyClass(ref.current);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    
+    try {
+      const creator_id = localStorage.getItem('user_id') || 'b494bae1-fddf-4adc-a04e-fed2e4de25ea';
+      
+      const tempCase = await createCase({
+        title: "Генерация кейса",
+        project_goals: "Требуется генерация",
+        difficulty_level_id: 1,
+        university_id: 1,
+        start_date: new Date().toISOString(),
+        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        creator_id: creator_id,
+      });
+      
+      setTempCaseId(tempCase.id);
+      
+      const generated = await generateWithAI(tempCase.id);
+      
+      const shortTitle = generated.project_description.slice(0, 50);
+      const fullTitle = generated.project_description.slice(0, 100);
+      
+      const newFormData = {
+        title: fullTitle,
+        shortTitle: shortTitle,
+        description: generated.project_description,
+        expectedResult: generated.project_idea,
+        criteria: generated.technical_details,
+      };
+      
+      setFormData(newFormData);
+      
+      setEditableContent(titleRef, fullTitle);
+      setEditableContent(shortTitleRef, shortTitle);
+      setEditableContent(descriptionRef, generated.project_description);
+      setEditableContent(expectedResultRef, generated.project_idea);
+      setEditableContent(criteriaRef, generated.technical_details);
+      
+      await deleteCase(tempCase.id);
+      setTempCaseId(null);
+      
+      showSuccess('Кейс успешно сгенерирован! Вы можете отредактировать и сохранить.');
+      
+    } catch (error) {
+      console.error('Ошибка генерации:', error);
+      showError('Не удалось сгенерировать кейс. Попробуйте позже.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
   const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = 'Введите название кейса';
@@ -143,19 +222,16 @@ const CaseCreatePage = () => {
         creator_id: creator_id,
       };
       
-      const newCase = await createCase(caseForAPI);
-      console.log('Создан кейс:', newCase);
+      await createCase(caseForAPI);
+      showSuccess('Кейс успешно создан!');
       navigate('/cases');
     } catch (error) {
       console.error('Ошибка создания кейса:', error);
+      showError('Не удалось создать кейс. Попробуйте позже.');
       setErrors({ submit: 'Не удалось создать кейс' });
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleGenerate = () => {
-    console.log('Генерация кейса с помощью AI');
   };
 
   const breadcrumbItems = [
@@ -172,9 +248,13 @@ const CaseCreatePage = () => {
       <div className="create-header">
         <h1 className="page-title">Создание кейса</h1>
         <div className="create-actions">
-          <button className="generate-btn" onClick={handleGenerate}>
+          <button 
+            className="generate-btn" 
+            onClick={handleGenerate} 
+            disabled={isGenerating}
+          >
             <GenerateIcon />
-            <span>Сгенерировать</span>
+            <span>{isGenerating ? 'Генерация...' : 'Сгенерировать'}</span>
           </button>
           <button className="save-btn" onClick={handleSave} disabled={saving}>
             <SaveIcon />
@@ -193,10 +273,12 @@ const CaseCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'title')}
             onInput={() => handleContentChange('title', titleRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите название кейса"
           />
           {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
+        
         <div className="form-field" data-field="shortTitle">
           <label className="form-label">Короткое название</label>
           <div
@@ -206,6 +288,7 @@ const CaseCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'shortTitle')}
             onInput={() => handleContentChange('shortTitle', shortTitleRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите короткое название (будет отображаться в карточке)"
           />
           {errors.shortTitle && <div className="error-message">{errors.shortTitle}</div>}
@@ -220,6 +303,7 @@ const CaseCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите описание кейса"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
@@ -234,6 +318,7 @@ const CaseCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'expectedResult')}
             onInput={() => handleContentChange('expectedResult', expectedResultRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите предполагаемый результат"
           />
           {errors.expectedResult && <div className="error-message">{errors.expectedResult}</div>}
@@ -248,6 +333,7 @@ const CaseCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'criteria')}
             onInput={() => handleContentChange('criteria', criteriaRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите критерии оценки"
           />
           {errors.criteria && <div className="error-message">{errors.criteria}</div>}
@@ -255,6 +341,8 @@ const CaseCreatePage = () => {
 
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
+
+      {isGenerating && <GenerationLoader />}
     </div>
   );
 };

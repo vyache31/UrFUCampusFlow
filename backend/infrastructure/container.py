@@ -1,0 +1,25 @@
+from infrastructure.events.event_bus import EventBus
+from infrastructure.events.events import (
+    CommentCreatedEvent,
+    CommentUpdatedEvent,
+    LikesUpdatedEvent,
+)
+from infrastructure.websocket.websocket_manager import WebSocketManager
+
+event_bus = EventBus()
+ws_manager = WebSocketManager()
+
+event_bus.subscribe(
+    CommentCreatedEvent,
+    ws_manager.on_comment_created,
+)
+
+event_bus.subscribe(
+    CommentUpdatedEvent,
+    ws_manager.on_comment_updated,
+)
+
+event_bus.subscribe(
+    LikesUpdatedEvent,
+    ws_manager.on_likes_created,
+)

@@ -6,10 +6,12 @@ import TeamStatusFilter from '../../components/teams/TeamFilters/TeamStatusFilte
 import TeamBulkActionsBar from '../../components/teams/TeamBulkActions/TeamBulkActionsBar';
 import TeamCard from '../../components/teams/TeamCard/TeamCard';
 import { getTeams, deleteTeam, type Team } from '../../services/teams';
+import { useToast } from '../../context/ToastContext';
 import './teamsPage.css';
 
 const TeamsPage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirm } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('Все команды');
@@ -33,7 +35,11 @@ const TeamsPage = () => {
   };
 
   useEffect(() => {
-    fetchTeams();
+    const loadTeams = async () => {
+      await fetchTeams();
+    };
+    loadTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredTeams = teams.filter(team => {
@@ -51,27 +57,41 @@ const TeamsPage = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (selectedTeamIds.length === 0) return;
-    
-    const confirmMessage = selectedTeamIds.length === 1 
-      ? 'Вы уверены, что хотите удалить выбранную команду? Это действие необратимо.'
-      : `Вы уверены, что хотите удалить ${selectedTeamIds.length} команд? Это действие необратимо.`;
-    
-    if (window.confirm(confirmMessage)) {
+  const handleDelete = () => {
+  if (selectedTeamIds.length === 0) return;
+  
+  const confirmMessage = selectedTeamIds.length === 1 
+    ? 'Вы уверены, что хотите удалить выбранную команду? Это действие необратимо.'
+    : `Вы уверены, что хотите удалить ${selectedTeamIds.length} команд? Это действие необратимо.`;
+  
+  showConfirm({
+    message: confirmMessage,
+    onConfirm: async () => {
       try {
         for (const teamId of selectedTeamIds) {
           await deleteTeam(teamId);
         }
         await fetchTeams();
         setSelectedTeamIds([]);
-        alert('Команды успешно удалены');
-      } catch (error) {
+        showSuccess('Команды успешно удалены');
+      } catch (error: unknown) {
         console.error('Ошибка при удалении:', error);
-        alert('Не удалось удалить некоторые команды.');
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        const detail = apiError?.response?.data?.detail;
+        if (detail && detail.includes('external links')) {
+          showError('Нельзя удалить команду, так как у неё есть связанные данные (участники, встречи или история кейсов)');
+        } else if (detail) {
+          showError(detail);
+        } else {
+          showError('Не удалось удалить некоторые команды');
+        }
       }
-    }
-  };
+    },
+    onCancel: () => {},
+    confirmText: 'Да',
+    cancelText: 'Нет'
+  });
+};
 
   const handleCreateTeam = () => {
     navigate('/teams/create');

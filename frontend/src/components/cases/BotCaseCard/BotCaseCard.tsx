@@ -2,28 +2,28 @@ import { useState } from 'react';
 import { ArrowDownIcon, CloseIcon } from '../../common/Icons/Icons';
 import './botCaseCard.css';
 
-interface Curator {
+interface BotInterview {
   id: string;
-  name: string;
+  team_name: string;
+  date_time: string;
+  tg_user_id: number;
 }
 
 interface BotCaseCardProps {
   id: string;
   title: string;
   description: string;
-  curators: Curator[];
-  onAddCurator: () => void;
-  onRemoveCurator: (curatorId: string) => void;
-  onRemoveCase: () => void;  // добавлено
+  interviews: BotInterview[];
+  onRemoveCase: () => void;
+  onRemoveInterview?: (interviewId: string) => void;
 }
 
 const BotCaseCard = ({
   title,
   description,
-  curators,
-  onAddCurator,
-  onRemoveCurator,
-  onRemoveCase,  // добавлено
+  interviews,
+  onRemoveCase,
+  onRemoveInterview,
 }: BotCaseCardProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -34,6 +34,17 @@ const BotCaseCard = ({
   const handleRemoveCaseClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemoveCase();
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   return (
@@ -47,9 +58,6 @@ const BotCaseCard = ({
             <span className="bot-accordion-title">{title}</span>
           </div>
           <div className="bot-accordion-header-right">
-            <button className="add-curator-btn" onClick={onAddCurator}>
-              Добавить куратора
-            </button>
             <button className="remove-curator-btn" onClick={handleRemoveCaseClick}>
               <CloseIcon />
             </button>
@@ -60,19 +68,28 @@ const BotCaseCard = ({
           <div className="bot-accordion-body">
             <p className="bot-accordion-description">{description}</p>
             
-            {curators.length > 0 && (
-              <div className="assigned-curators">
-                <div className="curators-label">Назначенные кураторы:</div>
-                <div className="curators-list">
-                  {curators.map((curator) => (
-                    <div key={curator.id} className="curator-tag">
-                      <span>{curator.name}</span>
-                      <button 
-                        className="remove-curator-tag"
-                        onClick={() => onRemoveCurator(curator.id)}
-                      >
-                        <CloseIcon />
-                      </button>
+            {/* Интервью */}
+            {interviews && interviews.length > 0 && (
+              <div className="interviews-section">
+                <div className="interviews-title">Записи на интервью</div>
+                <div className="interviews-table">
+                  <div className="interviews-header">
+                    <span>Команда</span>
+                    <span>Дата и время</span>
+                    <span></span>
+                  </div>
+                  {interviews.map((interview) => (
+                    <div key={interview.id} className="interview-row">
+                      <span className="interview-team">{interview.team_name}</span>
+                      <span className="interview-datetime">{formatDate(interview.date_time)}</span>
+                      {onRemoveInterview && (
+                        <button 
+                          className="remove-interview-btn"
+                          onClick={() => onRemoveInterview(interview.id)}
+                        >
+                          <CloseIcon />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

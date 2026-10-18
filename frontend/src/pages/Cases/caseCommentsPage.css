@@ -206,6 +206,19 @@
   margin-top: 40px;
 }
 
+.empty-comments {
+  text-align: center;
+  padding: 40px;
+  color: #A5A5B0;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 1200px) {
   .comments-list,
   .new-comment-section {

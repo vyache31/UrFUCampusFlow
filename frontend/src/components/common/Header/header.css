@@ -157,13 +157,40 @@
   color: #2E7D32;
 }
 
+.result-type.student {
+  background: #FFF3E0;
+  color: #ED6C02;
+}
+
 .result-title {
-  font-size: 14px;
+  font-size: 12px;
   color: #202024;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.result-subtitle {
+  font-size: 11px;
+  color: #A5A5B0;
+}
+
+.result-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.result-status.active {
+  color: #2E7D32;
+  background: #E8FCE8;
+}
+
+.result-status.archived {
+  color: #A5A5B0;
+  background: #F4F4F4;
 }
 
 .search-results.empty .search-result-item {
@@ -174,6 +201,106 @@
 
 .search-results.empty .search-result-item:hover {
   background: transparent;
+}
+
+.search-result-student-card {
+  background: white;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border: 1px solid #F4F4F4;
+}
+
+.student-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #F4F4F4;
+  margin-bottom: 10px;
+}
+
+.student-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #202024;
+}
+
+.student-group {
+  font-size: 11px;
+  color: #A5A5B0;
+  background: #F4F4F4;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.student-section-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: #A5A5B0;
+  margin: 8px 0 6px 0;
+}
+
+.student-cases-list,
+.student-teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.student-case-item,
+.student-team-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #F9F9F9;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.student-case-item:hover,
+.student-team-item:hover {
+  background: #F0F0F0;
+}
+
+.case-title, .header
+.team-name {
+  font-size: 14px;
+  color: #202024;
+  flex: 1;
+  font-weight: 500;
+}
+
+.case-semester {
+  font-size: 10px;
+  color: #A5A5B0;
+  margin: 0 12px;
+}
+
+.case-status,
+.team-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.case-status.active,
+.team-status.active {
+  background: #E8FCE8;
+  color: #2E7D32;
+}
+
+.case-status.archived,
+.team-status.archived {
+  background: #F4F4F4;
+  color: #A5A5B0;
+}
+
+.clickable {
+  cursor: pointer;
 }
 
 .user-name {
@@ -281,5 +408,19 @@
   
   .result-title {
     white-space: normal;
+  }
+  
+  .student-card-header {
+    gap: 8px;
+  }
+  
+  .student-case-item,
+  .student-team-item {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .case-semester {
+    margin: 0;
   }
 }

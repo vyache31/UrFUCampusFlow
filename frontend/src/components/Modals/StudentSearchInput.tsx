@@ -10,6 +10,10 @@ interface StudentSearchInputProps {
   disabled?: boolean;
 }
 
+const getShortId = (id: string): string => {
+  return id.slice(-4);
+};
+
 const StudentSearchInput = ({ 
   value, 
   onChange, 
@@ -47,6 +51,7 @@ const StudentSearchInput = ({
         performSearch(value);
       }, 300);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuggestions([]);
       setShowSuggestions(false);
     }
@@ -109,7 +114,7 @@ const StudentSearchInput = ({
               onClick={() => handleSelectStudent(student)}
             >
               <span className="student-name">{student.name}</span>
-              <span className="student-group">{student.group}</span>
+              <span className="student-id">#{getShortId(student.id)}</span>
             </div>
           ))}
         </div>

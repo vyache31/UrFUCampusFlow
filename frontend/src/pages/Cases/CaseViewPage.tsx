@@ -75,31 +75,16 @@ const CaseViewPage = () => {
       </div>
 
       <div className="case-content">
+        <div className="info-block">
+          <div className="info-label">Название кейса</div>
+          <div className="info-value">{caseData.title}</div>
+        </div>
         {caseData.short_title && (
           <div className="info-block">
             <div className="info-label">Короткое название</div>
             <div className="info-value">{caseData.short_title}</div>
           </div>
         )}
-        <div className="info-block">
-          <div className="info-label">Название кейса</div>
-          <div className="info-value">{caseData.title}</div>
-        </div>
-
-        <div className="info-block">
-          <div className="info-label">Университет</div>
-          <div className="info-value">{caseData.university_name || 'Не указан'}</div>
-        </div>
-
-        <div className="info-block">
-          <div className="info-label">Создатель</div>
-          <div className="info-value">{caseData.creator_email || 'Не указан'}</div>
-        </div>
-
-        <div className="info-block">
-          <div className="info-label">Семестр</div>
-          <div className="info-value">{caseData.semester_name || 'Не указан'}</div>
-        </div>
 
         <div className="info-block">
           <div className="info-label">Описание кейса</div>
@@ -114,6 +99,11 @@ const CaseViewPage = () => {
         <div className="info-block">
           <div className="info-label">Критерии оценки</div>
           <div className="info-value-description">{caseData.grade_criteria || 'Не указаны'}</div>
+        </div>
+
+        <div className="info-block">
+          <div className="info-label">Семестр</div>
+          <div className="info-value">{caseData.semester_name || 'Не указан'}</div>
         </div>
 
       </div>

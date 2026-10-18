@@ -10,30 +10,41 @@ import './dashboard.css';
 
 const DashboardPage = () => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loadingMeetings, setLoadingMeetings] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMeetings = async () => {
+    try {
+      const allMeetings = await getAllUpcomingMeetings();
+      setMeetings(allMeetings);
+    } catch (error) {
+      console.error('Ошибка загрузки встреч:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchMeetings = async () => {
-      try {
-        setLoadingMeetings(true);
-        // Получаем все встречи со всех команд
-        const allMeetings = await getAllUpcomingMeetings();
-        setMeetings(allMeetings);
-      } catch (error) {
-        console.error('Ошибка загрузки встреч:', error);
-      } finally {
-        setLoadingMeetings(false);
-      }
+    const loadAllData = async () => {
+      setLoading(true);
+      await fetchMeetings();
+      setLoading(false);
     };
-    fetchMeetings();
+    loadAllData();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <Header />
+        <div className="loading-container">Загрузка...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-wrapper">
       <Header />
       <ActionButtons />
       <main className="main-content">
-        <Meetings meetings={meetings} loading={loadingMeetings} />
+        <Meetings meetings={meetings} />
         <CasesSection />
         <TeamsSection />
       </main>

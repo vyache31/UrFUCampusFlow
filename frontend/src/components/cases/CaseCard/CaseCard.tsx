@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ReactionIcon, 
@@ -8,7 +8,16 @@ import {
   CheckboxIcon 
 } from '../../common/Icons/Icons';
 import { truncateCardTitle, truncateCardDescription } from '../../../utils/truncate';
-import './caseCard.css';
+import { 
+  getFormReactions, 
+  getMyReaction, 
+  createReaction, 
+  updateReaction,
+  type Reaction 
+} from '../../../services/evaluationReactions';
+import { subscribeToRealtime } from '../../../services/realtime';
+import { useToast } from '../../../context/ToastContext';
+import './CaseCard.css';
 
 interface CaseCardProps {
   type: 'case' | 'team';
@@ -18,6 +27,7 @@ interface CaseCardProps {
   description: string;
   status?: string;
   defaultOpen?: boolean;
+  evaluationFormId?: string;
   likes?: number;
   dislikes?: number;
   onOpenFull?: () => void;
@@ -37,8 +47,9 @@ const CaseCard = ({
   description,
   status = "На оценке",
   defaultOpen = false,
-  likes: initialLikes = 2,
-  dislikes: initialDislikes = 2,
+  evaluationFormId,
+  likes: initialLikes = 0,
+  dislikes: initialDislikes = 0,
   onOpenFull,
   onComment,
   onLike: onLikeProp,
@@ -48,63 +59,118 @@ const CaseCard = ({
   onSelect
 }: CaseCardProps) => {
   const navigate = useNavigate();
+  const { showError, showSuccess } = useToast();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [likes, setLikes] = useState(initialLikes);
   const [dislikes, setDislikes] = useState(initialDislikes);
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
+  const [userReaction, setUserReaction] = useState<Reaction | null>(null);
+  const [loadingReaction, setLoadingReaction] = useState(false);
 
-  const showReactions = type === 'case' && status === 'На оценке';
+  const showReactions = type === 'case' && status === 'На оценке' && evaluationFormId;
+
+  const loadReactions = useCallback(async () => {
+    if (!evaluationFormId) return;
+
+    try {
+      const allReactions = await getFormReactions(evaluationFormId);
+      const likesCount = allReactions.filter(r => r.reaction === 'LIKE').length;
+      const dislikesCount = allReactions.filter(r => r.reaction === 'DISLIKE').length;
+      setLikes(likesCount);
+      setDislikes(dislikesCount);
+      
+      const myReaction = await getMyReaction(evaluationFormId);
+      setUserReaction(myReaction);
+    } catch (error) {
+      console.error('Ошибка загрузки реакций:', error);
+    }
+  }, [evaluationFormId]);
+
+  useEffect(() => {
+    if (!showReactions) return;
+
+    const loadInitialReactions = async () => {
+      await loadReactions();
+    };
+
+    void loadInitialReactions();
+  }, [loadReactions, showReactions]);
+
+  useEffect(() => {
+    if (!showReactions || !evaluationFormId) return;
+
+    return subscribeToRealtime((event) => {
+      if (event.type !== 'reaction_updated') return;
+      if (event.like.evaluation_form_id !== evaluationFormId) return;
+
+      void loadReactions();
+    });
+  }, [evaluationFormId, loadReactions, showReactions]);
+
+  const handleReaction = async (reactionType: 'LIKE' | 'DISLIKE') => {
+    if (!evaluationFormId || loadingReaction) return;
+    
+    setLoadingReaction(true);
+    
+    try {
+      let newReaction: Reaction | null = null;
+      
+      if (userReaction) {
+        if (userReaction.reaction === reactionType) {
+          setLoadingReaction(false);
+          return;
+        } else {
+          newReaction = await updateReaction(userReaction.id, reactionType);
+          setUserReaction(newReaction);
+          showSuccess('Реакция обновлена');
+        }
+      } else {
+        newReaction = await createReaction(evaluationFormId, reactionType);
+        setUserReaction(newReaction);
+        showSuccess('Реакция добавлена');
+      }
+      
+      await loadReactions();
+      
+      if (reactionType === 'LIKE') {
+        onLikeProp?.();
+      } else {
+        onDislikeProp?.();
+      }
+      
+    } catch (error) {
+      console.error('Ошибка при реакции:', error);
+      showError('Не удалось отправить реакцию');
+    } finally {
+      setLoadingReaction(false);
+    }
+  };
+
+  const handleLike = () => {
+    handleReaction('LIKE');
+  };
+
+  const handleDislike = () => {
+    handleReaction('DISLIKE');
+  };
+
+  const liked = userReaction?.reaction === 'LIKE';
+  const disliked = userReaction?.reaction === 'DISLIKE';
 
   const displayTitle = shortTitle || title;
   const { fullText: fullTitle } = truncateCardTitle(displayTitle);
   
   const displayDescription = isOpen ? description : truncateCardDescription(description);
 
-  console.log('Description:', description);
-  console.log('Display description:', displayDescription);
-  console.log('Is open:', isOpen);
-
-const handleOpenFull = () => {
-  if (onOpenFull) {
-    onOpenFull();
-  } else if (id) {
-    if (type === 'case') {
-      navigate(`/cases/${id}`);
-    } else if (type === 'team') {
-      navigate(`/teams/${id}`);
-    }
-  }
-};
-
-  const handleLike = () => {
-    if (liked) {
-      setLikes(likes - 1);
-      setLiked(false);
-    } else {
-      setLikes(likes + 1);
-      setLiked(true);
-      if (disliked) {
-        setDislikes(dislikes - 1);
-        setDisliked(false);
+  const handleOpenFull = () => {
+    if (onOpenFull) {
+      onOpenFull();
+    } else if (id) {
+      if (type === 'case') {
+        navigate(`/cases/${id}`);
+      } else if (type === 'team') {
+        navigate(`/teams/${id}`);
       }
     }
-    onLikeProp?.();
-  };
-
-  const handleDislike = () => {
-    if (disliked) {
-      setDislikes(dislikes - 1);
-      setDisliked(false);
-    } else {
-      setDislikes(dislikes + 1);
-      setDisliked(true);
-      if (liked) {
-        setLikes(likes - 1);
-        setLiked(false);
-      }
-    }
-    onDislikeProp?.();
   };
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
@@ -161,11 +227,11 @@ const handleOpenFull = () => {
                   Комментарии
                 </button>
                 <div className="reactions">
-                  <button className={`reaction-btn like ${liked ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}>
+                  <button className={`reaction-btn like ${liked ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }} disabled={loadingReaction}>
                     <ReactionIcon />
                     <span className="count">{likes}</span>
                   </button>
-                  <button className={`reaction-btn dislike ${disliked ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); handleDislike(); }}>
+                  <button className={`reaction-btn dislike ${disliked ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); handleDislike(); }} disabled={loadingReaction}>
                     <span style={{ display: 'inline-block', transform: 'rotate(180deg)' }}>
                       <ReactionIcon />
                     </span>

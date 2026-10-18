@@ -1,4 +1,5 @@
 import api from './api';
+import { getMeetingAttendance, type CuratorAttendance } from './curators';
 
 export interface MeetingTask {
   id: string;
@@ -155,6 +156,23 @@ export const updateMeetingTask = async (teamId: string, meetingId: string, taskI
 // Удалить задачу
 export const deleteMeetingTask = async (teamId: string, meetingId: string, taskId: string): Promise<void> => {
   await api.delete(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`);
+};
+
+export const getAllMeetingAttendanceForTeam = async (teamId: string): Promise<CuratorAttendance[]> => {
+  const meetings = await getTeamMeetings(teamId);
+  
+  const allAttendance: CuratorAttendance[] = [];
+  
+  for (const meeting of meetings) {
+    try {
+      const attendance = await getMeetingAttendance(teamId, meeting.id);
+      allAttendance.push(...attendance);
+    } catch (error) {
+      console.error(`Ошибка загрузки посещаемости для встречи ${meeting.id}:`, error);
+    }
+  }
+  
+  return allAttendance;
 };
 
 // Тип для истории команды

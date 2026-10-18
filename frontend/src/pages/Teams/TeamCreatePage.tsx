@@ -5,9 +5,12 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { SaveIcon, PlusIcon } from '../../components/common/Icons/Icons';
 import AddMemberModal from '../../components/Modals/AddMemberModal';
 import AddCaseModal from '../../components/Modals/AddCaseModal';
+import AddCuratorModal from '../../components/Modals/AddCuratorModal';
 import { createTeam } from '../../services/teams';
 import { addTeamMember } from '../../services/teamMembers';
 import { assignCaseToTeam } from '../../services/teamCaseHistory';
+import { assignCuratorToTeam, getAllCurators } from '../../services/curators';
+import { useToast } from '../../context/ToastContext';
 import './teamCreatePage.css';
 
 interface TeamMember {
@@ -16,6 +19,7 @@ interface TeamMember {
   name: string;
   role: string;
   group: string;
+  shortId?: string;
 }
 
 interface TeamCase {
@@ -23,8 +27,15 @@ interface TeamCase {
   title: string;
 }
 
+interface AssignedCurator {
+  id: string;
+  curatorId: string;
+  email: string;
+}
+
 const TeamCreatePage = () => {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
   
   const nameRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -38,12 +49,23 @@ const TeamCreatePage = () => {
   });
 
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [teamCases, setTeamCases] = useState<TeamCase[]>([]);
+  const [teamCase, setTeamCase] = useState<TeamCase | null>(null);
+  const [curators, setCurators] = useState<AssignedCurator[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isCaseModalOpen, setIsCaseModalOpen] = useState(false);
+  const [isCuratorModalOpen, setIsCuratorModalOpen] = useState(false);
+  const [availableCurators, setAvailableCurators] = useState<{ id: string; email: string }[]>([]);
+
+  useEffect(() => {
+    const fetchCurators = async () => {
+      const curatorsList = await getAllCurators();
+      setAvailableCurators(curatorsList);
+    };
+    fetchCurators();
+  }, []);
 
   const setupScrollableEditable = (element: HTMLDivElement | null, maxHeight: number) => {
     if (!element) return;
@@ -94,6 +116,12 @@ const TeamCreatePage = () => {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
   const handleContentChange = (field: string, element: HTMLDivElement | null) => {
     if (!element) return;
     const value = element.innerText;
@@ -133,6 +161,7 @@ const TeamCreatePage = () => {
     name: string; 
     role: string; 
     group: string;
+    shortId: string;
     universityId: number;
   }) => {
     const newMember: TeamMember = {
@@ -140,23 +169,48 @@ const TeamCreatePage = () => {
       studentId: member.studentId,
       name: member.name,
       role: member.role,
-      group: member.group
+      group: member.group,
+      shortId: member.shortId
     };
     setMembers([...members, newMember]);
+    showSuccess(`Участник ${member.name} добавлен`);
   };
 
   const handleAddCase = (caseSemesterId: string, caseTitle: string) => {
-    if (!teamCases.some(c => c.caseSemesterId === caseSemesterId)) {
-      setTeamCases([...teamCases, { caseSemesterId, title: caseTitle }]);
+    if (teamCase) {
+      showError('Можно выбрать только один кейс. Сначала удалите текущий кейс.');
+      return;
+    }
+    setTeamCase({ caseSemesterId, title: caseTitle });
+    showSuccess('Кейс добавлен');
+  };
+
+  const handleAddCurator = (curatorId: string) => {
+    const curator = availableCurators.find(c => c.id === curatorId);
+    if (curator && !curators.some(c => c.curatorId === curatorId)) {
+      setCurators([...curators, { id: Date.now().toString(), curatorId: curator.id, email: curator.email }]);
+      showSuccess(`Куратор ${curator.email} добавлен`);
     }
   };
 
-  const handleRemoveMember = (tempId: string) => {
-    setMembers(members.filter(m => m.tempId !== tempId));
+  const handleRemoveCurator = (tempId: string) => {
+    setCurators(curators.filter(c => c.id !== tempId));
   };
 
-  const handleRemoveCase = (caseSemesterId: string) => {
-    setTeamCases(teamCases.filter(c => c.caseSemesterId !== caseSemesterId));
+  const handleRemoveMember = (tempId: string) => {
+    const removedMember = members.find(m => m.tempId === tempId);
+    setMembers(members.filter(m => m.tempId !== tempId));
+    if (removedMember) {
+      showSuccess(`Участник ${removedMember.name} удалён`);
+    }
+  };
+
+  const handleRemoveCase = () => {
+    if (teamCase) {
+      const caseTitle = teamCase.title;
+      setTeamCase(null);
+      showSuccess(`Кейс "${caseTitle}" удалён`);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -199,7 +253,6 @@ const TeamCreatePage = () => {
         ? Number(localStorage.getItem('university_id')) 
         : 1;
       
-      // Шаг 1: Создаем команду
       const teamForAPI = {
         name: formData.name,
         description: formData.description,
@@ -211,6 +264,7 @@ const TeamCreatePage = () => {
       console.log('Создаем команду:', teamForAPI);
       const newTeam = await createTeam(teamForAPI);
       console.log('Команда создана:', newTeam);
+      
       if (members.length > 0) {
         console.log(`Добавляем ${members.length} участников...`);
         
@@ -228,24 +282,34 @@ const TeamCreatePage = () => {
         }
       }
       
-      if (teamCases.length > 0 && newTeam.id) {
-        console.log(`Добавляем ${teamCases.length} кейсов...`);
+      if (teamCase && newTeam.id) {
+        console.log(`Добавляем кейс ${teamCase.title}...`);
+        try {
+          await assignCaseToTeam(newTeam.id, {
+            case_semesters_id: teamCase.caseSemesterId,
+            started_at: new Date().toISOString(),
+            is_current: true
+          });
+          console.log(`Кейс ${teamCase.title} добавлен`);
+        } catch (err) {
+          console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
+        }
+      }
+      
+      if (curators.length > 0 && teamCase) {
+        console.log(`Добавляем ${curators.length} кураторов...`);
         
-        for (let i = 0; i < teamCases.length; i++) {
-          const teamCase = teamCases[i];
+        for (const curator of curators) {
           try {
-            await assignCaseToTeam(newTeam.id, {
-              case_semesters_id: teamCase.caseSemesterId,
-              started_at: new Date().toISOString(),
-              is_current: i === 0 // первый кейс делаем текущим
-            });
-            console.log(`Кейс ${teamCase.title} добавлен`);
+            await assignCuratorToTeam(newTeam.id, curator.curatorId);
+            console.log(`Куратор ${curator.email} назначен команде`);
           } catch (err) {
-            console.error(`Ошибка добавления кейса ${teamCase.title}:`, err);
+            console.error(`Ошибка назначения куратора ${curator.email}:`, err);
           }
         }
       }
       
+      showSuccess('Команда успешно создана!');
       navigate('/teams');
     } catch (error) {
       console.error('Ошибка создания команды:', error);
@@ -256,6 +320,7 @@ const TeamCreatePage = () => {
       } else {
         setErrors({ submit: 'Не удалось создать команду' });
       }
+      showError('Не удалось создать команду');
     } finally {
       setSaving(false);
     }
@@ -293,6 +358,7 @@ const TeamCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'name')}
             onInput={() => handleContentChange('name', nameRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите название команды"
           />
           {errors.name && <div className="error-message">{errors.name}</div>}
@@ -308,6 +374,7 @@ const TeamCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'description')}
             onInput={() => handleContentChange('description', descriptionRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите описание команды"
           />
           {errors.description && <div className="error-message">{errors.description}</div>}
@@ -330,6 +397,7 @@ const TeamCreatePage = () => {
                     <span className="member-name">{member.name}</span>
                     <span className="member-role">{member.role}</span>
                     <span className="member-group">{member.group}</span>
+                    {member.shortId && <span className="member-short-id">#{member.shortId}</span>}
                   </div>
                   <button 
                     className="remove-btn"
@@ -353,6 +421,7 @@ const TeamCreatePage = () => {
             suppressContentEditableWarning
             onBeforeInput={(e) => handleBeforeInput(e, 'notes')}
             onInput={() => handleContentChange('notes', notesRef.current)}
+            onPaste={handlePaste}
             data-placeholder="Введите заметки"
           />
           {errors.notes && <div className="error-message">{errors.notes}</div>}
@@ -361,26 +430,60 @@ const TeamCreatePage = () => {
         {/* Кейсы */}
         <div className="form-field">
           <div className="field-header">
-            <label className="form-label">Кейсы</label>
-            <button className="add-btn" onClick={() => setIsCaseModalOpen(true)}>
+            <label className="form-label">Кейс</label>
+            <button 
+              className="add-btn" 
+              onClick={() => setIsCaseModalOpen(true)}
+              disabled={!!teamCase}
+              style={{ opacity: teamCase ? 0.5 : 1 }}
+            >
               <PlusIcon />
               <span>Добавить кейс</span>
             </button>
           </div>
-          {teamCases.length > 0 && (
-            <div className="cases-list">
-              {teamCases.map((teamCase) => (
-                <div key={teamCase.caseSemesterId} className="case-item">
-                  <span className="case-title">{teamCase.title}</span>
+          <div className="cases-list">
+            {teamCase ? (
+              <div className="case-item">
+                <span className="case-title">{teamCase.title}</span>
+                <button 
+                  className="remove-btn"
+                  onClick={handleRemoveCase}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="empty-cases-placeholder">
+                Нет выбранного кейса. Нажмите "Добавить кейс" чтобы назначить.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="form-field">
+          <div className="field-header">
+            <label className="form-label">Кураторы</label>
+            <button className="add-btn" onClick={() => setIsCuratorModalOpen(true)}>
+              <PlusIcon />
+              <span>Добавить куратора</span>
+            </button>
+          </div>
+          {curators.length > 0 ? (
+            <div className="curators-list">
+              {curators.map((curator) => (
+                <div key={curator.id} className="curator-item">
+                  <span className="curator-name">{curator.email}</span>
                   <button 
                     className="remove-btn"
-                    onClick={() => handleRemoveCase(teamCase.caseSemesterId)}
+                    onClick={() => handleRemoveCurator(curator.id)}
                   >
                     ×
                   </button>
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="empty-curators">Нет назначенных кураторов</div>
           )}
         </div>
 
@@ -416,7 +519,13 @@ const TeamCreatePage = () => {
         isOpen={isCaseModalOpen}
         onClose={() => setIsCaseModalOpen(false)}
         onAdd={handleAddCase}
-        usedCaseIds={teamCases.map(c => c.caseSemesterId)}
+        usedCaseSemesterIds={teamCase ? [teamCase.caseSemesterId] : []}
+      />
+
+      <AddCuratorModal
+        isOpen={isCuratorModalOpen}
+        onClose={() => setIsCuratorModalOpen(false)}
+        onAssign={handleAddCurator}
       />
     </div>
   );

@@ -1,17 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
-    iteration, auth, case_status
-from tg_bot import bot_endpoints
+from presentation.api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
+    iteration, auth, case_status, evaluation, websocket
+from presentation.api.v1.endpoints import bot as bot_endpoints
 import httpx
 import redis.asyncio as aioredis
 from config import settings
 import asyncio
 
-from tg_bot import bot_endpoints
-from tg_bot.tg_routers import bot, dp
-from tg_bot.tg_routers import router as tg_router
+from presentation.telegram.tg_routers import bot, dp
+from presentation.telegram.tg_routers import router as tg_router
 
 
 @asynccontextmanager
@@ -54,6 +53,7 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(team.router)
 app.include_router(case.router)
+app.include_router(evaluation.router)
 app.include_router(student.router)
 app.include_router(university.router)
 app.include_router(role.router)
@@ -61,3 +61,4 @@ app.include_router(case_status.router)
 app.include_router(difficulty_level.router)
 app.include_router(iteration.router)
 app.include_router(microsoft_oauth.router)
+app.include_router(websocket.router)

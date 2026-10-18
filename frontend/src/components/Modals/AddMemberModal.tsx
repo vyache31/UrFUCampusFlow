@@ -3,6 +3,7 @@ import { CloseIcon, CheckIcon } from '../common/Icons/Icons';
 import { createStudent, updateStudent, type Student } from '../../services/students';
 import { endTeamMember } from '../../services/teamMembers';
 import StudentSearchInput from './StudentSearchInput';
+import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 import api from '../../services/api';
 
@@ -14,12 +15,24 @@ interface AddMemberModalProps {
     name: string; 
     role: string; 
     group: string;
+    shortId: string;
     universityId: number;
   }) => void;
   teamId?: string;
 }
 
+interface TeamMemberResponse {
+  id: string;
+  student_id: string;
+}
+
+interface TeamResponse {
+  id: string;
+  name: string;
+}
+
 const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps) => {
+  const { showSuccess, showError, showConfirm } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -55,12 +68,12 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
   const getStudentActiveMembership = async (studentId: string) => {
     try {
       const teamsResponse = await api.get('/teams/?limit=100');
-      const teams = teamsResponse.data;
+      const teams = teamsResponse.data as TeamResponse[];
       
       for (const team of teams) {
         const membersResponse = await api.get(`/teams/${team.id}/members?current_only=true`);
-        const members = membersResponse.data;
-        const member = members.find((m: { student_id: string }) => m.student_id === studentId);
+        const members = membersResponse.data as TeamMemberResponse[];
+        const member = members.find((m: TeamMemberResponse) => m.student_id === studentId);
         if (member) {
           return { teamId: team.id, memberId: member.id, teamName: team.name };
         }
@@ -95,39 +108,44 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
       
       let studentId: string;
       let finalGroup = formData.group;
+      let shortId = '';
       
       if (selectedStudent) {
         studentId = selectedStudent.id;
+        shortId = selectedStudent.id.slice(-4);
         
         const activeMembership = await getStudentActiveMembership(studentId);
         
         if (activeMembership && activeMembership.teamId !== teamId) {
-          const confirmEnd = window.confirm(
-            `Студент "${selectedStudent.name}" уже является участником команды "${activeMembership.teamName}".\n\n` +
-            `Хотите переместить его в текущую команду? Он будет исключен из предыдущей команды.`
-          );
-          
-          if (confirmEnd) {
-            try {
-              await endTeamMember(activeMembership.teamId, activeMembership.memberId);
-              console.log(`Студент исключен из команды ${activeMembership.teamName}`);
-            } catch (endErr) {
-              console.error('Ошибка исключения из команды:', endErr);
-              setError('Не удалось исключить студента из предыдущей команды');
+          showConfirm({
+            message: `Студент "${selectedStudent.name}" уже является участником команды "${activeMembership.teamName}".\n\nХотите переместить его в текущую команду? Он будет исключен из предыдущей команды.`,
+            onConfirm: async () => {
+              try {
+                await endTeamMember(activeMembership.teamId, activeMembership.memberId);
+                showSuccess(`Студент "${selectedStudent.name}" перемещён из команды "${activeMembership.teamName}"`);
+                
+                await continueAdding(studentId, finalGroup, shortId, universityId);
+              } catch (endErr) {
+                console.error('Ошибка исключения из команды:', endErr);
+                showError('Не удалось исключить студента из предыдущей команды');
+                setLoading(false);
+              }
+            },
+            onCancel: () => {
+              setError('Добавление отменено');
               setLoading(false);
-              return;
-            }
-          } else {
-            setError('Добавление отменено. Сначала исключите студента из другой команды.');
-            setLoading(false);
-            return;
-          }
+            },
+            confirmText: 'Да, переместить',
+            cancelText: 'Отмена'
+          });
+          return;
         }
         
         if (formData.group !== selectedStudent.group) {
           try {
             const updatedStudent = await updateStudent(studentId, { group: formData.group });
             finalGroup = updatedStudent.group;
+            showSuccess(`Группа студента "${formData.name}" обновлена на "${finalGroup}"`);
           } catch (updateErr) {
             console.error('Ошибка обновления группы студента:', updateErr);
           }
@@ -140,22 +158,15 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
         });
         studentId = student.id;
         finalGroup = student.group;
+        shortId = student.id.slice(-4);
       }
       
-      onAdd({
-        studentId: studentId,
-        name: formData.name,
-        role: formData.role,
-        group: finalGroup,
-        universityId: universityId
-      });
+      await continueAdding(studentId, finalGroup, shortId, universityId);
       
-      setFormData({ name: '', role: '', group: '' });
-      setSelectedStudent(null);
-      onClose();
-    } catch (err: any) {
+    } catch (err) {
       console.error('Ошибка добавления участника:', err);
-      if (err.response?.data?.detail?.includes('already a current member')) {
+      const error = err as { response?: { data?: { detail?: string } } };
+      if (error.response?.data?.detail?.includes('already a current member')) {
         setError('Студент уже состоит в другой команде. Сначала исключите его оттуда.');
       } else {
         setError('Не удалось добавить участника');
@@ -163,6 +174,23 @@ const AddMemberModal = ({ isOpen, onClose, onAdd, teamId }: AddMemberModalProps)
     } finally {
       setLoading(false);
     }
+  };
+
+  const continueAdding = async (studentId: string, finalGroup: string, shortId: string, universityId: number) => {
+    onAdd({
+      studentId: studentId,
+      name: formData.name,
+      role: formData.role,
+      group: finalGroup,
+      shortId: shortId,
+      universityId: universityId
+    });
+    
+    showSuccess(`Участник "${formData.name}" успешно добавлен!`);
+    
+    setFormData({ name: '', role: '', group: '' });
+    setSelectedStudent(null);
+    onClose();
   };
 
   return (
