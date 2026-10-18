@@ -3,15 +3,15 @@ import uuid
 
 import logging
 
-from models import Roles
-from models import CaseStatuses, DifficultyLevels
-from models import Iterations
-from database import SessionLocal
+from infrastructure.db.models import Roles
+from infrastructure.db.models import CaseStatuses, DifficultyLevels
+from infrastructure.db.models import Iterations
+from infrastructure.db.database import SessionLocal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from seeds.data import CASE_DIFFICULTY_LEVELS, CASE_STATUSES, ROLES, ITERATIONS
 from datetime import datetime, timezone
-from auth.utils_jwt import hash_password
+from infrastructure.security.utils_jwt import hash_password
 
 print("LOADED FILE:", __file__)
 logging.basicConfig(level=logging.INFO)
@@ -71,7 +71,7 @@ async def seed_all_references() -> None:
         raise
 
 async def seed_user(session: AsyncSession):
-    from models import Users
+    from infrastructure.db.models import Users
 
     existing_user = await session.scalar(
         select(Users).where(Users.email == "test@alfa.ru")
@@ -103,7 +103,7 @@ async def seed_user(session: AsyncSession):
 
 async def seed_bot_mode(session: AsyncSession):
     print("BOTMODE SEED START")
-    from tg_bot.models.bot import BotMode
+    from infrastructure.db.models.bot import BotMode
     existing_user = await session.scalar(
         select(BotMode)
     )
@@ -125,7 +125,7 @@ async def seed_bot_mode(session: AsyncSession):
 
 async def seed_uni(session: AsyncSession):
     print("UNI SEED START")
-    from models import Universities
+    from infrastructure.db.models import Universities
     existing_uni = await session.scalar(
         select(Universities).where(Universities.id == 1)
     )
