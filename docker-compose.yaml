@@ -57,7 +57,7 @@ services:
     container_name: alpha-backend
     volumes:
       - ./backend:/backend
-      - jwt_keys:/auth/certs
+      - jwt_keys:/backend/infrastructure/security/certs
     env_file:
       - ./backend/.env
     environment:

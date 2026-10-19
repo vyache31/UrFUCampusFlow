@@ -1,4 +1,4 @@
-from schemas.evaluation_schemas import (
+from presentation.api.schemas.evaluation_schemas import (
     EvaluationCommentWs,
     LikesUpdatedWs
 )
