@@ -30,7 +30,7 @@ class TeamCaseHistoryService:
         case_semesters_id: str,
         started_at: datetime | None = None,
         is_current: bool = True,
-    ) -> TeamCaseHistory:
+    ) -> TeamCaseHistoryResponse:
         async with self.uow as uow:
             team = await uow.team_repository.get_by_id(team_id)
 
@@ -92,19 +92,24 @@ class TeamCaseHistoryService:
             if not created_history:
                 raise RuntimeError("Created team case history not found")
 
+            response = self.to_response(created_history)
             await uow.commit()
 
-            return created_history
+            return response
 
-    async def get_by_id(self, team_case_history_id: str) -> TeamCaseHistory | None:
+    async def get_by_id(
+        self, team_case_history_id: str
+    ) -> TeamCaseHistoryResponse | None:
         async with self.uow as uow:
-            return await uow.team_case_history_repository.get_by_id(
+            history = await uow.team_case_history_repository.get_by_id(
                 team_case_history_id
             )
+            return self.to_response(history) if history else None
 
-    async def get_by_team_id(self, team_id: str) -> list[TeamCaseHistory]:
+    async def get_by_team_id(self, team_id: str) -> list[TeamCaseHistoryResponse]:
         async with self.uow as uow:
-            return await self._get_by_team_id(uow, team_id)
+            history = await self._get_by_team_id(uow, team_id)
+            return [self.to_response(item) for item in history]
 
     async def get_team_history_response(
         self,
@@ -118,26 +123,30 @@ class TeamCaseHistoryService:
                 for team_case_history in history
             ]
 
-    async def get_current_by_team_id(self, team_id: str) -> TeamCaseHistory | None:
+    async def get_current_by_team_id(
+        self, team_id: str
+    ) -> TeamCaseHistoryResponse | None:
         async with self.uow as uow:
-            return await uow.team_case_history_repository.get_current_by_team_id(
+            history = await uow.team_case_history_repository.get_current_by_team_id(
                 team_id
             )
+            return self.to_response(history) if history else None
 
     async def get_by_case_semester_id(
         self,
         case_semesters_id: str,
-    ) -> list[TeamCaseHistory]:
+    ) -> list[TeamCaseHistoryResponse]:
         async with self.uow as uow:
-            return await uow.team_case_history_repository.get_by_case_semester_id(
+            history = await uow.team_case_history_repository.get_by_case_semester_id(
                 case_semesters_id
             )
+            return [self.to_response(item) for item in history]
 
     async def end_current_for_team(
         self,
         team_id: str,
         ended_at: datetime | None = None,
-    ) -> TeamCaseHistory | None:
+    ) -> TeamCaseHistoryResponse | None:
         async with self.uow as uow:
             team_case_history = (
                 await uow.team_case_history_repository.get_current_by_team_id(
@@ -164,9 +173,10 @@ class TeamCaseHistoryService:
             team_case_history.updated_at = datetime.now(UTC)
 
             await uow.team_case_history_repository.update()
+            response = self.to_response(team_case_history)
             await uow.commit()
 
-            return team_case_history
+            return response
 
     async def delete(self, team_case_history_id: str) -> bool | None:
         async with self.uow as uow:

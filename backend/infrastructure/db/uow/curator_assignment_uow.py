@@ -5,12 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from application.interfaces.repositories import (
     CuratorAssignmentsRepositoryProtocol,
-    TeamCaseHistoryRepositoryProtocol,
+    TeamRepositoryProtocol,
     UserRepositoryProtocol,
 )
 from infrastructure.db.repositories import (
     CuratorAssignmentsRepository,
-    TeamCaseHistoryRepository,
+    TeamRepository,
     UserRepository,
 )
 
@@ -18,7 +18,7 @@ from infrastructure.db.repositories import (
 class SqlAlchemyCuratorAssignmentUoW:
     curator_assignments_repository: CuratorAssignmentsRepositoryProtocol
     user_repository: UserRepositoryProtocol
-    team_case_history_repository: TeamCaseHistoryRepositoryProtocol
+    team_repository: TeamRepositoryProtocol
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
@@ -29,7 +29,7 @@ class SqlAlchemyCuratorAssignmentUoW:
             self.session
         )
         self.user_repository = UserRepository(self.session)
-        self.team_case_history_repository = TeamCaseHistoryRepository(self.session)
+        self.team_repository = TeamRepository(self.session)
 
         return self
 

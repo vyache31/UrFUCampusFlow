@@ -32,8 +32,8 @@ class CuratorMeetingAttendanceService:
             raise ValueError("This meeting not found")
 
         current_assignments = await (
-            uow.curator_assignments_repository.get_current_by_team_case_history_id(
-                meeting.team_case_history_id
+            uow.curator_assignments_repository.get_current_by_team_id(
+                meeting.team_case_history.team_id
             )
         )
         existing_attendances = await uow.attendance_repository.get_by_meeting_id(

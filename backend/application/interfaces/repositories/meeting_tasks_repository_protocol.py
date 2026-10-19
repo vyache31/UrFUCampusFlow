@@ -18,3 +18,10 @@ class MeetingTaskRepositoryProtocol(Protocol):
 
     async def delete(self, task: MeetingTask) -> None:
         ...
+
+    async def get_by_status_and_meeting_id(
+        self,
+        meeting_id: str,
+        is_completed: bool
+    ) -> list[MeetingTask]:
+        ...

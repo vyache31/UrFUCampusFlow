@@ -25,30 +25,30 @@ class CuratorAssignmentService:
             if not user or not user.role or user.role.code != "CURATOR":
                 raise ValueError("Curator user not found")
 
-            team_case_history = await uow.team_case_history_repository.get_by_id(
-                schema.team_case_history_id
+            team = await uow.team_repository.get_by_id(
+                schema.team_id
             )
 
-            if not team_case_history:
-                raise ValueError("Team case history not found")
+            if not team:
+                raise ValueError("Team not found")
 
             repository = uow.curator_assignments_repository
             existing_assignment = await (
-                repository.get_current_by_user_and_team_case_history(
+                repository.get_current_by_user_and_team(
                     user_id=schema.user_id,
-                    team_case_history_id=schema.team_case_history_id,
+                    team_id=schema.team_id,
                 )
             )
 
             if existing_assignment:
                 raise ValueError(
-                    "Curator already has current assignment for this team case history"
+                    "Curator already has current assignment for this team"
                 )
 
             curator_assignment = CuratorAssignment(
                 id=str(uuid.uuid4()),
                 user_id=schema.user_id,
-                team_case_history_id=schema.team_case_history_id,
+                team_id=schema.team_id,
                 assigned_at=datetime.now(UTC),
                 unassigned_at=None,
                 is_current=True,
@@ -62,7 +62,7 @@ class CuratorAssignmentService:
     async def unassign_curator(
         self,
         assignment_id: str,
-        team_case_history_id: str,
+        team_id: str,
     ) -> CuratorAssignmentResponse | None:
         async with self.uow as uow:
             assignment = await uow.curator_assignments_repository.get_by_id(
@@ -71,7 +71,7 @@ class CuratorAssignmentService:
 
             if (
                 not assignment
-                or assignment.team_case_history_id != team_case_history_id
+                or assignment.team_id != team_id
             ):
                 return None
 
@@ -111,41 +111,41 @@ class CuratorAssignmentService:
 
             return [self._to_response(assignment) for assignment in assignments]
 
-    async def get_by_team_case_history_id(
+    async def get_by_team_id(
         self,
-        team_case_history_id: str,
+        team_id: str,
     ) -> list[CuratorAssignmentResponse]:
         async with self.uow as uow:
             assignments = (
-                await uow.curator_assignments_repository.get_by_team_case_history_id(
-                    team_case_history_id
+                await uow.curator_assignments_repository.get_by_team_id(
+                    team_id
                 )
             )
 
             return [self._to_response(assignment) for assignment in assignments]
 
-    async def get_current_by_team_case_history_id(
+    async def get_current_by_team_id(
         self,
-        team_case_history_id: str,
+        team_id: str,
     ) -> list[CuratorAssignmentResponse]:
         async with self.uow as uow:
             repository = uow.curator_assignments_repository
-            assignments = await repository.get_current_by_team_case_history_id(
-                team_case_history_id
+            assignments = await repository.get_current_by_team_id(
+                team_id
             )
 
             return [self._to_response(assignment) for assignment in assignments]
 
-    async def get_current_by_user_and_team_case_history(
+    async def get_current_by_user_and_team(
         self,
         user_id: str,
-        team_case_history_id: str,
+        team_id: str,
     ) -> CuratorAssignmentResponse:
         async with self.uow as uow:
             repository = uow.curator_assignments_repository
-            assignment = await repository.get_current_by_user_and_team_case_history(
+            assignment = await repository.get_current_by_user_and_team(
                 user_id=user_id,
-                team_case_history_id=team_case_history_id,
+                team_id=team_id,
             )
 
             if not assignment:
@@ -158,7 +158,7 @@ class CuratorAssignmentService:
         return CuratorAssignmentResponse(
             id=assignment.id,
             user_id=assignment.user_id,
-            team_case_history_id=assignment.team_case_history_id,
+            team_id=assignment.team_id,
             assigned_at=assignment.assigned_at,
             unassigned_at=assignment.unassigned_at,
             is_current=assignment.is_current,

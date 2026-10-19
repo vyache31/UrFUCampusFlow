@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 class CuratorAssignmentCreate(BaseModel):
     user_id: str
-    team_case_history_id: str
+    team_id: str
 
 
 class CuratorAssignmentUpdate(BaseModel):
@@ -17,7 +17,7 @@ class CuratorAssignmentUpdate(BaseModel):
 class CuratorAssignmentResponse(BaseModel):
     id: str
     user_id: str
-    team_case_history_id: str
+    team_id: str
     assigned_at: datetime
     unassigned_at: Optional[datetime] = None
     is_current: bool

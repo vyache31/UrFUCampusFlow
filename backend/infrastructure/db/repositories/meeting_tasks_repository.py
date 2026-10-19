@@ -41,3 +41,15 @@ class MeetingTaskRepository:
 
     async def delete(self, task: MeetingTask) -> None:
         await self.db.delete(task)
+
+    async def get_by_status_and_meeting_id(
+        self,
+        meeting_id: str,
+        is_completed: bool
+    ) -> list[MeetingTask]:
+        tasks = await self.db.execute(
+            select(MeetingTask)
+            .where(MeetingTask.meeting_id == meeting_id, MeetingTask.is_completed == is_completed)
+        )
+
+        return list(tasks.scalars().all())
