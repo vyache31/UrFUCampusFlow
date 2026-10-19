@@ -19,22 +19,22 @@ class CuratorAssignmentsRepositoryProtocol(Protocol):
     async def get_by_user_id(self, user_id: str) -> list[CuratorAssignment]:
         ...
 
-    async def get_by_team_case_history_id(
+    async def get_by_team_id(
         self,
-        team_case_history_id: str,
+        team_id: str,
     ) -> list[CuratorAssignment]:
         ...
 
-    async def get_current_by_team_case_history_id(
+    async def get_current_by_team_id(
         self,
-        team_case_history_id: str,
+        team_id: str,
     ) -> list[CuratorAssignment]:
         ...
 
-    async def get_current_by_user_and_team_case_history(
+    async def get_current_by_user_and_team(
         self,
         user_id: str,
-        team_case_history_id: str,
+        team_id: str,
     ) -> CuratorAssignment | None:
         ...
 

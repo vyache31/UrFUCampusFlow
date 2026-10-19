@@ -227,12 +227,11 @@ async def assign_curator_to_team(
         team_id: str,
         curator_id: str,
         user=Depends(get_current_auth_user),
-        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
     schema = CuratorAssignmentCreate(
         user_id=curator_id,
-        team_case_history_id=current_team_case_history.id
+        team_id=team_id
     )
 
     try:
@@ -246,13 +245,12 @@ async def unassign_curator_from_team(
         team_id: str,
         assignment_id: str,
         user=Depends(get_current_auth_user),
-        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
     try:
         assignment = await service.unassign_curator(
             assignment_id=assignment_id,
-            team_case_history_id=current_team_case_history.id,
+            team_id=team_id,
         )
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
@@ -267,11 +265,10 @@ async def unassign_curator_from_team(
 async def get_team_curators(
         team_id: str,
         user=Depends(get_current_auth_user),
-        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
-    return await service.get_current_by_team_case_history_id(
-        team_case_history_id=current_team_case_history.id
+    return await service.get_current_by_team_id(
+        team_id=team_id
     )
 
 

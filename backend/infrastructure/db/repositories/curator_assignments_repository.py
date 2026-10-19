@@ -7,7 +7,7 @@ from infrastructure.db.models import CuratorAssignment
 
 CURATOR_ASSIGNMENT_LOAD_OPTIONS = (
     selectinload(CuratorAssignment.user),
-    selectinload(CuratorAssignment.team_case_history),
+    selectinload(CuratorAssignment.team),
 )
 
 
@@ -42,40 +42,40 @@ class CuratorAssignmentsRepository:
 
         return list(curator_assignments.scalars().all())
 
-    async def get_by_team_case_history_id(
-        self, team_case_history_id: str
+    async def get_by_team_id(
+        self, team_id: str
     ) -> list[CuratorAssignment]:
         curator_assignments = await self.db.execute(
             select(CuratorAssignment)
             .options(*CURATOR_ASSIGNMENT_LOAD_OPTIONS)
-            .where(CuratorAssignment.team_case_history_id == team_case_history_id)
+            .where(CuratorAssignment.team_id == team_id)
         )
 
         return list(curator_assignments.scalars().all())
 
-    async def get_current_by_team_case_history_id(
-        self, team_case_history_id: str
+    async def get_current_by_team_id(
+        self, team_id: str
     ) -> list[CuratorAssignment]:
         curator_assignments = await self.db.execute(
             select(CuratorAssignment)
             .options(*CURATOR_ASSIGNMENT_LOAD_OPTIONS)
             .where(
-                CuratorAssignment.team_case_history_id == team_case_history_id,
+                CuratorAssignment.team_id == team_id,
                 CuratorAssignment.is_current.is_(True),
             )
         )
 
         return list(curator_assignments.scalars().all())
 
-    async def get_current_by_user_and_team_case_history(
-        self, user_id: str, team_case_history_id: str
+    async def get_current_by_user_and_team(
+        self, user_id: str, team_id: str
     ) -> CuratorAssignment | None:
         curator_assignment = await self.db.execute(
             select(CuratorAssignment)
             .options(*CURATOR_ASSIGNMENT_LOAD_OPTIONS)
             .where(
                 CuratorAssignment.user_id == user_id,
-                CuratorAssignment.team_case_history_id == team_case_history_id,
+                CuratorAssignment.team_id == team_id,
                 CuratorAssignment.is_current.is_(True),
             )
         )
