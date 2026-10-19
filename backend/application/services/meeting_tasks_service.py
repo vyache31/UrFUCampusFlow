@@ -1,7 +1,13 @@
 from application.interfaces.uow.meeting_tasks_uow_protocol import MeetingTasksUoWProtocol
 from infrastructure.db.models import MeetingTask, Meetings
 from presentation.api.schemas.outlook_meetings import MeetingTaskCreate, MeetingTaskUpdate, MeetingTaskResponse
+from application.services.meetings_service import find_next_meeting
 import uuid
+
+
+class NextMeetingNotFoundError(ValueError):
+    pass
+
 
 class MeetingTasksService:
     def __init__(self, uow: MeetingTasksUoWProtocol):
@@ -48,6 +54,35 @@ class MeetingTasksService:
                 meeting_id=meeting_id,
                 is_completed=False
             )
+            await uow.meeting_tasks_repository.create(meeting_task)
+            response = self.to_response(meeting_task)
+            await uow.commit()
+            return response
+
+    async def create_task_for_next_meeting(
+        self,
+        schema: MeetingTaskCreate,
+        meeting_id: str,
+        current_team_case_history_id: str
+    ) -> MeetingTaskResponse:
+        async with self.uow as uow:
+            meeting = await find_next_meeting(
+                meetings_repository=uow.meetings_repository,
+                meeting_id = meeting_id,
+                current_team_case_history_id = current_team_case_history_id
+            )
+
+            if not meeting:
+                raise NextMeetingNotFoundError("Schedule the next meeting before adding tasks")
+
+            meeting_task = MeetingTask(
+                id=str(uuid.uuid4()),
+                title=schema.title,
+                description=schema.description,
+                meeting_id=meeting.id,
+                is_completed=False
+            )
+
             await uow.meeting_tasks_repository.create(meeting_task)
             response = self.to_response(meeting_task)
             await uow.commit()

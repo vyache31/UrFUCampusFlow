@@ -1,15 +1,18 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, StringConstraints
+from typing import Annotated, Optional
 from datetime import datetime
 
 
+TaskTitle = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
 class MeetingTaskCreate(BaseModel):
-    title: str
+    title: TaskTitle
     description: Optional[str] = None
 
 
 class MeetingTaskUpdate(BaseModel):
-    title: Optional[str] = None
+    title: Optional[TaskTitle] = None
     description: Optional[str] = None
     is_completed: Optional[bool] = None
 
