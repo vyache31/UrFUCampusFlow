@@ -535,6 +535,28 @@ async def create_task_for_next_team_meeting(
         raise HTTPException(status_code=404, detail=str(err))
 
 
+@router.post(
+    '/{team_id}/meetings/{meeting_id}/tasks/carry-to-next-meeting',
+    response_model=list[MeetingTaskResponse],
+)
+async def carry_tasks_to_next_team_meeting(
+        team_id: str,
+        meeting_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        return await service.carry_task_to_next_meeting(
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id,
+        )
+    except NextMeetingNotFoundError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+
+
 @router.get('/{team_id}/meetings/{meeting_id}/tasks', response_model=list[MeetingTaskResponse])
 async def get_meeting_tasks(
         team_id: str,

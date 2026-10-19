@@ -23,6 +23,7 @@ class MeetingTaskResponse(BaseModel):
     description: Optional[str] = None
     meeting_id: str
     is_completed: bool
+    carried_from_task_id: str | None = None
 
     class Config:
         from_attributes = True

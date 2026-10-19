@@ -88,6 +88,55 @@ class MeetingTasksService:
             await uow.commit()
             return response
 
+    async def carry_task_to_next_meeting(
+        self,
+        meeting_id: str,
+        current_team_case_history_id: str
+    ) -> list[MeetingTaskResponse]:
+        async with self.uow as uow:
+            carry_to_meeting = await find_next_meeting(
+                meetings_repository=uow.meetings_repository,
+                meeting_id = meeting_id,
+                current_team_case_history_id = current_team_case_history_id
+            )
+
+            if not carry_to_meeting:
+                raise NextMeetingNotFoundError("Schedule the next meeting before carrying tasks")
+
+            carry_to_meeting_tasks = await uow.meeting_tasks_repository.get_by_meeting_id(
+                carry_to_meeting.id
+            )
+
+            already_carried = set()
+
+            for task in carry_to_meeting_tasks:
+                if task.carried_from_task_id:
+                    already_carried.add(task.carried_from_task_id)
+
+            tasks_to_carry = await uow.meeting_tasks_repository.get_by_status_and_meeting_id(
+                meeting_id=meeting_id,
+                is_completed=False
+            )
+
+            response = []
+
+            for task in tasks_to_carry:
+                if task.id not in already_carried:
+                    carried_task = MeetingTask(
+                        id=str(uuid.uuid4()),
+                        title=task.title,
+                        description=task.description,
+                        meeting_id=carry_to_meeting.id,
+                        is_completed=False,
+                        carried_from_task_id=task.id
+                    )
+
+                    await uow.meeting_tasks_repository.create(carried_task)
+                    response.append(self.to_response(carried_task))
+
+            await uow.commit()
+            return response
+
 
     async def update_task(
             self,
@@ -142,5 +191,6 @@ class MeetingTasksService:
             title=meeting_task.title,
             description=meeting_task.description,
             meeting_id=meeting_task.meeting_id,
-            is_completed=meeting_task.is_completed
+            is_completed=meeting_task.is_completed,
+            carried_from_task_id=meeting_task.carried_from_task_id,
         )
