@@ -1,20 +1,25 @@
 from pydantic import BaseModel
 from typing import Optional
+from enum import Enum
 
+class DifficultyLevelCode(str, Enum):
+    easy = 'EASY'
+    medium = 'MEDIUM'
+    hard = 'HARD'
 
 class DifficultyLevelCreate(BaseModel):
-    code: str
+    code: DifficultyLevelCode
     level_name: str
 
 
 class DifficultyLevelUpdate(BaseModel):
-    code: Optional[str] = None
+    code: Optional[DifficultyLevelCode] = None
     level_name: Optional[str] = None
 
 
 class DifficultyLevelResponse(BaseModel):
     id: int
-    code: str
+    code: DifficultyLevelCode
     level_name: str
 
     class Config:
