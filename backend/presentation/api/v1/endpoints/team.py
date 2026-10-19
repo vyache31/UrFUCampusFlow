@@ -148,7 +148,7 @@ async def add_team_member(
             joined_at=schema.joined_at
         )
 
-        return service.to_response(team_member)
+        return team_member
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
@@ -170,7 +170,7 @@ async def end_team_member(
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
-    return service.to_response(team_member)
+    return team_member
 
 
 @router.get('/{team_id}/history', response_model=list[TeamCaseHistoryResponse])
@@ -200,7 +200,7 @@ async def assign_team_to_case_semester(
             is_current=schema.is_current
         )
 
-        return service.to_response(team_case_history)
+        return team_case_history
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
@@ -219,7 +219,7 @@ async def end_current_team_case_history(
     if not team_case_history:
         raise HTTPException(status_code=404, detail='Current team case history not found')
 
-    return service.to_response(team_case_history)
+    return team_case_history
 
 
 @router.post('/{team_id}/curators/{curator_id}', response_model=CuratorAssignmentResponse)

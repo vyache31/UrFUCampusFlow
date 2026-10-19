@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from application.interfaces.uow.team_uow_protocol import TeamUoWProtocol
 from infrastructure.db.models import Teams
-from presentation.api.schemas.team import TeamCreate, TeamUpdate
+from presentation.api.schemas.team import TeamCreate, TeamResponse, TeamUpdate
 
 
 class TeamService:
@@ -27,7 +27,7 @@ class TeamService:
         if not university:
             raise ValueError("University not found")
 
-    async def create_team(self, schema: TeamCreate) -> Teams:
+    async def create_team(self, schema: TeamCreate) -> TeamResponse:
         async with self.uow as uow:
             existing_team = await uow.team_repository.get_by_name(schema.name)
 
@@ -51,24 +51,26 @@ class TeamService:
 
             team = await uow.team_repository.create(team)
 
+            response = TeamResponse.model_validate(team)
             await uow.commit()
 
-            return team
+            return response
 
-    async def get_team(self, team_id: str) -> Teams | None:
+    async def get_team(self, team_id: str) -> TeamResponse | None:
         async with self.uow as uow:
-            return await uow.team_repository.get_by_id(team_id)
+            team = await uow.team_repository.get_by_id(team_id)
+            return TeamResponse.model_validate(team) if team else None
 
-    async def get_all_teams(self, limit: int = 10) -> list[Teams]:
+    async def get_all_teams(self, limit: int = 10) -> list[TeamResponse]:
         async with self.uow as uow:
             teams = await uow.team_repository.get_all(limit)
-            return list(teams)
+            return [TeamResponse.model_validate(team) for team in teams]
 
     async def update_team(
         self,
         team_id: str,
         schema: TeamUpdate,
-    ) -> Teams | None:
+    ) -> TeamResponse | None:
         async with self.uow as uow:
             team = await uow.team_repository.get_by_id(team_id)
 
@@ -84,9 +86,10 @@ class TeamService:
             team.updated_at = datetime.now(UTC)
 
             await uow.team_repository.update()
+            response = TeamResponse.model_validate(team)
             await uow.commit()
 
-            return team
+            return response
 
     async def delete_team(self, team_id: str) -> bool | None:
         async with self.uow as uow:

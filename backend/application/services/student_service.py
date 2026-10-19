@@ -1,10 +1,9 @@
 import uuid
-from collections.abc import Sequence
 from datetime import datetime, UTC
 
 from application.interfaces.uow.student_uow_protocol import StudentUoWProtocol
 from infrastructure.db.models import Students
-from presentation.api.schemas.student import StudentCreate, StudentUpdate
+from presentation.api.schemas.student import StudentCreate, StudentResponse, StudentUpdate
 
 
 class StudentService:
@@ -13,7 +12,7 @@ class StudentService:
         self.uow = uow
 
 
-    async def create_student(self, schema: StudentCreate) -> Students:
+    async def create_student(self, schema: StudentCreate) -> StudentResponse:
         async with self.uow as uow:
             is_exist = await uow.student_repository.verify_university(
                 schema.university_id
@@ -31,11 +30,14 @@ class StudentService:
             )
 
             student = await uow.student_repository.create_student(student)
+            response = StudentResponse.model_validate(student)
             await uow.commit()
-            return student
+            return response
 
 
-    async def update_student(self, student_id: str, schema: StudentUpdate) -> Students | None:
+    async def update_student(
+        self, student_id: str, schema: StudentUpdate
+    ) -> StudentResponse | None:
         async with self.uow as uow:
             student = await uow.student_repository.get_student_by_id(student_id)
 
@@ -58,9 +60,10 @@ class StudentService:
             student.updated_at = datetime.now(UTC)
 
             await uow.student_repository.update()
+            response = StudentResponse.model_validate(student)
             await uow.commit()
 
-            return student
+            return response
 
 
     async def delete_student(self, student_id: str) -> bool:
@@ -76,11 +79,13 @@ class StudentService:
             return True
 
 
-    async def get_all_students(self, limit: int = 10) -> Sequence[Students]:
+    async def get_all_students(self, limit: int = 10) -> list[StudentResponse]:
         async with self.uow as uow:
-            return await uow.student_repository.get_all(limit)
+            students = await uow.student_repository.get_all(limit)
+            return [StudentResponse.model_validate(student) for student in students]
 
 
-    async def get_student_by_id(self, student_id: str) -> Students | None:
+    async def get_student_by_id(self, student_id: str) -> StudentResponse | None:
         async with self.uow as uow:
-            return await uow.student_repository.get_student_by_id(student_id)
+            student = await uow.student_repository.get_student_by_id(student_id)
+            return StudentResponse.model_validate(student) if student else None

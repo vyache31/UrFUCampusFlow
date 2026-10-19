@@ -220,9 +220,10 @@ class MeetingsService:
             )
             return [self.to_response(meeting) for meeting in meetings]
 
-    async def get_by_id(self, meeting_id: str) -> Meetings | None:
+    async def get_by_id(self, meeting_id: str) -> MeetingResponse | None:
         async with self.uow as uow:
-            return await uow.meetings_repository.get_by_id(meeting_id)
+            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            return self.to_response(meeting) if meeting else None
 
     @staticmethod
     def to_response(meeting: Meetings) -> MeetingResponse:
