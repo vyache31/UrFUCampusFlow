@@ -6,7 +6,7 @@ from application.services.case_service import CaseHasDependenciesError
 from presentation.api.schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from presentation.api.dependencies.case_depends import get_case_service
 from presentation.api.dependencies.auth_depends import get_current_auth_user, get_current_subject
-from presentation.api.schemas.ai_case_schemas import AIGeneratedCaseResponse
+from presentation.api.schemas.ai_case_schemas import AIGenerateCaseRequest, AIGeneratedCaseResponse
 from application.services.ai_service import AIService
 from presentation.api.dependencies.ai_depends import get_ai_service
 
@@ -165,14 +165,14 @@ async def archive_case(
         raise HTTPException(status_code=409, detail=str(err))
 
 
-@router.post('/{case_id}/generate-with-ai', response_model=AIGeneratedCaseResponse)
+@router.post('/generate-with-ai', response_model=AIGeneratedCaseResponse)
 async def generate_case_with_ai(
-    case_id: str,
+    schema: AIGenerateCaseRequest,
     user=Depends(get_current_auth_user),
     service: AIService = Depends(get_ai_service)
 ):
     try:
-        response = await service.generate_case()
+        response = await service.generate_case(topic=schema.topic)
 
         return response
 

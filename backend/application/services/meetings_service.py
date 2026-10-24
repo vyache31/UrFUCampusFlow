@@ -7,6 +7,7 @@ from application.interfaces.integrations import (
     MicrosoftAccessTokenProviderProtocol,
     MicrosoftGraphClientProtocol,
 )
+from application.interfaces.repositories.meetings_repository_protocol import MeetingsRepositoryProtocol
 from application.interfaces.uow.meetings_uow_protocol import MeetingsUoWProtocol
 from infrastructure.db.models import Meetings, MeetingTask
 from presentation.api.schemas.outlook_meetings import MeetingCreate, MeetingResponse, MeetingUpdate
@@ -14,6 +15,27 @@ from application.services.curator_meetings_attendance_service import CuratorMeet
 
 
 logger = logging.getLogger(__name__)
+
+
+async def find_next_meeting(
+    meetings_repository: MeetingsRepositoryProtocol, meeting_id: str, current_team_case_history_id: str
+) -> Meetings | None:
+    meeting = await meetings_repository.get_by_id(meeting_id)
+
+    if not meeting or meeting.team_case_history_id != current_team_case_history_id:
+        raise ValueError("Meeting not found")
+
+    current_meeting_start_at = meeting.start_at
+
+    meetings = await meetings_repository.get_by_team_case_history_id(meeting.team_case_history_id)
+
+    meetings.sort(key=lambda meeting: (meeting.start_at, meeting.id))
+
+    for meet in meetings:
+        if meet.start_at > current_meeting_start_at:
+            return meet
+
+    return None
 
 
 class MeetingsService:
@@ -220,9 +242,21 @@ class MeetingsService:
             )
             return [self.to_response(meeting) for meeting in meetings]
 
-    async def get_by_id(self, meeting_id: str) -> Meetings | None:
+    async def get_by_id(self, meeting_id: str) -> MeetingResponse | None:
         async with self.uow as uow:
-            return await uow.meetings_repository.get_by_id(meeting_id)
+            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            return self.to_response(meeting) if meeting else None
+
+    async def get_next_meeting(
+        self, meeting_id: str, current_team_case_history_id: str
+    ) -> MeetingResponse | None:
+
+        async with self.uow as uow:
+            meeting = await find_next_meeting(
+                uow.meetings_repository, meeting_id, current_team_case_history_id
+            )
+
+            return self.to_response(meeting) if meeting else None
 
     @staticmethod
     def to_response(meeting: Meetings) -> MeetingResponse:

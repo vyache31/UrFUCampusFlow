@@ -6,7 +6,10 @@ from sqlalchemy.orm import selectinload
 
 from infrastructure.db.models import Meetings
 
-MEETING_LOAD_OPTIONS = (selectinload(Meetings.tasks),)
+MEETING_LOAD_OPTIONS = (
+    selectinload(Meetings.tasks),
+    selectinload(Meetings.team_case_history),
+)
 
 
 class MeetingsRepository:

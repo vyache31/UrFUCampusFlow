@@ -34,7 +34,7 @@ class TeamMembersService:
         student_id: str,
         position: str,
         joined_at: datetime | None = None,
-    ) -> TeamMembers:
+    ) -> TeamMemberResponse:
         async with self.uow as uow:
             team = await uow.team_repository.get_by_id(team_id)
 
@@ -87,21 +87,24 @@ class TeamMembersService:
             if not created_member:
                 raise RuntimeError("Created team member not found")
 
+            response = self.to_response(created_member)
             await uow.commit()
 
-            return created_member
+            return response
 
-    async def get_member(self, team_member_id: str) -> TeamMembers | None:
+    async def get_member(self, team_member_id: str) -> TeamMemberResponse | None:
         async with self.uow as uow:
-            return await uow.team_members_repository.get_by_id(team_member_id)
+            team_member = await uow.team_members_repository.get_by_id(team_member_id)
+            return self.to_response(team_member) if team_member else None
 
     async def get_team_members(
         self,
         team_id: str,
         current_only: bool = True,
-    ) -> list[TeamMembers]:
+    ) -> list[TeamMemberResponse]:
         async with self.uow as uow:
-            return await self._get_team_members(uow, team_id, current_only)
+            team_members = await self._get_team_members(uow, team_id, current_only)
+            return [self.to_response(team_member) for team_member in team_members]
 
     async def get_team_members_response(
         self,
@@ -121,7 +124,7 @@ class TeamMembersService:
         self,
         team_member_id: str,
         left_at: datetime | None = None,
-    ) -> TeamMembers | None:
+    ) -> TeamMemberResponse | None:
         async with self.uow as uow:
             team_member = await uow.team_members_repository.get_by_id(
                 team_member_id
@@ -145,9 +148,10 @@ class TeamMembersService:
             team_member.is_current = False
 
             await uow.team_members_repository.update()
+            response = self.to_response(team_member)
             await uow.commit()
 
-            return team_member
+            return response
 
     async def delete_member(self, team_member_id: str) -> bool | None:
         async with self.uow as uow:

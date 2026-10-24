@@ -28,7 +28,7 @@ from presentation.api.dependencies.meetings_depends import (
 )
 from presentation.api.dependencies.meetings_series_depends import get_meetings_series_service
 from presentation.api.dependencies.curator_assignment_depends import get_curator_assignment_service
-from application.services.meeting_tasks_service import MeetingTasksService
+from application.services.meeting_tasks_service import MeetingTasksService, NextMeetingNotFoundError
 from presentation.api.dependencies.meeting_task_depends import get_meeting_tasks_service
 from presentation.api.schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
 from presentation.api.schemas.team_members import TeamMemberCreate, TeamMemberResponse
@@ -148,7 +148,7 @@ async def add_team_member(
             joined_at=schema.joined_at
         )
 
-        return service.to_response(team_member)
+        return team_member
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
@@ -170,7 +170,7 @@ async def end_team_member(
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
-    return service.to_response(team_member)
+    return team_member
 
 
 @router.get('/{team_id}/history', response_model=list[TeamCaseHistoryResponse])
@@ -200,7 +200,7 @@ async def assign_team_to_case_semester(
             is_current=schema.is_current
         )
 
-        return service.to_response(team_case_history)
+        return team_case_history
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
 
@@ -219,7 +219,7 @@ async def end_current_team_case_history(
     if not team_case_history:
         raise HTTPException(status_code=404, detail='Current team case history not found')
 
-    return service.to_response(team_case_history)
+    return team_case_history
 
 
 @router.post('/{team_id}/curators/{curator_id}', response_model=CuratorAssignmentResponse)
@@ -227,12 +227,11 @@ async def assign_curator_to_team(
         team_id: str,
         curator_id: str,
         user=Depends(get_current_auth_user),
-        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
     schema = CuratorAssignmentCreate(
         user_id=curator_id,
-        team_case_history_id=current_team_case_history.id
+        team_id=team_id
     )
 
     try:
@@ -246,13 +245,12 @@ async def unassign_curator_from_team(
         team_id: str,
         assignment_id: str,
         user=Depends(get_current_auth_user),
-        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
     try:
         assignment = await service.unassign_curator(
             assignment_id=assignment_id,
-            team_case_history_id=current_team_case_history.id,
+            team_id=team_id,
         )
     except ValueError as err:
         raise HTTPException(status_code=409, detail=str(err))
@@ -267,11 +265,10 @@ async def unassign_curator_from_team(
 async def get_team_curators(
         team_id: str,
         user=Depends(get_current_auth_user),
-        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: CuratorAssignmentService = Depends(get_curator_assignment_service)
 ):
-    return await service.get_current_by_team_case_history_id(
-        team_case_history_id=current_team_case_history.id
+    return await service.get_current_by_team_id(
+        team_id=team_id
     )
 
 
@@ -310,6 +307,23 @@ async def get_team_meetings(
     return await service.get_by_team_case_history_id(
         team_case_history_id=current_team_case_history.id
     )
+
+
+@router.get('/{team_id}/meetings/{meeting_id}/next', response_model=MeetingResponse | None)
+async def get_next_team_meeting(
+        team_id: str,
+        meeting_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingsService = Depends(get_meetings_service),
+):
+    try:
+        return await service.get_next_meeting(
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id,
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
 
 
 @router.patch('/{team_id}/meetings/{meeting_id}', response_model=MeetingResponse)
@@ -492,6 +506,53 @@ async def create_meeting_task(
             meeting_id=meeting_id,
             current_team_case_history_id=current_team_case_history.id
         )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+
+
+@router.post(
+    '/{team_id}/meetings/{meeting_id}/next-meeting/tasks',
+    response_model=MeetingTaskResponse,
+    status_code=201,
+)
+async def create_task_for_next_team_meeting(
+        team_id: str,
+        meeting_id: str,
+        schema: MeetingTaskCreate,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        return await service.create_task_for_next_meeting(
+            schema=schema,
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id,
+        )
+    except NextMeetingNotFoundError as err:
+        raise HTTPException(status_code=409, detail=str(err))
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+
+
+@router.post(
+    '/{team_id}/meetings/{meeting_id}/tasks/carry-to-next-meeting',
+    response_model=list[MeetingTaskResponse],
+)
+async def carry_tasks_to_next_team_meeting(
+        team_id: str,
+        meeting_id: str,
+        user=Depends(get_current_auth_user),
+        current_team_case_history=Depends(get_current_team_case_history_by_team_id),
+        service: MeetingTasksService = Depends(get_meeting_tasks_service),
+):
+    try:
+        return await service.carry_task_to_next_meeting(
+            meeting_id=meeting_id,
+            current_team_case_history_id=current_team_case_history.id,
+        )
+    except NextMeetingNotFoundError as err:
+        raise HTTPException(status_code=409, detail=str(err))
     except ValueError as err:
         raise HTTPException(status_code=404, detail=str(err))
 

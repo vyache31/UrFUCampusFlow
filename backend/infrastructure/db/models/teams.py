@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from infrastructure.db.database import Base
@@ -54,6 +54,10 @@ class Teams(Base):
         DateTime(timezone=True), nullable=True
     )
 
+
+    curator_assignments = relationship(
+        "CuratorAssignment", back_populates="team"
+    )
     team_members = relationship("TeamMembers", back_populates="team", passive_deletes=True)
     university = relationship("Universities", back_populates="teams")
     case_history = relationship("TeamCaseHistory", back_populates="team", passive_deletes=True)
@@ -80,18 +84,25 @@ class TeamCaseHistory(Base):
     grades = relationship("Grades", back_populates="team_case_history")
     meetings = relationship("Meetings", back_populates="team_case_history")
     meetings_series = relationship("MeetingsSeries", back_populates="team_case_history")
-    curator_assignments = relationship(
-        "CuratorAssignment", back_populates="team_case_history"
-    )
+
 
 
 class CuratorAssignment(Base):
     __tablename__ = "curator_assignments"
+    __table_args__ = (
+        Index(
+            "uq_curator_assignments_active_team_user",
+            "team_id",
+            "user_id",
+            unique=True,
+            postgresql_where=text("is_current = true"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
-    team_case_history_id: Mapped[str] = mapped_column(
-        ForeignKey("team_case_history.id")
+    team_id: Mapped[str] = mapped_column(
+        ForeignKey("teams.id")
     )
     assigned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     unassigned_at: Mapped[Optional[datetime]] = mapped_column(
@@ -100,8 +111,8 @@ class CuratorAssignment(Base):
     is_current: Mapped[bool] = mapped_column(Boolean, default=True)
 
     user = relationship("Users", back_populates="curator_assignments")
-    team_case_history = relationship(
-        "TeamCaseHistory", back_populates="curator_assignments"
+    team = relationship(
+        "Teams", back_populates="curator_assignments"
     )
     meetings_attendance = relationship(
         "CuratorMeetingsAttendance", back_populates="curator_assignment"

@@ -70,12 +70,22 @@ class Meetings(Base):
 
 class MeetingTask(Base):
     __tablename__ = "meeting_tasks"
+    __table_args__ = (
+        UniqueConstraint(
+            "carried_from_task_id",
+            "meeting_id",
+            name="uq_meeting_tasks_source_target_meeting",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     title: Mapped[str]
     description: Mapped[Optional[str]] = mapped_column(nullable=True)
     meeting_id: Mapped[str] = mapped_column(ForeignKey("meetings.id"))
     is_completed: Mapped[bool]
+    carried_from_task_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("meeting_tasks.id"), nullable=True
+    )
 
     meeting = relationship("Meetings", back_populates="tasks")
 
