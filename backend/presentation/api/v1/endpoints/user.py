@@ -20,13 +20,7 @@ async def create_user(
         user=Depends(require_admin_role),
         service: UserService = Depends(get_user_service)
 ):
-    # TODO: Переписать валидацию в user_service
-    try:
-        return await service.create_user(schema)
-    except ValueError as err:
-        detail = str(err)
-        status_code = 409 if detail == 'User already exist' else 404
-        raise HTTPException(status_code=status_code, detail=detail)
+    return await service.create_user(schema)
 
 
 @router.get('/', response_model=List[UserResponse])
@@ -58,10 +52,7 @@ async def update_user(
         user=Depends(get_current_auth_user),
         service: UserService = Depends(get_user_service)
 ):
-    try:
-        user = await service.update_user(user_id, schema)
-    except ValueError as err:
-        raise HTTPException(status_code=404, detail=str(err))
+    user = await service.update_user(user_id, schema)
     if not user:
         raise HTTPException(status_code=404, detail='User not found')
 

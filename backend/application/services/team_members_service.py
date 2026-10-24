@@ -1,6 +1,14 @@
 import uuid
 from datetime import UTC, datetime
 
+from application.exceptions.base import InvalidPeriodError
+from application.exceptions.resources import StudentNotFoundError
+from application.exceptions.team import (
+    StudentAlreadyAssignedToTeamError,
+    TeamMembershipAlreadyEndedError,
+    TeamMembershipAlreadyExistsError,
+    TeamNotFoundError,
+)
 from application.interfaces.uow.team_members_uow_protocol import (
     TeamMembersUoWProtocol,
 )
@@ -21,7 +29,7 @@ class TeamMembersService:
         team = await uow.team_repository.get_by_id(team_id)
 
         if not team:
-            raise ValueError("Team not found")
+            raise TeamNotFoundError("Team not found")
 
         if current_only:
             return await uow.team_members_repository.get_current_by_team_id(team_id)
@@ -39,12 +47,12 @@ class TeamMembersService:
             team = await uow.team_repository.get_by_id(team_id)
 
             if not team:
-                raise ValueError("Team not found")
+                raise TeamNotFoundError("Team not found")
 
             student = await uow.student_repository.get_student_by_id(student_id)
 
             if not student:
-                raise ValueError("Student not found")
+                raise StudentNotFoundError("Student not found")
 
             existing_member = (
                 await uow.team_members_repository.get_current_by_team_and_student(
@@ -54,7 +62,9 @@ class TeamMembersService:
             )
 
             if existing_member:
-                raise ValueError("Student is already a current member of this team")
+                raise TeamMembershipAlreadyExistsError(
+                    "Student is already a current member of this team"
+                )
 
             current_student_membership = (
                 await uow.team_members_repository.get_current_by_student_id(
@@ -63,7 +73,7 @@ class TeamMembersService:
             )
 
             if current_student_membership:
-                raise ValueError(
+                raise StudentAlreadyAssignedToTeamError(
                     "Student is already a current member of another team"
                 )
 
@@ -134,13 +144,15 @@ class TeamMembersService:
                 return None
 
             if not team_member.is_current:
-                raise ValueError("Team membership is already ended")
+                raise TeamMembershipAlreadyEndedError(
+                    "Team membership is already ended"
+                )
 
             if left_at is None:
                 left_at = datetime.now(UTC)
 
             if left_at < team_member.joined_at:
-                raise ValueError(
+                raise InvalidPeriodError(
                     "Membership end date cannot be earlier than join date"
                 )
 

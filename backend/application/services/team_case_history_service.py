@@ -1,6 +1,13 @@
 import uuid
 from datetime import UTC, datetime
 
+from application.exceptions.base import InvalidPeriodError
+from application.exceptions.case import CaseSemesterNotFoundError
+from application.exceptions.team import (
+    TeamAlreadyAssignedToCaseError,
+    TeamCaseAssignmentAlreadyExistsError,
+    TeamNotFoundError,
+)
 from application.interfaces.uow.team_case_history_uow_protocol import (
     TeamCaseHistoryUoWProtocol,
 )
@@ -20,7 +27,7 @@ class TeamCaseHistoryService:
         team = await uow.team_repository.get_by_id(team_id)
 
         if not team:
-            raise ValueError("Team not found")
+            raise TeamNotFoundError("Team not found")
 
         return await uow.team_case_history_repository.get_by_team_id(team_id)
 
@@ -35,14 +42,14 @@ class TeamCaseHistoryService:
             team = await uow.team_repository.get_by_id(team_id)
 
             if not team:
-                raise ValueError("Team not found")
+                raise TeamNotFoundError("Team not found")
 
             case_semester = await uow.case_semesters_repository.get_by_id(
                 case_semesters_id
             )
 
             if not case_semester:
-                raise ValueError("Case semester not found")
+                raise CaseSemesterNotFoundError("Case semester not found")
 
             existing_connection = await (
                 uow.team_case_history_repository
@@ -53,7 +60,7 @@ class TeamCaseHistoryService:
             )
 
             if existing_connection:
-                raise ValueError(
+                raise TeamCaseAssignmentAlreadyExistsError(
                     "Team already has current connection with this case semester"
                 )
 
@@ -65,7 +72,9 @@ class TeamCaseHistoryService:
                 )
 
                 if current_connection:
-                    raise ValueError("Team already has current case history")
+                    raise TeamAlreadyAssignedToCaseError(
+                        "Team already has current case history"
+                    )
 
             now = datetime.now(UTC)
 
@@ -164,7 +173,7 @@ class TeamCaseHistoryService:
                 team_case_history.started_at
                 and ended_at < team_case_history.started_at
             ):
-                raise ValueError(
+                raise InvalidPeriodError(
                     "Case history end date cannot be earlier than start date"
                 )
 

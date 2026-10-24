@@ -3,6 +3,12 @@ import uuid
 
 import httpx
 
+from application.exceptions.base import InvalidPeriodError, RequiredFieldError
+from application.exceptions.meeting import (
+    MeetingNotFoundError,
+    MeetingTimeConflictError,
+)
+from application.exceptions.team import TeamCaseHistoryNotFoundError
 from application.interfaces.integrations import (
     MicrosoftAccessTokenProviderProtocol,
     MicrosoftGraphClientProtocol,
@@ -23,7 +29,7 @@ async def find_next_meeting(
     meeting = await meetings_repository.get_by_id(meeting_id)
 
     if not meeting or meeting.team_case_history_id != current_team_case_history_id:
-        raise ValueError("Meeting not found")
+        raise MeetingNotFoundError("Meeting not found")
 
     current_meeting_start_at = meeting.start_at
 
@@ -88,13 +94,15 @@ class MeetingsService:
         meeting_data: MeetingCreate,
     ) -> MeetingResponse:
         if meeting_data.start_at >= meeting_data.end_at:
-            raise ValueError("Meeting start time should be earlier than ending time")
+            raise InvalidPeriodError(
+                "Meeting start time should be earlier than ending time"
+            )
         async with self.uow as uow:
             history = await uow.team_case_history_repository.get_by_id(
                 current_team_case_history_id
             )
             if history is None:
-                raise ValueError("TeamCaseHistory entry not found")
+                raise TeamCaseHistoryNotFoundError("TeamCaseHistory entry not found")
 
             access_token = await self.oauth_service.get_actual_access_token(user_id)
             calendar_view = await self.graph_client.list_calendar_view(
@@ -106,7 +114,9 @@ class MeetingsService:
             )
             events = calendar_view.get("value", [])
             if self._has_calendar_conflicts(events):
-                raise ValueError("This time slot is not empty. Try another time.")
+                raise MeetingTimeConflictError(
+                    "This time slot is not empty. Try another time."
+                )
 
             payload = await self.graph_client.create_meeting(
                 meeting_data=meeting_data, access_token=access_token
@@ -158,12 +168,14 @@ class MeetingsService:
 
             for field in ("title", "start_at", "end_at"):
                 if field in update_data and update_data[field] is None:
-                    raise ValueError(f"{field} can not be empty")
+                    raise RequiredFieldError(f"{field} can not be empty")
 
             start_at = update_data.get("start_at", meeting.start_at)
             end_at = update_data.get("end_at", meeting.end_at)
             if start_at >= end_at:
-                raise ValueError("Meeting start time should be earlier than ending time")
+                raise InvalidPeriodError(
+                    "Meeting start time should be earlier than ending time"
+                )
 
             access_token = await self.oauth_service.get_actual_access_token(user_id)
             if "start_at" in update_data or "end_at" in update_data:
@@ -178,7 +190,9 @@ class MeetingsService:
                 if self._has_calendar_conflicts(
                     events, ignored_event_id=meeting.outlook_event_id
                 ):
-                    raise ValueError("This time slot is not empty. Try another time.")
+                    raise MeetingTimeConflictError(
+                        "This time slot is not empty. Try another time."
+                    )
 
             title = update_data.get("title", meeting.title)
             location = update_data.get("location", meeting.location)

@@ -1,3 +1,9 @@
+from application.exceptions.base import RequiredFieldError
+from application.exceptions.meeting import (
+    MeetingNotFoundError,
+    MeetingTaskNotFoundError,
+    NextMeetingNotFoundError,
+)
 from application.interfaces.uow.meeting_tasks_uow_protocol import MeetingTasksUoWProtocol
 from infrastructure.db.models import MeetingTask, Meetings
 from presentation.api.schemas.outlook_meetings import MeetingTaskCreate, MeetingTaskUpdate, MeetingTaskResponse
@@ -5,8 +11,6 @@ from application.services.meetings_service import find_next_meeting
 import uuid
 
 
-class NextMeetingNotFoundError(ValueError):
-    pass
 
 
 class MeetingTasksService:
@@ -23,7 +27,7 @@ class MeetingTasksService:
         meeting = await uow.meetings_repository.get_by_id(meeting_id)
 
         if not meeting or meeting.team_case_history_id != current_team_case_history_id:
-            raise ValueError('This meeting does not exist')
+            raise MeetingNotFoundError('This meeting does not exist')
 
         return meeting
 
@@ -34,7 +38,7 @@ class MeetingTasksService:
         task = await uow.meeting_tasks_repository.get_by_id(task_id)
 
         if not task or task.meeting_id != meeting_id:
-            raise ValueError('This task does not exist')
+            raise MeetingTaskNotFoundError('This task does not exist')
 
         return task
 
@@ -73,7 +77,9 @@ class MeetingTasksService:
             )
 
             if not meeting:
-                raise NextMeetingNotFoundError("Schedule the next meeting before adding tasks")
+                raise NextMeetingNotFoundError(
+                    "Schedule the next meeting before adding tasks"
+                )
 
             meeting_task = MeetingTask(
                 id=str(uuid.uuid4()),
@@ -101,7 +107,9 @@ class MeetingTasksService:
             )
 
             if not carry_to_meeting:
-                raise NextMeetingNotFoundError("Schedule the next meeting before carrying tasks")
+                raise NextMeetingNotFoundError(
+                    "Schedule the next meeting before carrying tasks"
+                )
 
             carry_to_meeting_tasks = await uow.meeting_tasks_repository.get_by_meeting_id(
                 carry_to_meeting.id
@@ -150,7 +158,7 @@ class MeetingTasksService:
             task = await self._get_task_for_meeting(uow, task_id, meeting_id)
             update_data = schema.model_dump(exclude_unset=True)
             if 'title' in update_data and update_data['title'] is None:
-                raise ValueError('Task title can not be empty')
+                raise RequiredFieldError('Task title can not be empty')
             for field, value in update_data.items():
                 setattr(task, field, value)
             await uow.meeting_tasks_repository.update(task)

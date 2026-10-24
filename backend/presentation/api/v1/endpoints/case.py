@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 import httpx
 from pydantic import ValidationError
 from application.services.case_service import CaseService
-from application.services.case_service import CaseHasDependenciesError
 from presentation.api.schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from presentation.api.dependencies.case_depends import get_case_service
 from presentation.api.dependencies.auth_depends import get_current_auth_user, get_current_subject
@@ -36,13 +35,8 @@ async def create_case(
         user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
-    try:
-        return await service.create_case(schema, creator_id=user.id)
+    return await service.create_case(schema, creator_id=user.id)
 
-    except ValueError as error:
-        detail = str(error)
-        status_code = 409 if detail == 'Case with this title already exists' else 404
-        raise HTTPException(status_code=status_code, detail=detail)
 
 
 @router.get('/{case_id}', response_model=CaseResponse)
@@ -66,10 +60,7 @@ async def update_case(
         user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
-    try:
-        case = await service.update_case(case_id=case_id, schema=schema)
-    except ValueError as err:
-        raise HTTPException(status_code=404, detail=str(err))
+    case = await service.update_case(case_id=case_id, schema=schema)
     if not case:
         raise _case_not_found(case_id)
 
@@ -82,10 +73,7 @@ async def delete_case(
         user=Depends(get_current_auth_user),
         service: CaseService = Depends(get_case_service)
 ):
-    try:
-        result = await service.delete_case(case_id=case_id)
-    except CaseHasDependenciesError as err:
-        raise HTTPException(status_code=409, detail=str(err))
+    result = await service.delete_case(case_id=case_id)
 
     if not result:
         raise _case_not_found(case_id)
@@ -99,16 +87,13 @@ async def send_case_to_review(
     user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
-    try:
-        case = await service.send_to_review(case_id)
+    case = await service.send_to_review(case_id)
 
-        if not case:
-            raise _case_not_found(case_id)
+    if not case:
+        raise _case_not_found(case_id)
 
-        return case
+    return case
 
-    except ValueError as err:
-        raise HTTPException(status_code=409, detail=str(err))
 
 
 @router.post('/{case_id}/reject', response_model=CaseResponse)
@@ -117,16 +102,13 @@ async def reject_case(
     user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
-    try:
-        case = await service.reject(case_id)
+    case = await service.reject(case_id)
 
-        if not case:
-            raise _case_not_found(case_id)
+    if not case:
+        raise _case_not_found(case_id)
 
-        return case
+    return case
 
-    except ValueError as err:
-        raise HTTPException(status_code=409, detail=str(err))
 
 
 @router.post('/{case_id}/activate', response_model=CaseResponse)
@@ -135,16 +117,13 @@ async def activate_case(
     user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
-    try:
-        case = await service.activate_after_submition(case_id)
+    case = await service.activate_after_submition(case_id)
 
-        if not case:
-            raise _case_not_found(case_id)
+    if not case:
+        raise _case_not_found(case_id)
 
-        return case
+    return case
 
-    except ValueError as err:
-        raise HTTPException(status_code=409, detail=str(err))
 
 
 @router.post('/{case_id}/archive', response_model=CaseResponse)
@@ -153,16 +132,13 @@ async def archive_case(
     user=Depends(get_current_auth_user),
     service: CaseService = Depends(get_case_service)
 ):
-    try:
-        case = await service.archive(case_id)
+    case = await service.archive(case_id)
 
-        if not case:
-            raise _case_not_found(case_id)
+    if not case:
+        raise _case_not_found(case_id)
 
-        return case
+    return case
 
-    except ValueError as err:
-        raise HTTPException(status_code=409, detail=str(err))
 
 
 @router.post('/generate-with-ai', response_model=AIGeneratedCaseResponse)

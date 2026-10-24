@@ -1,6 +1,14 @@
 import uuid
 from datetime import UTC, datetime
 
+from application.exceptions.curator import (
+    CuratorAssignmentAlreadyEndedError,
+    CuratorAssignmentAlreadyExistsError,
+    CuratorAssignmentNotFoundError,
+    UserIsNotCuratorError,
+)
+from application.exceptions.resources import UserNotFoundError
+from application.exceptions.team import TeamNotFoundError
 from application.interfaces.uow.curator_assignment_uow_protocol import (
     CuratorAssignmentUoWProtocol,
 )
@@ -22,15 +30,18 @@ class CuratorAssignmentService:
         async with self.uow as uow:
             user = await uow.user_repository.get_by_id(schema.user_id)
 
-            if not user or not user.role or user.role.code != "CURATOR":
-                raise ValueError("Curator user not found")
+            if not user:
+                raise UserNotFoundError("Curator user not found")
+
+            if not user.role or user.role.code != "CURATOR":
+                raise UserIsNotCuratorError("User does not have the curator role")
 
             team = await uow.team_repository.get_by_id(
                 schema.team_id
             )
 
             if not team:
-                raise ValueError("Team not found")
+                raise TeamNotFoundError("Team not found")
 
             repository = uow.curator_assignments_repository
             existing_assignment = await (
@@ -41,7 +52,7 @@ class CuratorAssignmentService:
             )
 
             if existing_assignment:
-                raise ValueError(
+                raise CuratorAssignmentAlreadyExistsError(
                     "Curator already has current assignment for this team"
                 )
 
@@ -76,7 +87,9 @@ class CuratorAssignmentService:
                 return None
 
             if not assignment.is_current:
-                raise ValueError("Curator assignment is already ended")
+                raise CuratorAssignmentAlreadyEndedError(
+                    "Curator assignment is already ended"
+                )
 
             assignment.is_current = False
             assignment.unassigned_at = datetime.now(UTC)
@@ -96,7 +109,7 @@ class CuratorAssignmentService:
             )
 
             if not assignment:
-                raise ValueError("Curator assignment not found")
+                raise CuratorAssignmentNotFoundError("Curator assignment not found")
 
             return self._to_response(assignment)
 
@@ -149,7 +162,9 @@ class CuratorAssignmentService:
             )
 
             if not assignment:
-                raise ValueError("Current curator assignment not found")
+                raise CuratorAssignmentNotFoundError(
+                    "Current curator assignment not found"
+                )
 
             return self._to_response(assignment)
 

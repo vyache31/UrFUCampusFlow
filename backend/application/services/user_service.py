@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime, UTC
+from application.exceptions.auth import InvalidCredentialsError
+from application.exceptions.resources import RoleNotFoundError, UserAlreadyExistsError
 from infrastructure.db.repositories.user_repository import UserRepository
 from presentation.api.schemas.user import (
     UserCreate, UserUpdate,
@@ -7,11 +9,8 @@ from presentation.api.schemas.user import (
 )
 from infrastructure.db.models import Users
 import infrastructure.security.utils_jwt as auth_utils_jwt
-from fastapi import HTTPException, status
 
 
-class InvalidCredentialsError(Exception):
-    pass
 
 
 class UserService:
@@ -26,17 +25,10 @@ class UserService:
         is_exist = await self.rep.get_by_email(schema.email)
         role = await self.rep.get_role_by_id(schema.role_id)
 
-        # TODO: заменить на HTTPException's, убрать HTTP из сервисного слоя!!!!
         if is_exist:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User already exist"
-            )
+            raise UserAlreadyExistsError("User already exist")
         if not role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Role not found"
-            )
+            raise RoleNotFoundError("Role not found")
 
         user = Users(
             id=str(uuid.uuid4()),
@@ -88,7 +80,7 @@ class UserService:
         if schema.role_id:
             role = await self.rep.get_role_by_id(schema.role_id)  # TODO: переделать, убрав в role_service
             if not role:
-                raise ValueError("Role not found")
+                raise RoleNotFoundError("Role not found")
             user.role_id = schema.role_id
         user.updated_at = datetime.now(UTC)
 
@@ -112,13 +104,13 @@ class UserService:
     ) -> Users:
         user = await self.rep.get_by_email(email)
         if not user:
-            raise InvalidCredentialsError()
+            raise InvalidCredentialsError("invalid username or password")
 
         if not auth_utils_jwt.validate_password(
                 password=password,
                 hashed_password=user.password_hash,
         ):
-            raise InvalidCredentialsError()
+            raise InvalidCredentialsError("invalid username or password")
 
         return user
 

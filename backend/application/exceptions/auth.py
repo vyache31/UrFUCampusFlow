@@ -1,6 +1,8 @@
-from application.exceptions.base import AuthenticationError, ConflictError, NotFoundError
-
-
+from application.exceptions.base import (
+    AuthenticationError,
+    ConflictError,
+    NotFoundError,
+)
 class InvalidServiceCredentialsError(AuthenticationError):
     """The service client supplied an invalid secret."""
 
@@ -15,3 +17,7 @@ class OAuthConnectionNotFoundError(NotFoundError):
 
 class OAuthConnectionInactiveError(ConflictError):
     """The OAuth connection is inactive and cannot provide an access token."""
+
+
+class InvalidCredentialsError(AuthenticationError):
+    """The supplied user credentials are invalid."""

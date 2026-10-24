@@ -1,6 +1,9 @@
 import uuid
 from datetime import datetime
 
+from application.exceptions.base import InvalidPeriodError
+from application.exceptions.meeting import InvalidRecurrenceError
+from application.exceptions.team import TeamCaseHistoryNotFoundError
 from application.interfaces.integrations import (
     MicrosoftAccessTokenProviderProtocol,
     MicrosoftGraphClientProtocol,
@@ -39,7 +42,7 @@ class MeetingsSeriesService:
             end_date = schema.recurrence.range.end_date
 
             if end_date is None:
-                raise ValueError("end_date обязателен для типа endDate")
+                raise InvalidRecurrenceError("end_date обязателен для типа endDate")
 
             end_time = datetime.combine(end_date, schema.end_at.time())
 
@@ -49,7 +52,7 @@ class MeetingsSeriesService:
             )
 
             if not team_case_history:
-                raise ValueError("TeamCaseHistory entry not found")
+                raise TeamCaseHistoryNotFoundError("TeamCaseHistory entry not found")
 
             end_time = team_case_history.case_semester.semester.end_date
 
@@ -103,13 +106,15 @@ class MeetingsSeriesService:
         self, user_id: str, team_case_history_id: str, schema: MeetingsSeriesCreate
     ) -> MeetingsSeriesResponse:
         if schema.start_at >= schema.end_at:
-            raise ValueError("Meetings start time must be earlier than end time")
+            raise InvalidPeriodError(
+                "Meetings start time must be earlier than end time"
+            )
         async with self.uow as uow:
             team_case_history = await uow.team_case_history_repository.get_by_id(
                 team_case_history_id
             )
             if not team_case_history:
-                raise ValueError("TeamCaseHistory entry not found")
+                raise TeamCaseHistoryNotFoundError("TeamCaseHistory entry not found")
 
             window = await self._resolve_instances_window(
                 uow=uow, schema=schema, team_case_history_id=team_case_history_id

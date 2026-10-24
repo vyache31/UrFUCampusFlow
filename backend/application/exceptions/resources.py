@@ -1,6 +1,4 @@
-from application.exceptions.base import NotFoundError
-
-
+from application.exceptions.base import ConflictError, NotFoundError
 class UserNotFoundError(NotFoundError):
     """The referenced user does not exist."""
 
@@ -19,3 +17,7 @@ class RoleNotFoundError(NotFoundError):
 
 class StudentNotFoundError(NotFoundError):
     """The referenced student does not exist."""
+
+
+class UserAlreadyExistsError(ConflictError):
+    """A user with the given email already exists."""

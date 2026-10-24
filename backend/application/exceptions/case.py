@@ -1,6 +1,4 @@
 from application.exceptions.base import ConfigurationError, ConflictError, NotFoundError
-
-
 class CaseNotFoundError(NotFoundError):
     """The requested case does not exist."""
 
@@ -23,3 +21,7 @@ class InvalidCaseStatusTransitionError(ConflictError):
 
 class CaseStatusConfigurationError(ConfigurationError):
     """A status required by the case workflow is missing from reference data."""
+
+
+class CaseHasDependenciesError(ConflictError):
+    """The case cannot be deleted while dependent records exist."""

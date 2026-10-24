@@ -1,6 +1,4 @@
 from application.exceptions.base import ConflictError, NotFoundError
-
-
 class TeamNotFoundError(NotFoundError):
     """The requested team does not exist."""
 
@@ -31,3 +29,7 @@ class TeamCaseAssignmentAlreadyExistsError(ConflictError):
 
 class TeamAlreadyAssignedToCaseError(ConflictError):
     """The team already has a current case assignment."""
+
+
+class TeamHasDependenciesError(ConflictError):
+    """The team cannot be deleted while dependent records exist."""
