@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
+from application.exceptions.auth import OAuthAccountAlreadyLinkedError
 from application.services.microsoft_oauth_service import MicrosoftOAuthService
 from presentation.api.schemas.microsoft_oauth import ConnectResponse, OAuthStatusResponse
 from presentation.api.dependencies.oauth_depends import get_oauth_service
@@ -67,7 +68,7 @@ async def outlook_callback(
 
         return redirect_to_frontend(outlook='connected')
 
-    except ValueError as err:
+    except OAuthAccountAlreadyLinkedError as err:
         return redirect_to_frontend(outlook_error=str(err))
 
 
@@ -76,10 +77,7 @@ async def disconnect_outlook(
         user: Users = Depends(get_current_auth_user),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
 ):
-    try:
-        return await service.disconnect_oauth(user.id)
-    except ValueError as err:
-        raise HTTPException(status_code=404, detail=str(err))
+    return await service.disconnect_oauth(user.id)
 
 
 @router.get('/outlook/integration-status', response_model=OAuthStatusResponse)
@@ -87,7 +85,4 @@ async def get_integration_status(
         user: Users = Depends(get_current_auth_user),
         service: MicrosoftOAuthService = Depends(get_oauth_service),
 ):
-    try:
-        return await service.get_status(user.id)
-    except ValueError as err:
-        raise HTTPException(status_code=404, detail=str(err))
+    return await service.get_status(user.id)

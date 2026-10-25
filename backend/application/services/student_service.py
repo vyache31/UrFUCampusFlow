@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, UTC
 
+from application.exceptions.resources import UniversityNotFoundError
 from application.interfaces.uow.student_uow_protocol import StudentUoWProtocol
 from infrastructure.db.models import Students
 from presentation.api.schemas.student import StudentCreate, StudentResponse, StudentUpdate
@@ -19,7 +20,7 @@ class StudentService:
             )
 
             if not is_exist:
-                raise ValueError('University not found')
+                raise UniversityNotFoundError('University not found')
 
             student = Students(
                 id=str(uuid.uuid4()),
@@ -52,7 +53,7 @@ class StudentService:
                 )
 
                 if not is_exist:
-                    raise ValueError('University not found')
+                    raise UniversityNotFoundError('University not found')
 
             for key, value in update_data.items():
                 setattr(student, key, value)

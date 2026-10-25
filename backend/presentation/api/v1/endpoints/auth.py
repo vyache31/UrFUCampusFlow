@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from application.services.auth_service import AuthService
 from presentation.api.schemas.user import (
     UserCreate, UserLoginRequest,
@@ -36,13 +36,7 @@ async def login_service(
     payload: dict,
     service: AuthService = Depends(get_auth_service)
 ):
-    try:
-        return await service.login_service(payload)
-    except ValueError as err:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid service secret"
-        )
+    return await service.login_service(payload)
 
 @router.post(
     '/refresh',

@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 
 from sqlalchemy.exc import IntegrityError
 
+from application.exceptions.resources import UniversityNotFoundError
+from application.exceptions.team import TeamAlreadyExistsError, TeamHasDependenciesError
 from application.interfaces.uow.team_uow_protocol import TeamUoWProtocol
 from infrastructure.db.models import Teams
 from presentation.api.schemas.team import TeamCreate, TeamResponse, TeamUpdate
@@ -25,14 +27,14 @@ class TeamService:
         )
 
         if not university:
-            raise ValueError("University not found")
+            raise UniversityNotFoundError("University not found")
 
     async def create_team(self, schema: TeamCreate) -> TeamResponse:
         async with self.uow as uow:
             existing_team = await uow.team_repository.get_by_name(schema.name)
 
             if existing_team:
-                raise ValueError("Team already exist")
+                raise TeamAlreadyExistsError("Team already exist")
 
             await self._validate_refs(
                 uow,
@@ -109,9 +111,3 @@ class TeamService:
                 raise
 
             return True
-
-
-class TeamHasDependenciesError(Exception):
-    """Команда не может быть удалена, так как есть связанные записи"""
-
-    pass

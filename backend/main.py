@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from application.exceptions.base import ApplicationError
 from presentation.api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
     iteration, auth, case_status, evaluation, websocket
 from presentation.api.v1.endpoints import bot as bot_endpoints
+from presentation.api.exception_handlers import application_exception_handler
 import httpx
 import redis.asyncio as aioredis
 from config import settings
@@ -34,6 +36,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.add_exception_handler(ApplicationError, application_exception_handler)
 
 app.add_middleware(
     CORSMiddleware,

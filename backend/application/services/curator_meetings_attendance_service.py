@@ -1,5 +1,7 @@
 import uuid
 
+from application.exceptions.curator import CuratorAttendanceNotFoundError
+from application.exceptions.meeting import MeetingNotFoundError
 from infrastructure.db.models import CuratorMeetingsAttendance
 from application.interfaces.uow.curator_meeting_attendance_uow_protocol import CuratorMeetingAttendanceUoWProtocol
 from application.interfaces.uow.meetings_uow_protocol import MeetingsUoWProtocol
@@ -29,7 +31,7 @@ class CuratorMeetingAttendanceService:
         meeting = await uow.meetings_repository.get_by_id(meeting_id)
 
         if not meeting:
-            raise ValueError("This meeting not found")
+            raise MeetingNotFoundError("This meeting not found")
 
         current_assignments = await (
             uow.curator_assignments_repository.get_current_by_team_id(
@@ -71,7 +73,9 @@ class CuratorMeetingAttendanceService:
         async with self.uow as uow:
             attendance = await uow.attendance_repository.get_by_id(attendance_id)
             if not attendance:
-                raise ValueError("Curator meeting attendance not found")
+                raise CuratorAttendanceNotFoundError(
+                    "Curator meeting attendance not found"
+                )
             return self._to_response(attendance)
 
     async def get_by_meeting_id(
@@ -80,7 +84,7 @@ class CuratorMeetingAttendanceService:
         async with self.uow as uow:
             meeting = await uow.meetings_repository.get_by_id(meeting_id)
             if not meeting or meeting.team_case_history_id != current_team_case_history_id:
-                raise ValueError("Meeting not found")
+                raise MeetingNotFoundError("Meeting not found")
             attendances = await uow.attendance_repository.get_by_meeting_id(meeting_id)
             return [self._to_response(attendance) for attendance in attendances]
 
@@ -102,7 +106,9 @@ class CuratorMeetingAttendanceService:
                 curator_assignment_id=curator_assignment_id,
             )
             if not attendance:
-                raise ValueError("Curator meeting attendance not found")
+                raise CuratorAttendanceNotFoundError(
+                    "Curator meeting attendance not found"
+                )
             return self._to_response(attendance)
 
     async def mark_attendance(
@@ -115,10 +121,12 @@ class CuratorMeetingAttendanceService:
         async with self.uow as uow:
             meeting = await uow.meetings_repository.get_by_id(meeting_id)
             if not meeting or meeting.team_case_history_id != current_team_case_history_id:
-                raise ValueError("Meeting not found")
+                raise MeetingNotFoundError("Meeting not found")
             attendance = await uow.attendance_repository.get_by_id(attendance_id)
             if not attendance or attendance.meeting_id != meeting_id:
-                raise ValueError("Curator meeting attendance not found")
+                raise CuratorAttendanceNotFoundError(
+                    "Curator meeting attendance not found"
+                )
             update_data = schema.model_dump(exclude_none=True, exclude_unset=True)
             if "is_present" not in update_data:
                 return self._to_response(attendance)

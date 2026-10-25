@@ -1,6 +1,15 @@
 import uuid
 from datetime import UTC, datetime
 
+from application.exceptions.case import CaseNotFoundError
+from application.exceptions.evaluation import (
+    CaseNotReadyForEvaluationError,
+    EvaluationCommentNotFoundError,
+    EvaluationEditForbiddenError,
+    EvaluationFormNotFoundError,
+    EvaluationReactionAlreadyExistsError,
+    EvaluationReactionNotFoundError,
+)
 from application.interfaces.uow.evaluation_uow_protocol import EvaluationUoWProtocol
 from infrastructure.db.models import (
     EvaluationForm,
@@ -62,10 +71,10 @@ class EvaluationService:
             case = await uow.case_repository.get_by_id(case_id)
 
             if not case:
-                raise ValueError("Case with this id not found")
+                raise CaseNotFoundError("Case with this id not found")
 
             if case.status.code != "IN_REVIEW":
-                raise ValueError("Case status must be IN_REVIEW")
+                raise CaseNotReadyForEvaluationError("Case status must be IN_REVIEW")
 
             created_form = EvaluationForm(
                 id=str(uuid.uuid4()),
@@ -88,7 +97,7 @@ class EvaluationService:
             if not await uow.evaluation_repository.get_form_by_id(
                 schema.evaluation_form_id
             ):
-                raise ValueError("This form does not exist")
+                raise EvaluationFormNotFoundError("This form does not exist")
 
             existing_reaction = (
                 await uow.evaluation_repository.get_reaction_by_form_and_user(
@@ -98,7 +107,9 @@ class EvaluationService:
             )
 
             if existing_reaction:
-                raise ValueError("User has already reacted to this form")
+                raise EvaluationReactionAlreadyExistsError(
+                    "User has already reacted to this form"
+                )
 
             created_reaction = EvaluationFormReactions(
                 id=str(uuid.uuid4()),
@@ -128,7 +139,7 @@ class EvaluationService:
             if not await uow.evaluation_repository.get_form_by_id(
                 schema.evaluation_form_id
             ):
-                raise ValueError("This form does not exist")
+                raise EvaluationFormNotFoundError("This form does not exist")
 
             this_comment_uuid = str(uuid.uuid4())
             created_at = datetime.now(UTC)
@@ -169,10 +180,10 @@ class EvaluationService:
             reaction = await uow.evaluation_repository.get_reaction_by_id(reaction_id)
 
             if not reaction:
-                raise ValueError("This reaction does not exist")
+                raise EvaluationReactionNotFoundError("This reaction does not exist")
 
             if reaction.user_id != user_id:
-                raise ValueError("You cannot update this reaction")
+                raise EvaluationEditForbiddenError("You cannot update this reaction")
 
             update_data = schema.model_dump(exclude_unset=True, exclude_none=True)
 
@@ -202,10 +213,10 @@ class EvaluationService:
             comment = await uow.evaluation_repository.get_comment_by_id(comment_id)
 
             if not comment:
-                raise ValueError("This comment does not exist")
+                raise EvaluationCommentNotFoundError("This comment does not exist")
 
             if comment.user_id != user_id:
-                raise ValueError("You cannot update this comment")
+                raise EvaluationEditForbiddenError("You cannot update this comment")
 
             update_data = schema.model_dump(exclude_unset=True, exclude_none=True)
 

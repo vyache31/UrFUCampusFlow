@@ -2,9 +2,20 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
+from application.exceptions.case import (
+    CaseAlreadyExistsError,
+    CaseHasDependenciesError,
+    CaseSemesterAlreadyExistsError,
+    CaseStatusConfigurationError,
+    InvalidCaseStatusTransitionError,
+)
+from application.exceptions.resources import (
+    DifficultyLevelNotFoundError,
+    UniversityNotFoundError,
+    UserNotFoundError,
+)
 from application.interfaces.uow.case_uow_protocol import CaseUoWProtocol
 from application.services.const.case_status_workflow import (
     ALLOWED_CASE_STATUS_TRANSITIONS,
@@ -29,14 +40,17 @@ class CaseService:
         uow: CaseUoWProtocol,
     ) -> None:
         config = {
-            "creator_id": (uow.user_repository.get_by_id, "Creator not found."),
+            "creator_id": (
+                uow.user_repository.get_by_id,
+                UserNotFoundError("Creator not found."),
+            ),
             "university_id": (
                 uow.university_info_repository.get_by_id,
-                "University not found.",
+                UniversityNotFoundError("University not found."),
             ),
             "difficulty_level_id": (
                 uow.difficulty_level_repository.get_by_id,
-                "Difficulty level not found",
+                DifficultyLevelNotFoundError("Difficulty level not found"),
             ),
         }
 
@@ -46,7 +60,7 @@ class CaseService:
             if is_ok:
                 setattr(case, key, value)
             else:
-                raise ValueError(config[key][1])
+                raise config[key][1]
 
     async def create_case(
         self, schema: CaseCreate, creator_id: str
@@ -55,14 +69,14 @@ class CaseService:
             is_exist = await uow.case_repository.get_by_title(schema.title)
 
             if is_exist:
-                raise HTTPException(status_code=409, detail="Case already exists")
+                raise CaseAlreadyExistsError("Case already exists")
 
             draft_status = await uow.case_statuses_repository.get_by_code(
                 CASE_STATUS_DRAFT
             )
 
             if not draft_status:
-                raise ValueError("Draft status not found in db")
+                raise CaseStatusConfigurationError("Draft status not found in db")
 
             case = Cases(
                 id=str(uuid.uuid4()),
@@ -105,7 +119,9 @@ class CaseService:
             )
 
             if case_semester_existing_connection:
-                raise ValueError("This Case already exists in the current semester")
+                raise CaseSemesterAlreadyExistsError(
+                    "This Case already exists in the current semester"
+                )
 
             case_semester_connection = CaseSemesters(
                 id=str(uuid.uuid4()), case_id=case.id, semester_id=semester.id
@@ -250,14 +266,16 @@ class CaseService:
             return None
 
         if new_status_code not in ALLOWED_CASE_STATUS_TRANSITIONS[case.status.code]:
-            raise ValueError("Invalid status transition")
+            raise InvalidCaseStatusTransitionError("Invalid status transition")
 
         new_status = await uow.case_statuses_repository.get_by_code(
             status_code=new_status_code
         )
 
         if not new_status:
-            raise ValueError(f"Status with code {new_status_code} not found")
+            raise CaseStatusConfigurationError(
+                f"Status with code {new_status_code} not found"
+            )
 
         case.status = new_status
         case.status_id = new_status.id
@@ -318,9 +336,3 @@ class CaseService:
             await uow.commit()
 
             return response
-
-
-class CaseHasDependenciesError(Exception):
-    """Кейс не может быть удален, так как есть связанные записи"""
-
-    pass
