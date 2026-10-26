@@ -88,6 +88,12 @@ class MeetingTask(Base):
     )
 
     meeting = relationship("Meetings", back_populates="tasks")
+    files = relationship(
+        "S3FilesMetadata",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class CuratorMeetingsAttendance(Base):
@@ -134,3 +140,18 @@ class MeetingsSeries(Base):
     meetings = relationship(
         "Meetings", back_populates="series", cascade="all, delete-orphan"
     )
+
+
+class S3FilesMetadata(Base):
+    __tablename__ = 's3_files_metadata'
+    id: Mapped[str] = mapped_column(String(36), nullable=False, primary_key=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey('meeting_tasks.id', ondelete='CASCADE'))
+    object_key: Mapped[str] = mapped_column(nullable=False, unique=True)
+    original_filename: Mapped[str]
+    size_bytes: Mapped[int]
+    content_type: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    uploaded_by: Mapped[str] = mapped_column(ForeignKey('users.id'), nullable=False)
+
+    task = relationship("MeetingTask", back_populates='files')

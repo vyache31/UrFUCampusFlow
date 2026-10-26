@@ -88,7 +88,26 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: ["mini", "-dir=/data"]
+    restart: unless-stopped
+    container_name: alpha-seaweedfs
+    ports:
+      - "127.0.0.1:8333:8333"
+
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-localadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-secret}
+      S3_BUCKET: ${S3_BUCKET:-task-files}
+
+    volumes:
+      - seaweedfs_data:/data
+
+
+
 volumes:
   postgres_data:
   redis_data:
   jwt_keys:
+  seaweedfs_data:
