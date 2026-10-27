@@ -29,7 +29,6 @@ def upgrade() -> None:
     sa.Column('size_bytes', sa.Integer(), nullable=False),
     sa.Column('content_type', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('uploaded_by', sa.String(length=36), nullable=False),
     sa.ForeignKeyConstraint(['task_id'], ['meeting_tasks.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['uploaded_by'], ['users.id'], ),

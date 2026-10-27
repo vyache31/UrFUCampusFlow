@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiobotocore>=3.10.0",
     "aiohappyeyeballs==2.6.1",
     "aiosignal==1.4.0",
     "alembic==1.18.4",
@@ -48,4 +49,9 @@ dependencies = [
     "urllib3==2.6.3",
     "uvicorn[standard]==0.42.0",
     "yarl==1.23.0",
+]
+
+[dependency-groups]
+dev = [
+    "types-aiobotocore[s3]>=3.10.0",
 ]

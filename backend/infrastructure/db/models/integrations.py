@@ -151,7 +151,6 @@ class S3FilesMetadata(Base):
     size_bytes: Mapped[int]
     content_type: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     uploaded_by: Mapped[str] = mapped_column(ForeignKey('users.id'), nullable=False)
 
     task = relationship("MeetingTask", back_populates='files')
