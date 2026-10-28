@@ -5,6 +5,7 @@ from application.exceptions.base import ApplicationError
 from presentation.api.v1.endpoints import user, microsoft_oauth, difficulty_level, role, student, university, case, team, \
     iteration, auth, case_status, evaluation, websocket
 from presentation.api.v1.endpoints import bot as bot_endpoints
+from presentation.api.v1.endpoints import s3_files
 from presentation.api.exception_handlers import application_exception_handler
 import httpx
 import redis.asyncio as aioredis
@@ -55,6 +56,7 @@ app.include_router(bot_endpoints.router)
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(team.router)
+app.include_router(s3_files.router)
 app.include_router(case.router)
 app.include_router(evaluation.router)
 app.include_router(student.router)
