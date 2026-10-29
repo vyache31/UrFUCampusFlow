@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { CloseIcon, DeleteIcon, PlusIcon } from '../common/Icons/Icons';
 import {
   createMeetingTask,
+  createTaskForNextMeeting,
+  carryTasksToNextMeeting,
+  getNextTeamMeeting,
   deleteMeetingTask,
   getMeetingTasks,
   updateTeamMeeting,
@@ -22,6 +25,13 @@ interface MeetingDetailsModalProps {
   onMeetingUpdate?: (meeting: Meeting) => void;
 }
 
+const toDateTimeLocal = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
 const MeetingDetailsModal = ({
   isOpen,
   onClose,
@@ -41,10 +51,28 @@ const MeetingDetailsModal = ({
   const [taskDescription, setTaskDescription] = useState('');
   const [creatingTask, setCreatingTask] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState('');
+  const [editingTaskDescription, setEditingTaskDescription] = useState('');
+  const [savingTaskEdit, setSavingTaskEdit] = useState(false);
   const [notes, setNotes] = useState(meeting.notes ?? '');
   const [notesDraft, setNotesDraft] = useState(meeting.notes ?? '');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
+  const [isEditingMeeting, setIsEditingMeeting] = useState(false);
+  const [meetingTitleDraft, setMeetingTitleDraft] = useState(meeting.title);
+  const [meetingStartDraft, setMeetingStartDraft] = useState(toDateTimeLocal(meeting.start_at));
+  const [meetingEndDraft, setMeetingEndDraft] = useState(toDateTimeLocal(meeting.end_at));
+  const [meetingLocationDraft, setMeetingLocationDraft] = useState(meeting.location ?? '');
+  const [meetingLinkDraft, setMeetingLinkDraft] = useState(meeting.event_link ?? '');
+  const [savingMeeting, setSavingMeeting] = useState(false);
+  const [isNextTaskFormOpen, setIsNextTaskFormOpen] = useState(false);
+  const [nextTaskTitle, setNextTaskTitle] = useState('');
+  const [nextTaskDescription, setNextTaskDescription] = useState('');
+  const [savingNextTask, setSavingNextTask] = useState(false);
+  const [carryingTasks, setCarryingTasks] = useState(false);
+  const [nextMeeting, setNextMeeting] = useState<Meeting | null>(null);
+  const [loadingNextMeeting, setLoadingNextMeeting] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -53,7 +81,13 @@ const MeetingDetailsModal = ({
     setNotes(currentNotes);
     setNotesDraft(currentNotes);
     setIsEditingNotes(false);
-  }, [isOpen, meeting.id, meeting.notes]);
+    setMeetingTitleDraft(meeting.title);
+    setMeetingStartDraft(toDateTimeLocal(meeting.start_at));
+    setMeetingEndDraft(toDateTimeLocal(meeting.end_at));
+    setMeetingLocationDraft(meeting.location ?? '');
+    setMeetingLinkDraft(meeting.event_link ?? '');
+    setIsEditingMeeting(false);
+  }, [isOpen, meeting.id, meeting.notes, meeting.title, meeting.start_at, meeting.end_at, meeting.location, meeting.event_link]);
 
   const fetchTasks = useCallback(async () => {
     if (!meeting.id || !teamId) return;
@@ -106,6 +140,25 @@ const MeetingDetailsModal = ({
     }
   }, [isOpen, meeting.id, teamId, fetchTasks, fetchAttendance, fetchCurators]);
 
+  const fetchNextMeeting = useCallback(async () => {
+    if (!isOpen || !meeting.id || !teamId) return;
+    try {
+      setLoadingNextMeeting(true);
+      const data = await getNextTeamMeeting(teamId, meeting.id);
+      setNextMeeting(data);
+    } catch (error) {
+      setNextMeeting(null);
+      // 404/пустой результат обычно означает, что следующая встреча ещё не назначена.
+      console.info('Следующая встреча не найдена:', error);
+    } finally {
+      setLoadingNextMeeting(false);
+    }
+  }, [isOpen, meeting.id, teamId]);
+
+  useEffect(() => {
+    void fetchNextMeeting();
+  }, [fetchNextMeeting]);
+
   const getCuratorEmail = (assignmentId: string): string => {
     const curator = curators.find(c => c.id === assignmentId);
     if (curator?.email) return curator.email;
@@ -115,7 +168,7 @@ const MeetingDetailsModal = ({
 
   const handleTaskToggle = async (taskId: string, currentStatus: boolean) => {
     try {
-      await updateMeetingTask(teamId, meeting.id, taskId, !currentStatus);
+      await updateMeetingTask(teamId, meeting.id, taskId, { is_completed: !currentStatus });
       setTasks(prev => prev.map(task =>
         task.id === taskId ? { ...task, is_completed: !currentStatus } : task
       ));
@@ -153,6 +206,35 @@ const MeetingDetailsModal = ({
     }
   };
 
+  const startEditTask = (task: MeetingTask) => {
+    setEditingTaskId(task.id);
+    setEditingTaskTitle(task.title);
+    setEditingTaskDescription(task.description ?? '');
+  };
+
+  const handleSaveTaskEdit = async (taskId: string) => {
+    if (!editingTaskTitle.trim()) {
+      showError('Введите название поручения');
+      return;
+    }
+    try {
+      setSavingTaskEdit(true);
+      const updatedTask = await updateMeetingTask(teamId, meeting.id, taskId, {
+        title: editingTaskTitle.trim(),
+        description: editingTaskDescription.trim(),
+      });
+      setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+      setEditingTaskId(null);
+      showSuccess('Поручение обновлено');
+      onTaskUpdate?.();
+    } catch (error) {
+      console.error('Ошибка редактирования поручения:', error);
+      showError('Не удалось обновить поручение');
+    } finally {
+      setSavingTaskEdit(false);
+    }
+  };
+
   const handleDeleteTask = async (taskId: string) => {
     try {
       setDeletingTaskId(taskId);
@@ -178,6 +260,76 @@ const MeetingDetailsModal = ({
     } catch (error) {
       console.error('Ошибка обновления посещаемости:', error);
       showError('Не удалось обновить статус посещаемости');
+    }
+  };
+
+  const handleSaveMeeting = async () => {
+    if (!meetingTitleDraft.trim()) {
+      showError('Введите название встречи');
+      return;
+    }
+    const start = new Date(meetingStartDraft);
+    const end = new Date(meetingEndDraft);
+    if (!meetingStartDraft || !meetingEndDraft || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      showError('Проверьте дату и время: окончание должно быть позже начала');
+      return;
+    }
+    try {
+      setSavingMeeting(true);
+      const updatedMeeting = await updateTeamMeeting(teamId, meeting.id, {
+        title: meetingTitleDraft.trim(),
+        start_at: start.toISOString(),
+        end_at: end.toISOString(),
+        location: meetingLocationDraft.trim() || null,
+        event_link: meetingLinkDraft.trim() || null,
+      });
+      onMeetingUpdate?.(updatedMeeting);
+      setIsEditingMeeting(false);
+      showSuccess('Встреча обновлена');
+    } catch (error) {
+      console.error('Ошибка обновления встречи:', error);
+      showError('Не удалось обновить встречу');
+    } finally {
+      setSavingMeeting(false);
+    }
+  };
+
+  const handleCreateNextTask = async () => {
+    if (!nextTaskTitle.trim()) {
+      showError('Введите название поручения');
+      return;
+    }
+    try {
+      setSavingNextTask(true);
+      await createTaskForNextMeeting(teamId, meeting.id, {
+        title: nextTaskTitle.trim(),
+        description: nextTaskDescription.trim() || undefined,
+      });
+      setNextTaskTitle('');
+      setNextTaskDescription('');
+      setIsNextTaskFormOpen(false);
+      await fetchNextMeeting();
+      showSuccess('Поручение добавлено к следующей встрече');
+    } catch (error) {
+      console.error('Ошибка создания поручения для следующей встречи:', error);
+      showError('Не удалось создать поручение. Проверьте, назначена ли следующая встреча.');
+    } finally {
+      setSavingNextTask(false);
+    }
+  };
+
+  const handleCarryTasks = async () => {
+    try {
+      setCarryingTasks(true);
+      const carried = await carryTasksToNextMeeting(teamId, meeting.id);
+      await fetchTasks();
+      await fetchNextMeeting();
+      showSuccess(carried.length ? `Перенесено поручений: ${carried.length}` : 'Нет незавершённых поручений для переноса');
+    } catch (error) {
+      console.error('Ошибка переноса поручений:', error);
+      showError('Не удалось перенести поручения. Проверьте, назначена ли следующая встреча.');
+    } finally {
+      setCarryingTasks(false);
     }
   };
 
@@ -232,21 +384,35 @@ const MeetingDetailsModal = ({
         
         <div className="modal-body" style={{ padding: '30px' }}>
           <div className="meeting-details-title">{meeting.title}</div>
-          
-          <div className="meeting-details-field">
-            <span className="meeting-details-label">Дата:</span>
-            <span className="meeting-details-value">{date}</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <button type="button" className="meeting-notes-edit-button" onClick={() => setIsEditingMeeting(v => !v)}>
+              {isEditingMeeting ? 'Отмена редактирования' : 'Редактировать встречу'}
+            </button>
           </div>
-          
-          <div className="meeting-details-field">
-            <span className="meeting-details-label">Время:</span>
-            <span className="meeting-details-value">{time} ({duration})</span>
-          </div>
-          
-          <div className="meeting-details-field">
-            <span className="meeting-details-label">Место:</span>
-            <span className="meeting-details-value">{meeting.location || 'Не указано'}</span>
-          </div>
+          {isEditingMeeting ? (
+            <div className="meeting-notes-editor" style={{ marginBottom: 18 }}>
+              <label className="meeting-details-label">Название</label>
+              <input className="meeting-task-create-input" value={meetingTitleDraft} onChange={e => setMeetingTitleDraft(e.target.value)} disabled={savingMeeting} />
+              <label className="meeting-details-label">Начало</label>
+              <input className="meeting-task-create-input" type="datetime-local" value={meetingStartDraft} onChange={e => setMeetingStartDraft(e.target.value)} disabled={savingMeeting} />
+              <label className="meeting-details-label">Окончание</label>
+              <input className="meeting-task-create-input" type="datetime-local" value={meetingEndDraft} onChange={e => setMeetingEndDraft(e.target.value)} disabled={savingMeeting} />
+              <label className="meeting-details-label">Место</label>
+              <input className="meeting-task-create-input" value={meetingLocationDraft} onChange={e => setMeetingLocationDraft(e.target.value)} disabled={savingMeeting} />
+              <label className="meeting-details-label">Ссылка на встречу</label>
+              <input className="meeting-task-create-input" value={meetingLinkDraft} onChange={e => setMeetingLinkDraft(e.target.value)} disabled={savingMeeting} />
+              <div className="meeting-task-create-actions">
+                <button type="button" className="meeting-task-cancel-button" onClick={() => setIsEditingMeeting(false)} disabled={savingMeeting}>Отмена</button>
+                <button type="button" className="meeting-task-save-button" onClick={handleSaveMeeting} disabled={savingMeeting}>{savingMeeting ? 'Сохранение...' : 'Сохранить изменения'}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="meeting-details-field"><span className="meeting-details-label">Дата:</span><span className="meeting-details-value">{date}</span></div>
+              <div className="meeting-details-field"><span className="meeting-details-label">Время:</span><span className="meeting-details-value">{time} ({duration})</span></div>
+              <div className="meeting-details-field"><span className="meeting-details-label">Место:</span><span className="meeting-details-value">{meeting.location || 'Не указано'}</span></div>
+            </>
+          )}
           
           {meeting.event_link && (
             <div className="meeting-details-field">
@@ -399,11 +565,22 @@ const MeetingDetailsModal = ({
                         {task.is_completed && <span className="checkmark">✓</span>}
                       </div>
                       <div className="task-content">
-                        <div className={`task-title ${task.is_completed ? 'completed' : ''}`}>
-                          {task.title}
-                        </div>
-                        {task.description && (
-                          <div className="task-description">{task.description}</div>
+                        {editingTaskId === task.id ? (
+                          <div className="meeting-task-create-form">
+                            <input className="meeting-task-create-input" value={editingTaskTitle} onChange={event => setEditingTaskTitle(event.target.value)} disabled={savingTaskEdit} />
+                            <textarea className="meeting-task-create-input meeting-task-create-description" value={editingTaskDescription} onChange={event => setEditingTaskDescription(event.target.value)} placeholder="Описание (необязательно)" disabled={savingTaskEdit} />
+                            <div className="meeting-task-create-actions">
+                              <button type="button" className="meeting-task-cancel-button" onClick={() => setEditingTaskId(null)} disabled={savingTaskEdit}>Отмена</button>
+                              <button type="button" className="meeting-task-save-button" onClick={() => handleSaveTaskEdit(task.id)} disabled={savingTaskEdit || !editingTaskTitle.trim()}>{savingTaskEdit ? 'Сохранение...' : 'Сохранить'}</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className={`task-title ${task.is_completed ? 'completed' : ''}`}>{task.title}</div>
+                            {task.description && <div className="task-description">{task.description}</div>}
+                            {task.carried_from_task_id && <div className="task-description">Перенесено с предыдущей встречи</div>}
+                            <button type="button" className="meeting-notes-edit-button" onClick={() => startEditTask(task)}>Редактировать</button>
+                          </>
                         )}
                       </div>
                       <button
@@ -422,6 +599,50 @@ const MeetingDetailsModal = ({
                 <div className="meeting-tasks-empty">Нет поручений</div>
               )}
             </div>
+          </div>
+
+          <div className="meeting-tasks-section" style={{ marginTop: 24 }}>
+            <div className="meeting-tasks-header">
+              <div className="meeting-tasks-title">Следующая встреча</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="button" className="meeting-task-add-button" onClick={() => setIsNextTaskFormOpen(v => !v)}>
+                  <PlusIcon /><span>Добавить поручение</span>
+                </button>
+                <button type="button" className="meeting-task-save-button" onClick={handleCarryTasks} disabled={carryingTasks || !nextMeeting || !tasks.some(task => !task.is_completed)}>
+                  {carryingTasks ? 'Перенос...' : 'Перенести незавершённые'}
+                </button>
+              </div>
+            </div>
+            {loadingNextMeeting ? <div className="meeting-tasks-loading">Загрузка следующей встречи...</div> : nextMeeting ? (
+              <div className="meeting-details-field">
+                <span className="meeting-details-label">{nextMeeting.title}</span>
+                <span className="meeting-details-value">{formatDateTime(nextMeeting.start_at).date} в {formatDateTime(nextMeeting.start_at).time}</span>
+              </div>
+            ) : <div className="meeting-tasks-empty">Следующая встреча пока не найдена. Создайте её, чтобы добавлять или переносить поручения.</div>}
+            {isNextTaskFormOpen && (
+              <div className="meeting-task-create-form">
+                <input className="meeting-task-create-input" value={nextTaskTitle} onChange={e => setNextTaskTitle(e.target.value)} placeholder="Название поручения" disabled={savingNextTask} />
+                <textarea className="meeting-task-create-input meeting-task-create-description" value={nextTaskDescription} onChange={e => setNextTaskDescription(e.target.value)} placeholder="Описание (необязательно)" disabled={savingNextTask} />
+                <div className="meeting-task-create-actions">
+                  <button type="button" className="meeting-task-cancel-button" onClick={() => setIsNextTaskFormOpen(false)} disabled={savingNextTask}>Отмена</button>
+                  <button type="button" className="meeting-task-save-button" onClick={handleCreateNextTask} disabled={savingNextTask || !nextTaskTitle.trim()}>{savingNextTask ? 'Добавление...' : 'Добавить'}</button>
+                </div>
+              </div>
+            )}
+            {nextMeeting?.tasks?.length ? (
+              <div className="meeting-tasks-list">
+                {nextMeeting.tasks.map(task => (
+                  <div key={task.id} className="meeting-task-item">
+                    <div className={`task-checkbox ${task.is_completed ? 'completed' : ''}`}>{task.is_completed && <span className="checkmark">✓</span>}</div>
+                    <div className="task-content">
+                      <div className={`task-title ${task.is_completed ? 'completed' : ''}`}>{task.title}</div>
+                      {task.description && <div className="task-description">{task.description}</div>}
+                      {task.carried_from_task_id && <div className="task-description">Перенесено с предыдущей встречи</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

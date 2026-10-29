@@ -7,6 +7,7 @@ export interface MeetingTask {
   description: string;
   meeting_id: string;
   is_completed: boolean;
+  carried_from_task_id?: string | null;
 }
 
 export interface CreateTaskData {
@@ -40,6 +41,7 @@ export interface CreateMeetingData {
   event_link?: string | null;
   notes?: string | null;
   timezone?: number | null;
+  tasks?: CreateTaskData[];
 }
 
 // Получить встречи команды
@@ -146,10 +148,30 @@ export const createMeetingTask = async (teamId: string, meetingId: string, data:
 };
 
 // Обновить задачу
-export const updateMeetingTask = async (teamId: string, meetingId: string, taskId: string, isCompleted: boolean): Promise<MeetingTask> => {
-  const response = await api.patch(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`, {
-    is_completed: isCompleted
-  });
+export type UpdateMeetingTaskData = Partial<Pick<MeetingTask, 'title' | 'description' | 'is_completed'>>;
+
+export const updateMeetingTask = async (
+  teamId: string, meetingId: string, taskId: string, data: boolean | UpdateMeetingTaskData
+): Promise<MeetingTask> => {
+  const payload = typeof data === 'boolean' ? { is_completed: data } : data;
+  const response = await api.patch(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`, payload);
+  return response.data;
+};
+
+export const getNextTeamMeeting = async (teamId: string, meetingId: string): Promise<Meeting> => {
+  const response = await api.get(`/teams/${teamId}/meetings/${meetingId}/next`);
+  return response.data;
+};
+
+export const createTaskForNextMeeting = async (
+  teamId: string, meetingId: string, data: CreateTaskData
+): Promise<MeetingTask> => {
+  const response = await api.post(`/teams/${teamId}/meetings/${meetingId}/next-meeting/tasks`, data);
+  return response.data;
+};
+
+export const carryTasksToNextMeeting = async (teamId: string, meetingId: string): Promise<MeetingTask[]> => {
+  const response = await api.post(`/teams/${teamId}/meetings/${meetingId}/tasks/carry-to-next-meeting`);
   return response.data;
 };
 

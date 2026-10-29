@@ -2996,3 +2996,82 @@
 .meeting-task-delete-button:hover svg path {
   fill: #F63333;
 }
+
+.schedule-modal-container .schedule-input,
+.schedule-modal-container .schedule-textarea,
+.schedule-modal-container .date-picker-input,
+.schedule-modal-container .time-input,
+.schedule-modal-container .task-title-input,
+.schedule-modal-container .task-desc-input,
+.schedule-modal-container .occurrences-input,
+.schedule-modal-container input[type="date"],
+.schedule-modal-container input[type="time"] {
+  box-sizing: border-box;
+  background: #F4F4F4 !important;
+  border: 2px solid transparent !important;
+  border-radius: 25px !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+}
+.schedule-modal-container .schedule-input,
+.schedule-modal-container .schedule-textarea,
+.schedule-modal-container .date-picker-input,
+.schedule-modal-container .time-input,
+.schedule-modal-container .task-title-input,
+.schedule-modal-container .task-desc-input,
+.schedule-modal-container .occurrences-input {
+  padding: 10px 15px;
+}
+.schedule-modal-container .schedule-input:hover,
+.schedule-modal-container .schedule-textarea:hover,
+.schedule-modal-container .date-picker-input:hover,
+.schedule-modal-container .time-input:hover,
+.schedule-modal-container .task-title-input:hover,
+.schedule-modal-container .task-desc-input:hover,
+.schedule-modal-container .occurrences-input:hover {
+  background: #EBEBEB !important;
+}
+.schedule-modal-container .schedule-input:focus,
+.schedule-modal-container .schedule-textarea:focus,
+.schedule-modal-container .date-picker-input:focus,
+.schedule-modal-container .time-input:focus,
+.schedule-modal-container .task-title-input:focus,
+.schedule-modal-container .task-desc-input:focus,
+.schedule-modal-container .occurrences-input:focus {
+  background: #FFFFFF !important;
+  border-color: #4E85FC !important;
+}
+
+.schedule-modal-container .date-picker-wrapper {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 15px;
+  padding-right: 15px;
+  background: #F4F4F4 !important;
+  border: 2px solid transparent !important;
+  border-radius: 25px !important;
+  gap: 10px;
+}
+.schedule-modal-container .date-picker-wrapper:hover { 
+  background: #EBEBEB !important; 
+}
+.schedule-modal-container .date-picker-wrapper:focus-within { 
+  background: #FFFFFF !important; 
+  border-color: #4E85FC !important; 
+}
+.schedule-modal-container .date-picker-wrapper .date-picker-input,
+.schedule-modal-container .date-picker-wrapper .date-picker-input:hover,
+.schedule-modal-container .date-picker-wrapper .date-picker-input:focus {
+  min-width: 0;
+  width: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}

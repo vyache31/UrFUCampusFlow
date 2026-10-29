@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { CloseIcon, CheckIcon, CalendarIcon, PlusIcon } from '../common/Icons/Icons';
+import { DeleteIcon, CheckIcon, CalendarIcon, PlusIcon } from '../common/Icons/Icons';
 import { useToast } from '../../context/ToastContext';
 import './Modal.css';
 
@@ -35,7 +35,7 @@ interface ScheduleMeetingModalProps {
     recurrence_type: 'daily' | 'weekly' | 'biweekly' | 'monthly';
     interval: number;
     days_of_week?: string[];
-    end_type: 'never' | 'after_occurrences' | 'by_date';
+    end_type: 'after_occurrences' | 'by_date';
     occurrences?: number;
     end_date?: string;
   }) => void;
@@ -81,7 +81,7 @@ const ScheduleMeetingModal = ({
   const [showTaskInput, setShowTaskInput] = useState(false);
   const [recurrence, setRecurrence] = useState('none');
   const [selectedWeekDays, setSelectedWeekDays] = useState<string[]>([]);
-  const [endType, setEndType] = useState<'never' | 'after_occurrences' | 'by_date'>('never');
+  const [endType, setEndType] = useState<'after_occurrences' | 'by_date'>('after_occurrences');
   const [occurrences, setOccurrences] = useState(5);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
@@ -171,6 +171,16 @@ const ScheduleMeetingModal = ({
       return;
     }
 
+    if (recurrence !== 'none' && endType === 'by_date' && !endDate) {
+      showError('Выберите дату окончания повторений');
+      return;
+    }
+
+    if (recurrence !== 'none' && endType === 'after_occurrences' && occurrences < 1) {
+      showError('Количество повторений должно быть не меньше 1');
+      return;
+    }
+
     if (recurrence === 'none') {
       onSchedule({
         title: title.trim(),
@@ -223,7 +233,7 @@ const ScheduleMeetingModal = ({
     setTasks([]);
     setRecurrence('none');
     setSelectedWeekDays([]);
-    setEndType('never');
+    setEndType('after_occurrences');
     setOccurrences(5);
     setEndDate(null);
   };
@@ -237,7 +247,7 @@ const ScheduleMeetingModal = ({
       <div className="schedule-modal-container schedule-modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="schedule-modal-header">
           <button className="schedule-modal-close" onClick={onClose}>
-            <CloseIcon />
+            <DeleteIcon />
           </button>
         </div>
         
@@ -359,15 +369,6 @@ const ScheduleMeetingModal = ({
             <div className="schedule-field recurrence-options">
               <label className="schedule-label">Окончание:</label>
               <div className="recurrence-end-options">
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="endType"
-                    checked={endType === 'never'}
-                    onChange={() => setEndType('never')}
-                  />
-                  Никогда
-                </label>
                 <label className="radio-label">
                   <input
                     type="radio"
