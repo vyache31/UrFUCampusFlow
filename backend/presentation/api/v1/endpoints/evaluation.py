@@ -18,16 +18,6 @@ from application.services.evaluation_service import EvaluationService
 router = APIRouter(tags=["Case Evaluations"])
 
 
-def _evaluation_error(error: ValueError) -> HTTPException:
-    detail = str(error)
-
-    if "does not exist" in detail or "not found" in detail:
-        return HTTPException(status_code=404, detail=detail)
-
-    if "cannot update" in detail:
-        return HTTPException(status_code=403, detail=detail)
-
-    return HTTPException(status_code=409, detail=detail)
 
 
 @router.get(
@@ -86,10 +76,7 @@ async def create_evaluation_reaction(
     user=Depends(get_current_auth_user),
     service: EvaluationService = Depends(get_evaluation_service),
 ):
-    try:
-        return await service.evaluation_reaction_create(user.id, schema)
-    except ValueError as error:
-        raise _evaluation_error(error)
+    return await service.evaluation_reaction_create(user.id, schema)
 
 
 @router.get(
@@ -173,12 +160,9 @@ async def update_evaluation_reaction(
     user=Depends(get_current_auth_user),
     service: EvaluationService = Depends(get_evaluation_service),
 ):
-    try:
-        return await service.evaluation_reaction_update(
-            reaction_id, user.id, schema
-        )
-    except ValueError as error:
-        raise _evaluation_error(error)
+    return await service.evaluation_reaction_update(
+        reaction_id, user.id, schema
+    )
 
 
 @router.post(
@@ -191,14 +175,11 @@ async def create_evaluation_comment(
     user=Depends(get_current_auth_user),
     service: EvaluationService = Depends(get_evaluation_service),
 ):
-    try:
-        return await service.evaluation_comment_create(
-            user.id,
-            user.email,
-            schema
-        )
-    except ValueError as error:
-        raise _evaluation_error(error)
+    return await service.evaluation_comment_create(
+        user.id,
+        user.email,
+        schema
+    )
 
 
 @router.get(
@@ -240,12 +221,9 @@ async def update_evaluation_comment(
     user=Depends(get_current_auth_user),
     service: EvaluationService = Depends(get_evaluation_service),
 ):
-    try:
-        return await service.evaluation_comment_update(
-            comment_id,
-            user.id,
-            user.email,
-            schema,
-        )
-    except ValueError as error:
-        raise _evaluation_error(error)
+    return await service.evaluation_comment_update(
+        comment_id,
+        user.id,
+        user.email,
+        schema,
+    )

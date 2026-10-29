@@ -1,4 +1,5 @@
-from application.services.user_service import UserService, InvalidCredentialsError
+from application.exceptions.auth import InvalidServiceCredentialsError
+from application.services.user_service import UserService
 from presentation.api.schemas.user import (
     UserCreate, UserTokenInfo,
     UserLoginRequest
@@ -9,7 +10,6 @@ from infrastructure.security.utils_jwt import (
     create_service_access_token
 )
 
-from fastapi import HTTPException, status
 from config import settings
 
 
@@ -35,16 +35,10 @@ class AuthService:
             schema: UserLoginRequest
     ) -> UserTokenInfo:
 
-        try:
-            await self.user_service.authenticate_user(
-                email=schema.email,
-                password=schema.password
-            )
-        except InvalidCredentialsError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="invalid username or password"
-            )
+        await self.user_service.authenticate_user(
+            email=schema.email,
+            password=schema.password
+        )
         access_token = create_user_access_token(schema)
         refresh_token = create_refresh_token(schema)
         return UserTokenInfo(
@@ -54,8 +48,7 @@ class AuthService:
 
     async def login_service(self, payload: dict):
         if payload.get('secret') != settings.SERVICE_BOT_SECRET:
-            print(payload.get('secret'), settings.SERVICE_BOT_SECRET)
-            raise ValueError
+            raise InvalidServiceCredentialsError("Invalid service secret")
 
         service_access_token = create_service_access_token(payload.get('service_name'))
         return {

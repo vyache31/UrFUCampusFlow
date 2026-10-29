@@ -1,3 +1,8 @@
+from application.exceptions.auth import (
+    OAuthAccountAlreadyLinkedError,
+    OAuthConnectionInactiveError,
+    OAuthConnectionNotFoundError,
+)
 from infrastructure.integrations.microsoft_oauth_client import OAuthClient
 from application.interfaces.integrations import MicrosoftGraphClientProtocol
 from application.interfaces.uow.microsoft_oauth_uow_protocol import MicrosoftOAuthUoWProtocol
@@ -95,7 +100,9 @@ class MicrosoftOAuthService:
             provider_oauth = await repo.get_oauth_by_provider_user_id(user_info['id'])
             if oauth := await repo.get_oauth_by_user_id(user_id):
                 if provider_oauth and provider_oauth.user_id != user_id:
-                    raise ValueError('This connection already exists')
+                    raise OAuthAccountAlreadyLinkedError(
+                        'This connection already exists'
+                    )
                 await self.update_oauth(
                     uow=uow, oauth=oauth, token_payload=token_payload, user_info=user_info
                 )
@@ -112,7 +119,7 @@ class MicrosoftOAuthService:
                 return response
 
             if provider_oauth:
-                raise ValueError('This connection already exists')
+                raise OAuthAccountAlreadyLinkedError('This connection already exists')
 
             creating_time = datetime.now(UTC)
             oauth_object = MicrosoftOAuth(
@@ -145,7 +152,9 @@ class MicrosoftOAuthService:
         async with self.uow as uow:
             oauth = await uow.microsoft_oauth_repository.get_oauth_by_user_id(user_id)
             if not oauth:
-                raise ValueError('This user has not existing connections')
+                raise OAuthConnectionNotFoundError(
+                    'This user has not existing connections'
+                )
             return OAuthStatusResponse(is_active=oauth.is_active)
 
 
@@ -153,7 +162,9 @@ class MicrosoftOAuthService:
         async with self.uow as uow:
             oauth = await uow.microsoft_oauth_repository.get_oauth_by_user_id(user_id)
             if not oauth:
-                raise ValueError('This user has not existing connections')
+                raise OAuthConnectionNotFoundError(
+                    'This user has not existing connections'
+                )
             oauth.is_active = False
             oauth.updated_at = datetime.now(UTC)
             await uow.microsoft_oauth_repository.update_oauth(oauth)
@@ -201,9 +212,11 @@ class MicrosoftOAuthService:
         async with self.uow as uow:
             oauth = await uow.microsoft_oauth_repository.get_oauth_by_user_id(user_id)
             if not oauth:
-                raise ValueError('This OAuth connection does not exist')
+                raise OAuthConnectionNotFoundError(
+                    'This OAuth connection does not exist'
+                )
             if not oauth.is_active:
-                raise ValueError('This OAuth connection is inactive')
+                raise OAuthConnectionInactiveError('This OAuth connection is inactive')
             original_expiry = oauth.access_token_expires_at
             oauth = await self.ensure_actual_tokens(uow, oauth)
             access_token = encryption.decrypt_token(oauth.encrypted_access_token)

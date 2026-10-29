@@ -1,5 +1,11 @@
 from datetime import datetime, UTC
 import uuid
+from application.exceptions.base import ConflictError
+from application.exceptions.bot import (
+    InterviewTimeConflictError,
+    InvalidBotModeError,
+    RecruitmentCaseNotFoundError,
+)
 from infrastructure.db.models.bot import (
     BotMode,
     BotCases,
@@ -32,7 +38,7 @@ class BotService:
         allowed_modes = ["stop", "recruitment"]
 
         if mode not in allowed_modes:
-            raise ValueError("Invalid bot mode")
+            raise InvalidBotModeError("Invalid bot mode")
 
         current_mode.mode = mode
         current_mode.updated_at = datetime.now(UTC)
@@ -45,7 +51,7 @@ class BotService:
         current_mode = await self.bot_repo.get_current_mode()
 
         if current_mode.mode != "stop":
-            raise PermissionError(
+            raise ConflictError(
                 "редактирование невозможно! измените режим"
             )
 
@@ -127,16 +133,16 @@ class BotService:
     async def get_interview_by_datetime(self, date_time: datetime):
         interview = await self.bot_repo.get_interview_by_datetime(date_time)
         if interview:
-            raise ValueError("время занято, попробуйте другое")
+            raise InterviewTimeConflictError("время занято, попробуйте другое")
 
 
     async def add_interview(self, schema: InterviewCreate):
         case = await self.bot_repo.get_bot_case_by_id(schema.case_id)
         if not case:
-            raise ValueError("данного кейса нет в списке набора!")
+            raise RecruitmentCaseNotFoundError("данного кейса нет в списке набора!")
         interview = await self.bot_repo.get_interview_by_datetime(schema.date_time)
         if interview:
-            raise ValueError("время занято, попробуйте другое")
+            raise InterviewTimeConflictError("время занято, попробуйте другое")
 
         interview = Interviews(
             id=str(uuid.uuid4()),

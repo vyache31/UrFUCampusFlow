@@ -16,10 +16,7 @@ async def create_student(
         user=Depends(get_current_auth_user),
         service: StudentService = Depends(get_student_service)
 ):
-    try:
-        return await service.create_student(schema)
-    except ValueError as err:
-        raise HTTPException(status_code=404, detail=str(err))
+    return await service.create_student(schema)
 
 
 @router.get('/', response_model=list[StudentResponse])
@@ -52,10 +49,7 @@ async def update_student(
         user=Depends(get_current_auth_user),
         service: StudentService = Depends(get_student_service)
 ):
-    try:
-        student = await service.update_student(student_id, schema)
-    except ValueError as err:
-        raise HTTPException(status_code=404, detail=str(err))
+    student = await service.update_student(student_id, schema)
 
     if not student:
         raise HTTPException(status_code=404, detail='Student not found')
