@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import EditableField from '../../components/common/EditableField/EditableField';
-import { SaveIcon, GenerateIcon } from '../../components/common/Icons/Icons';
+import { SaveIcon } from '../../components/common/Icons/Icons';
 import { createCase } from '../../services/cases';
-import { generateWithAI } from '../../services/ai';
-import GenerationLoader from '../../components/GenerationLoader/GenerationLoader';
+import CaseAssistantChat, { type CaseDraft } from '../../components/CaseAssistantChat/CaseAssistantChat';
 import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
@@ -57,7 +56,18 @@ const CaseCreatePage = () => {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'submit', string>>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleTransferFromChat = (draft: CaseDraft) => {
+    setForm({
+      title: draft.title,
+      shortTitle: draft.shortTitle,
+      description: draft.description,
+      expectedResult: draft.expectedResult,
+      criteria: draft.criteria,
+    });
+    setErrors({});
+    showSuccess('Наработки перенесены в форму');
+  };
 
   const updateField = (field: keyof FormState) => (value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -101,43 +111,6 @@ const CaseCreatePage = () => {
     }
   };
 
-  const handleGenerate = async () => {
-    setIsGenerating(true);
-    try {
-      const creatorId = localStorage.getItem('user_id') ?? '';
-      const tempCase = await createCase({
-        title: 'Генерация кейса',
-        project_goals: 'Требуется генерация',
-        difficulty_level_id: 1,
-        university_id: 1,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        creator_id: creatorId,
-      });
-
-      const generated = await generateWithAI(tempCase.id);
-      const shortTitle = generated.project_description.slice(0, 50);
-      const fullTitle = generated.project_description.slice(0, 100);
-
-      setForm({
-        title: fullTitle,
-        shortTitle,
-        description: generated.project_description,
-        expectedResult: generated.project_idea,
-        criteria: generated.technical_details,
-      });
-
-      const { deleteCase } = await import('../../services/cases');
-      await deleteCase(tempCase.id);
-      showSuccess('Кейс успешно сгенерирован! Отредактируйте и сохраните.');
-    } catch (error) {
-      console.error('Ошибка генерации:', error);
-      showError('Не удалось сгенерировать кейс');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const breadcrumbItems = [
     { label: 'Главная', path: '/' },
     { label: 'Все кейсы', path: '/cases' },
@@ -152,11 +125,7 @@ const CaseCreatePage = () => {
       <div className="create-header">
         <h1 className="page-title">Создание кейса</h1>
         <div className="create-actions">
-          <button className="generate-btn" onClick={handleGenerate} disabled={isGenerating}>
-            <GenerateIcon />
-            <span>{isGenerating ? 'Генерация...' : 'Сгенерировать'}</span>
-          </button>
-          <button className="save-btn" onClick={handleSave} disabled={isSaving}>
+<button className="save-btn" onClick={handleSave} disabled={isSaving}>
             <SaveIcon />
             <span>{isSaving ? 'Сохранение...' : 'Сохранить'}</span>
           </button>
@@ -186,7 +155,7 @@ const CaseCreatePage = () => {
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
 
-      {isGenerating && <GenerationLoader />}
+      <CaseAssistantChat onTransfer={handleTransferFromChat} />
     </div>
   );
 };

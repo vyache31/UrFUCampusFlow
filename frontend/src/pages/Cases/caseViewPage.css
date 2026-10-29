@@ -168,3 +168,208 @@
     gap: 20px;
   }
 }
+
+.case-teams-section {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.case-teams-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.case-teams-heading .info-label {
+  margin: 0;
+}
+
+.case-teams-caption {
+  margin: 6px 0 0;
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.case-teams-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 15px;
+  background: #edf3ff;
+  color: #3563c6;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.case-teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.case-team-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid #e8eaf0;
+  border-radius: 18px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.case-team-card:hover {
+  border-color: #c9d8ff;
+  box-shadow: 0 4px 16px rgba(32, 32, 36, 0.05);
+}
+
+.case-team-card:focus-visible {
+  outline: 2px solid #4e85fc;
+  outline-offset: 3px;
+}
+
+.case-team-icon {
+  display: flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  margin-top: 1px;
+  background: transparent;
+}
+
+.case-team-icon svg {
+  display: block;
+  width: 24px;
+  height: 22px;
+}
+
+.case-team-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.case-team-name {
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 23px;
+  overflow-wrap: anywhere;
+}
+
+.case-team-description {
+  margin: 5px 0 0;
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.case-team-chevron {
+  align-self: center;
+  color: #777782;
+  font-size: 26px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.case-team-card:hover .case-team-chevron {
+  transform: translateX(3px);
+}
+
+.case-team-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.case-team-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  background: #eaf7ef;
+  color: #247747;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 17px;
+}
+
+.case-team-semester {
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.case-teams-message,
+.case-teams-empty {
+  margin: 0;
+  padding: 22px;
+  border: 1px solid #e8eaf0;
+  border-radius: 18px;
+  background: #fff;
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  line-height: 21px;
+}
+
+.case-teams-message-error {
+  color: #b42318;
+  border-color: #f1c7c4;
+  background: #fffafa;
+}
+
+.case-teams-empty-title {
+  color: #202024;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.case-teams-empty p {
+  margin: 6px 0 0;
+}
+
+@media (max-width: 768px) {
+  .case-team-card {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 15px;
+  }
+
+  .case-team-icon {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .case-teams-message,
+  .case-teams-empty {
+    padding: 17px;
+  }
+}
