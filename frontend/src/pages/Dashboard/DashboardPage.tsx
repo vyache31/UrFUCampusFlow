@@ -22,13 +22,27 @@ const DashboardPage = () => {
       try {
         const [meetingsData, casesData, teamsData] = await Promise.all([
           getAllUpcomingMeetings(),
-          getCases(PREVIEW_COUNT),
-          getTeams(PREVIEW_COUNT),
+          getCases(),
+          getTeams(),
         ]);
         if (cancelled) return;
         setMeetings(meetingsData);
-        setCases(casesData.slice(0, PREVIEW_COUNT));
-        setTeams(teamsData.slice(0, PREVIEW_COUNT));
+        setCases(
+          [...casesData]
+            .sort((a, b) =>
+              new Date(b.created_at || 0).getTime() -
+              new Date(a.created_at || 0).getTime()
+            )
+            .slice(0, PREVIEW_COUNT)
+        );
+        setTeams(
+          [...teamsData]
+            .sort((a, b) =>
+              new Date(b.created_at || 0).getTime() -
+              new Date(a.created_at || 0).getTime()
+            )
+            .slice(0, PREVIEW_COUNT)
+        );
       } catch (error) {
         console.error('Ошибка загрузки дашборда:', error);
       } finally {
