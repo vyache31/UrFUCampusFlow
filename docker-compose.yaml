@@ -63,6 +63,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-alpha_user}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-alpha_db}
       REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://seaweedfs:8333
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -88,7 +89,26 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: ["mini", "-dir=/data"]
+    restart: unless-stopped
+    container_name: alpha-seaweedfs
+    ports:
+      - "127.0.0.1:8333:8333"
+
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-localadmin}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-secret}
+      S3_BUCKET: ${S3_BUCKET:-task-files}
+
+    volumes:
+      - seaweedfs_data:/data
+
+
+
 volumes:
   postgres_data:
   redis_data:
   jwt_keys:
+  seaweedfs_data:

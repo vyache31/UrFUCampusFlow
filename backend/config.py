@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     BACKEND_URL: str
     BOT_TOKEN: str
     SERVICE_BOT_SECRET: str
+    S3_ENDPOINT_URL: str
+    AWS_ACCESS_KEY_ID: str
+    AWS_SECRET_ACCESS_KEY: str
+    S3_BUCKET: str
+    AWS_DEFAULT_REGION: str
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 
