@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ExpandArrowIcon,
   CollapseArrowIcon,
+  OpenFullIcon,
 } from '../common/Icons/Icons';
 import type { Meeting } from '../../services/meetings';
 import './meetings.css';
@@ -53,7 +54,13 @@ const Meetings = ({
   if (loading) {
     return (
       <section className="section">
-        <h2 className="section-title">Ближайшие встречи</h2>
+        <div className="meetings-section-heading dashboard-meetings-heading">
+          <h2 className="section-title">Ближайшие встречи</h2>
+          <button className="all-meetings-link" onClick={() => navigate('/meetings')}>
+            Все встречи
+            <OpenFullIcon />
+          </button>
+        </div>
         <div className="meetings-card">
           <div className="loading-meetings"> Загрузка встреч...</div>
         </div>
@@ -64,7 +71,13 @@ const Meetings = ({
   if (meetings.length === 0) {
     return (
       <section className="section">
-        <h2 className="section-title">Ближайшие встречи</h2>
+        <div className="meetings-section-heading dashboard-meetings-heading">
+          <h2 className="section-title">Ближайшие встречи</h2>
+          <button className="all-meetings-link" onClick={() => navigate('/meetings')}>
+            Все встречи
+            <OpenFullIcon />
+          </button>
+        </div>
         <div className="meetings-card">
           <div className="empty-meetings"> Нет запланированных встреч</div>
         </div>
@@ -74,7 +87,13 @@ const Meetings = ({
 
   return (
     <section className="section">
-      <h2 className="section-title">Ближайшие встречи</h2>
+      <div className="meetings-section-heading dashboard-meetings-heading">
+        <h2 className="section-title">Ближайшие встречи</h2>
+        <button className="all-meetings-link" onClick={() => navigate('/meetings')}>
+          Все встречи
+          <OpenFullIcon />
+        </button>
+      </div>
       <div className="meetings-card">
         <div className="meetings-header">
           <span>Проект</span>

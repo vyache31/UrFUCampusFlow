@@ -536,3 +536,43 @@
     align-self: flex-end;
   }
 }
+.meetings-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+}
+
+.meetings-section-heading .info-label {
+  margin: 0;
+}
+
+.team-view-page .all-meetings-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.team-view-page .all-meetings-link:hover {
+  color: #A5A5B0;
+}
+
+.team-view-page .all-meetings-link svg {
+  width: 18px;
+  height: 14px;
+}
+
+.team-view-page .all-meetings-link svg path {
+  fill: currentColor;
+}

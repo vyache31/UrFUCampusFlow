@@ -5,8 +5,8 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getTeamById, type Team } from '../../services/teams';
 import { getTeamMembers, type TeamMember } from '../../services/teamMembers';
 import { getTeamHistory, type TeamCaseHistory } from '../../services/teamCaseHistory';
-import { getTeamMeetings, createTeamMeeting, deleteTeamMeeting, type Meeting } from '../../services/meetings';
-import { EditIcon, FlagIcon, ChevronDownIcon, CloseIcon, HistoryIcon } from '../../components/common/Icons/Icons';
+import { getTeamMeetings, createTeamMeeting, deleteTeamMeeting, createMeetingTask, type Meeting } from '../../services/meetings';
+import { EditIcon, FlagIcon, ChevronDownIcon, CloseIcon, HistoryIcon, OpenFullIcon } from '../../components/common/Icons/Icons';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import ControlPointsModal from '../../components/Modals/ControlPointsModal';
 import './teamViewPage.css';
@@ -24,7 +24,7 @@ interface ControlPoint {
 
 const TeamViewPage = () => {
   const { id } = useParams<{ id: string }>();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showConfirm } = useToast();
   const navigate = useNavigate();
   
   const [team, setTeam] = useState<Team | null>(null);
@@ -196,9 +196,23 @@ const TeamViewPage = () => {
     });
     
     const updatedMeetings = await getTeamMeetings(id);
-    setMeetings([...updatedMeetings].sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime()));
+    const sortedMeetings = [...updatedMeetings].sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+    setMeetings(sortedMeetings);
+
+    const firstSeriesMeeting = sortedMeetings.find(meeting =>
+      meeting.title === data.title && new Date(meeting.start_at).getTime() >= startDateTime.getTime()
+    );
+
+    if (firstSeriesMeeting && data.tasks.length > 0) {
+      await Promise.all(data.tasks.map(task =>
+        createMeetingTask(id, firstSeriesMeeting.id, {
+          title: task.title,
+          description: task.description || '',
+        })
+      ));
+    }
     
-    showSuccess('Серия встреч успешно создана!');
+    showSuccess(`Серия встреч успешно создана!${data.tasks.length > 0 ? ` Поручения добавлены на ближайшую встречу: ${data.tasks.length}` : ''}`);
   } catch (err: unknown) {
     console.error('Ошибка создания серии встреч:', err);
     const error = err as { response?: { data?: { detail?: string } } };
@@ -224,21 +238,24 @@ const TeamViewPage = () => {
     
     if (!id) return;
     
-    if (!window.confirm('Вы уверены, что хотите удалить эту встречу? Она также будет удалена из календаря Outlook.')) {
-      return;
-    }
-    
-    try {
-      setDeletingMeetingId(meetingId);
-      await deleteTeamMeeting(id, meetingId);
-      setMeetings(prev => prev.filter(m => m.id !== meetingId));
-      showSuccess('Встреча успешно удалена');
-    } catch (error) {
-      console.error('Ошибка удаления встречи:', error);
-      showError('Не удалось удалить встречу');
-    } finally {
-      setDeletingMeetingId(null);
-    }
+    showConfirm({
+      message: 'Вы уверены, что хотите удалить эту встречу? Она также будет удалена из календаря Outlook.',
+      confirmText: 'Да',
+      cancelText: 'Нет',
+      onConfirm: async () => {
+        try {
+          setDeletingMeetingId(meetingId);
+          await deleteTeamMeeting(id, meetingId);
+          setMeetings(prev => prev.filter(m => m.id !== meetingId));
+          showSuccess('Встреча успешно удалена');
+        } catch (error) {
+          console.error('Ошибка удаления встречи:', error);
+          showError('Не удалось удалить встречу');
+        } finally {
+          setDeletingMeetingId(null);
+        }
+      },
+    });
   };
 
   const handleMeetingClick = (meeting: Meeting) => {
@@ -465,7 +482,13 @@ const TeamViewPage = () => {
         </div>
 
         <div className="info-block meetings-block">
-          <div className="info-label">Запланированные встречи</div>
+          <div className="meetings-section-heading">
+            <div className="info-label">Запланированные встречи</div>
+            <button className="all-meetings-link" onClick={() => navigate(`/meetings?team=${id}`)}>
+              Все встречи
+              <OpenFullIcon />
+            </button>
+          </div>
           <div className="meetings-scroll-container">
             <div className="meetings-header-row">
               <span>Название встречи</span>

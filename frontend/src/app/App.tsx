@@ -18,6 +18,7 @@ import OutlookCallbackPage from '../pages/OutlookCallback/OutlookCallbackPage';
 import SSOPage from '../pages/Login/SSOPage';
 import TeamCaseHistoryPage from '../pages/Teams/TeamCaseHistoryPage';
 import MeetingViewPage from '../pages/Teams/MeetingViewPage';
+import MeetingsHistoryPage from '../pages/Teams/MeetingsHistoryPage';
 
 interface AppRoute {
   path: string;
@@ -34,6 +35,7 @@ const ROUTES: AppRoute[] = [
   { path: '/cases/:id/comments', element: <CaseCommentsPage /> },
   { path: '/report', element: <ReportPage /> },
   { path: '/teams', element: <TeamsPage /> },
+  { path: '/meetings', element: <MeetingsHistoryPage /> },
   { path: '/teams/create', element: <TeamCreatePage /> },
   { path: '/teams/:id', element: <TeamViewPage /> },
   { path: '/teams/:id/edit', element: <TeamEditPage /> },

@@ -1317,18 +1317,6 @@
     fill .2s ease, stroke .2s ease, transform .18s ease, box-shadow .2s ease;
 }
 
-.meeting-view-page button:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.meeting-view-page button:active:not(:disabled) {
-  transform: scale(.97);
-}
-
-.meeting-view-page button:disabled {
-  transform: none;
-}
-
 .meeting-view-page .meeting-task-add-button {
   display: inline-flex;
   align-items: center;

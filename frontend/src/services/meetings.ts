@@ -59,19 +59,19 @@ export const getTeamMeetings = async (teamId: string): Promise<Meeting[]> => {
   }
 };
 
-export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
+export const getAllMeetings = async (): Promise<Meeting[]> => {
   try {
     const teamsResponse = await api.get('/teams/?limit=100');
     const teams = teamsResponse.data;
-    
+
     const allMeetings: Meeting[] = [];
-    
+
     for (const team of teams) {
       try {
         const historyResponse = await api.get(`/teams/${team.id}/history`);
         const history = historyResponse.data;
         const currentCase = history.find((h: TeamCaseHistory) => h.is_current === true);
-        
+
         let shortTitle = currentCase?.case_title || '';
         if (currentCase?.case_id) {
           try {
@@ -81,37 +81,36 @@ export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
             shortTitle = currentCase?.case_title || '';
           }
         }
-        
+
         const meetings = await getTeamMeetings(team.id);
-        
+
         meetings.forEach((meeting: Meeting) => {
           allMeetings.push({
             ...meeting,
             team_name: team.name,
             team_id: team.id,
             case_title: shortTitle,
-            case_short_title: shortTitle
+            case_short_title: shortTitle,
           });
         });
       } catch {
         // Игнор команд без истории
       }
     }
-    
-    allMeetings.sort((a: Meeting, b: Meeting) => 
+
+    return allMeetings.sort((a, b) =>
       new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
     );
-    
-    const now = new Date();
-    const upcomingMeetings = allMeetings.filter((meeting: Meeting) => 
-      new Date(meeting.start_at) > now
-    );
-    
-    return upcomingMeetings;
   } catch (error) {
     console.error('Ошибка загрузки встреч:', error);
     return [];
   }
+};
+
+export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
+  const allMeetings = await getAllMeetings();
+  const now = new Date();
+  return allMeetings.filter(meeting => new Date(meeting.start_at) > now);
 };
 
 // Создать встречу
