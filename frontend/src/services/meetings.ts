@@ -10,6 +10,53 @@ export interface MeetingTask {
   carried_from_task_id?: string | null;
 }
 
+
+export interface MeetingTaskFile {
+  id: string;
+  task_id: string;
+  original_filename: string;
+  size_bytes: number;
+  content_type: string;
+  created_at: string;
+  uploaded_by: string;
+}
+
+export const uploadMeetingTaskFile = async (
+  teamId: string, meetingId: string, taskId: string, file: File
+): Promise<MeetingTaskFile> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post(
+    `/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+  return response.data;
+};
+
+export const getMeetingTaskFiles = async (
+  teamId: string, meetingId: string, taskId: string
+): Promise<MeetingTaskFile[]> => {
+  const response = await api.get(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files`);
+  return response.data;
+};
+
+export const downloadMeetingTaskFile = async (
+  teamId: string, meetingId: string, taskId: string, fileId: string
+): Promise<Blob> => {
+  const response = await api.get(
+    `/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files/${fileId}/download`,
+    { responseType: 'blob' }
+  );
+  return response.data;
+};
+
+export const deleteMeetingTaskFile = async (
+  teamId: string, meetingId: string, taskId: string, fileId: string
+): Promise<void> => {
+  await api.delete(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files/${fileId}`);
+};
+
 export interface CreateTaskData {
   title: string;
   description?: string;

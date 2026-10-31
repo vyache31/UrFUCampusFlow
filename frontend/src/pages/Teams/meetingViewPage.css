@@ -1617,3 +1617,129 @@
   stroke: none !important;
   stroke-width: 0 !important;
 }
+.meeting-task-file-input {
+  display: none;
+}
+
+.meeting-task-files-hint {
+  margin: -8px 0 10px;
+  color: #858592;
+  font: 400 11px/1.5 'Montserrat', sans-serif;
+}
+
+.meeting-task-row {
+  flex-wrap: wrap;
+}
+
+.meeting-task-actions .meeting-file-upload-btn {
+  background: #4E85FC;
+}
+
+.meeting-task-actions .meeting-file-upload-btn svg {
+  color: #fff;
+}
+
+.meeting-task-actions .meeting-file-upload-btn:hover {
+  background: #356FEA;
+}
+
+.meeting-task-actions .meeting-file-upload-btn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.meeting-task-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  padding: 2px 0 4px 34px;
+}
+
+.meeting-task-file-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 190px;
+  min-width: 0;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 9px 30px 9px 11px;
+  border: 1px solid #E9E9EF;
+  border-radius: 10px;
+  background: #F8F8FA;
+  cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease;
+}
+
+.meeting-task-file-card:hover {
+  background: #F1F4FC;
+  border-color: #D7E2FC;
+}
+
+.meeting-task-file-card > svg {
+  flex: 0 0 auto;
+  color: #202024;
+}
+
+.meeting-task-file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.meeting-task-file-details strong {
+  overflow: hidden;
+  color: #202024;
+  font: 500 11px/1.35 'Montserrat', sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-task-file-details small {
+  color: #858592;
+  font: 400 10px/1.3 'Montserrat', sans-serif;
+}
+
+.meeting-task-file-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity .2s ease, background-color .2s ease;
+}
+
+.meeting-task-file-card:hover .meeting-task-file-delete,
+.meeting-task-file-card:focus-within .meeting-task-file-delete {
+  opacity: 1;
+}
+
+.meeting-task-file-delete:hover {
+  background: #E5E5EA;
+}
+
+@media (max-width: 640px) {
+  .meeting-task-files {
+    padding-left: 0;
+  }
+
+  .meeting-task-file-card {
+    width: min(100%, 230px);
+  }
+
+  .meeting-task-file-delete {
+    opacity: 1;
+  }
+}

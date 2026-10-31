@@ -1,16 +1,21 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { EditIcon, PlusIcon, CheckIcon, TeamIcon, DeleteIcon, CalendarIcon } from '../../components/common/Icons/Icons';
+import { EditIcon, PlusIcon, CheckIcon, TeamIcon, DeleteIcon, CalendarIcon, AttachmentUploadIcon, AttachmentFileIcon, AttachmentDeleteIcon } from '../../components/common/Icons/Icons';
 import { useToast } from '../../context/ToastContext';
 import { getTeamById, type Team } from '../../services/teams';
 import ScheduleMeetingModal from '../../components/Modals/ScheduleMeetingModal';
 import { createMeetingsSeries } from '../../services/meetingsSeries';
 import {
   carryTasksToNextMeeting,
+  deleteMeetingTaskFile,
+  downloadMeetingTaskFile,
+  getMeetingTaskFiles,
+  uploadMeetingTaskFile,
+  type MeetingTaskFile,
   createMeetingTask,
   createTeamMeeting,
   createTaskForNextMeeting,
@@ -65,6 +70,9 @@ const MeetingViewPage = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [taskTitleDraft, setTaskTitleDraft] = useState('');
   const [taskDescriptionDraft, setTaskDescriptionDraft] = useState('');
+  const [taskFiles, setTaskFiles] = useState<Record<string, MeetingTaskFile[]>>({});
+  const [uploadingTaskId, setUploadingTaskId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadPage = useCallback(async () => {
     if (!teamId || !meetingId) return;
@@ -80,6 +88,11 @@ const MeetingViewPage = () => {
       setTeam(teamData);
       setMeeting(found);
       setTasks(taskData);
+      const filesByTask = await Promise.all(taskData.map(async task => {
+        try { return [task.id, await getMeetingTaskFiles(teamId, meetingId, task.id)] as const; }
+        catch { return [task.id, []] as const; }
+      }));
+      setTaskFiles(Object.fromEntries(filesByTask));
       setTitle(found.title || '');
       setStartAt(toLocalInput(found.start_at));
       setEndAt(toLocalInput(found.end_at));
@@ -207,6 +220,88 @@ const MeetingViewPage = () => {
     }
   };
 
+  const allowedFileExtensions = ['pdf', 'txt', 'md', 'doc', 'docx'];
+  const maxTaskFilesSize = 10 * 1024 * 1024;
+
+  const handleUploadFiles = async (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    const taskId = uploadingTaskId;
+    event.target.value = '';
+    if (!teamId || !meetingId || !taskId || !selectedFiles.length) return;
+
+    const currentFiles = taskFiles[taskId] || [];
+    const currentSize = currentFiles.reduce((total, file) => total + file.size_bytes, 0);
+    const selectedSize = selectedFiles.reduce((total, file) => total + file.size, 0);
+    if (currentSize + selectedSize > maxTaskFilesSize) {
+      setUploadingTaskId(null);
+      showError('Суммарный размер файлов одного поручения не должен превышать 10 МБ');
+      return;
+    }
+    const invalidFile = selectedFiles.find(file => {
+      const extension = file.name.split('.').pop()?.toLowerCase() || '';
+      return !allowedFileExtensions.includes(extension);
+    });
+    if (invalidFile) {
+      setUploadingTaskId(null);
+      showError('Поддерживаются только PDF, TXT, MD, DOC и DOCX');
+      return;
+    }
+
+    try {
+      const uploaded: MeetingTaskFile[] = [];
+      for (const file of selectedFiles) {
+        uploaded.push(await uploadMeetingTaskFile(teamId, meetingId, taskId, file));
+      }
+      setTaskFiles(previous => ({ ...previous, [taskId]: [...(previous[taskId] || []), ...uploaded] }));
+      showSuccess(uploaded.length === 1 ? 'Файл прикреплён' : 'Файлы прикреплены');
+    } catch (error) {
+      console.error('Не удалось загрузить файл поручения:', error);
+      showError('Не удалось загрузить файл. Проверьте размер и формат');
+      try {
+        const refreshedFiles = await getMeetingTaskFiles(teamId, meetingId, taskId);
+        setTaskFiles(previous => ({ ...previous, [taskId]: refreshedFiles }));
+      } catch { /* Сохраняем уже загруженный список */ }
+    } finally {
+      setUploadingTaskId(null);
+    }
+  };
+
+  const handleDownloadTaskFile = async (taskId: string, file: MeetingTaskFile) => {
+    if (!teamId || !meetingId) return;
+    try {
+      const blob = await downloadMeetingTaskFile(teamId, meetingId, taskId, file.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.original_filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Не удалось скачать файл:', error);
+      showError('Не удалось скачать файл');
+    }
+  };
+
+  const handleDeleteTaskFile = (taskId: string, file: MeetingTaskFile) => {
+    if (!teamId || !meetingId) return;
+    showConfirm({
+      message: `Удалить файл «${file.original_filename}»?`,
+      confirmText: 'Удалить',
+      cancelText: 'Отмена',
+      onConfirm: async () => {
+        try {
+          await deleteMeetingTaskFile(teamId, meetingId, taskId, file.id);
+          setTaskFiles(previous => ({ ...previous, [taskId]: (previous[taskId] || []).filter(item => item.id !== file.id) }));
+          showSuccess('Файл удалён');
+        } catch {
+          showError('Не удалось удалить файл');
+        }
+      },
+    });
+  };
+
   const handleDeleteTask = (taskId: string) => {
     if (!teamId || !meetingId) return;
     showConfirm({
@@ -276,12 +371,57 @@ const MeetingViewPage = () => {
       onConfirm: async () => {
         try {
           const carried = await carryTasksToNextMeeting(teamId, meetingId);
-          showSuccess(`Перенос выполнен. Перенесено поручений: ${carried.length}`);
+          let copiedFilesCount = 0;
+          let failedFilesCount = 0;
+
+          for (const carriedTask of carried) {
+            if (!carriedTask.carried_from_task_id) continue;
+
+            try {
+              const sourceFiles = await getMeetingTaskFiles(teamId, meetingId, carriedTask.carried_from_task_id);
+              for (const sourceFile of sourceFiles) {
+                try {
+                  const blob = await downloadMeetingTaskFile(
+                    teamId, meetingId, carriedTask.carried_from_task_id, sourceFile.id
+                  );
+                  const copiedFile = new File([blob], sourceFile.original_filename, {
+                    type: sourceFile.content_type || blob.type,
+                  });
+                  await uploadMeetingTaskFile(teamId, nextMeeting.id, carriedTask.id, copiedFile);
+                  copiedFilesCount += 1;
+                } catch (error) {
+                  console.error(`Не удалось перенести файл ${sourceFile.original_filename}:`, error);
+                  failedFilesCount += 1;
+                }
+              }
+            } catch (error) {
+              console.error(`Не удалось получить файлы исходного поручения ${carriedTask.carried_from_task_id}:`, error);
+              failedFilesCount += 1;
+            }
+          }
+
           const next = await getNextTeamMeeting(teamId, meetingId);
           setNextMeeting(next);
-          setNextMeetingTasks(await getMeetingTasks(teamId, next.id).catch(() => []));
-          setTasks(await getMeetingTasks(teamId, meetingId).catch(() => []));
-        } catch {
+          const [refreshedNextTasks, refreshedTasks] = await Promise.all([
+            getMeetingTasks(teamId, next.id).catch(() => []),
+            getMeetingTasks(teamId, meetingId).catch(() => []),
+          ]);
+          setNextMeetingTasks(refreshedNextTasks);
+          setTasks(refreshedTasks);
+
+          const refreshedFiles = await Promise.all(refreshedTasks.map(async task => {
+            try { return [task.id, await getMeetingTaskFiles(teamId, meetingId, task.id)] as const; }
+            catch { return [task.id, []] as const; }
+          }));
+          setTaskFiles(Object.fromEntries(refreshedFiles));
+
+          if (failedFilesCount > 0) {
+            showError(`Поручения перенесены (${carried.length}), но не удалось скопировать файлов: ${failedFilesCount}. Успешно скопировано: ${copiedFilesCount}.`);
+          } else {
+            showSuccess(`Перенос выполнен. Поручений: ${carried.length}, файлов скопировано: ${copiedFilesCount}`);
+          }
+        } catch (error) {
+          console.error('Не удалось перенести поручения:', error);
           showError('Не удалось перенести поручения на следующую встречу');
         }
       },
@@ -355,7 +495,7 @@ const MeetingViewPage = () => {
           <form id="meeting-edit-form" className="meeting-edit-form" onSubmit={handleSaveMeeting}>
             <div className="meeting-form-grid">
               <label className="meeting-field meeting-field-full"><span>Название:</span><input className="schedule-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Введите название встречи" required /></label>
-              <div className="meeting-field meeting-field-full"><span>Дата и время:</span><div className="meeting-edit-datetime"><div className="date-picker-wrapper meeting-edit-date-picker"><DatePicker aria-label="Дата встречи" selected={startAt ? new Date(`${startAt.slice(0, 10)}T12:00:00`) : null} onChange={date => { if (!date) return; const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); setStartAt(`${year}-${month}-${day}T${startAt.slice(11, 16) || '09:00'}`); }} dateFormat="dd.MM.yyyy" className="date-picker-input" required /><CalendarIcon /></div><input aria-label="Время встречи" className="time-input" type="time" value={startAt.slice(11, 16)} onChange={e => setStartAt(`${startAt.slice(0, 10)}T${e.target.value}`)} required /></div></div>
+              <div className="meeting-field meeting-field-full"><span>Дата и время:</span><div className="meeting-edit-datetime"><div className="date-picker-wrapper meeting-edit-date-picker"><DatePicker aria-label="Дата встречи" selected={startAt ? new Date(`${startAt.slice(0, 10)}T12:00:00`) : null} onChange={(date: Date | null) => { if (!date) return; const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, '0'); const day = String(date.getDate()).padStart(2, '0'); setStartAt(`${year}-${month}-${day}T${startAt.slice(11, 16) || '09:00'}`); }} dateFormat="dd.MM.yyyy" className="date-picker-input" required /><CalendarIcon /></div><input aria-label="Время встречи" className="time-input" type="time" value={startAt.slice(11, 16)} onChange={e => setStartAt(`${startAt.slice(0, 10)}T${e.target.value}`)} required /></div></div>
               <label className="meeting-field"><span>Длительность (мин):</span><input className="schedule-input" type="number" min={15} step={15} value={Math.max(0, Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60000) || 30)} onChange={e => { const minutes = Number(e.target.value); if (Number.isFinite(minutes) && minutes > 0 && startAt) setEndAt(new Date(new Date(startAt).getTime() + minutes * 60000 - new Date(startAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16)); }} /></label>
               <label className="meeting-field"><span>Место:</span><input className="schedule-input" value={location} onChange={e => setLocation(e.target.value)} placeholder="Введите место проведения" /></label>
               <label className="meeting-field meeting-field-full"><span>Ссылка:</span><input className="schedule-input" value={eventLink} onChange={e => setEventLink(e.target.value)} placeholder="https://..." /></label>
@@ -379,6 +519,15 @@ const MeetingViewPage = () => {
                 <textarea className="meeting-task-create-input meeting-task-create-description" value={newTaskDescription} onChange={e => setNewTaskDescription(e.target.value)} placeholder="Описание (необязательно)" disabled={addingTask} rows={3} />
                 <div className="meeting-task-create-actions"><button type="button" className="meeting-task-cancel-button" onClick={() => setTaskFormOpen(false)} disabled={addingTask}>Отмена</button><button type="submit" className="meeting-task-save-button" disabled={addingTask || !newTaskTitle.trim()}>{addingTask ? 'Добавление…' : 'Добавить'}</button></div>
               </form>}
+              <p className="meeting-task-files-hint">Форматы: PDF, TXT, MD, DOC, DOCX. Максимальный суммарный размер файлов одного поручения — 10 МБ.</p>
+              <input
+                ref={fileInputRef}
+                className="meeting-task-file-input"
+                type="file"
+                accept=".pdf,.txt,.md,.doc,.docx"
+                multiple
+                onChange={handleUploadFiles}
+              />
               <div className="meeting-task-list">
                 {tasks.map(task => <div className={`meeting-task-row ${task.is_completed ? 'completed' : ''}`} key={task.id}>
                   {editingTaskId === task.id ? (
@@ -394,8 +543,18 @@ const MeetingViewPage = () => {
                       </button>
                       <span className="meeting-task-copy"><strong>{task.title}</strong>{task.description && <small>{task.description}</small>}{task.carried_from_task_id && <em>Перенесено с предыдущей встречи</em>}</span>
                     </div>
-                    <div className="meeting-task-actions"><button className="meeting-icon-btn" aria-label="Редактировать поручение" title="Редактировать поручение" onClick={() => { setEditingTaskId(task.id); setTaskTitleDraft(task.title); setTaskDescriptionDraft(task.description || ''); }}><EditIcon /></button><button type="button" className="meeting-icon-btn delete" aria-label="Удалить поручение" title="Удалить поручение" onClick={() => handleDeleteTask(task.id)}><DeleteIcon /></button></div>
+                    <div className="meeting-task-actions"><button type="button" className="meeting-icon-btn meeting-file-upload-btn" aria-label="Прикрепить файл" title="Прикрепить файл" onClick={() => { setUploadingTaskId(task.id); fileInputRef.current?.click(); }}><AttachmentUploadIcon /></button><button className="meeting-icon-btn" aria-label="Редактировать поручение" title="Редактировать поручение" onClick={() => { setEditingTaskId(task.id); setTaskTitleDraft(task.title); setTaskDescriptionDraft(task.description || ''); }}><EditIcon /></button><button type="button" className="meeting-icon-btn delete" aria-label="Удалить поручение" title="Удалить поручение" onClick={() => handleDeleteTask(task.id)}><DeleteIcon /></button></div>
                   </>}
+                  {(taskFiles[task.id] || []).length > 0 && <div className="meeting-task-files">
+                    {(taskFiles[task.id] || []).map(file => {
+                      const extension = file.original_filename.split('.').pop()?.toUpperCase() || 'FILE';
+                      return <div className="meeting-task-file-card" key={file.id} onClick={() => void handleDownloadTaskFile(task.id, file)} role="button" tabIndex={0} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') void handleDownloadTaskFile(task.id, file); }} title={file.original_filename}>
+                        <AttachmentFileIcon />
+                        <span className="meeting-task-file-details"><strong>{file.original_filename}</strong><small>{extension} · {(file.size_bytes / 1024).toFixed(0)} КБ</small></span>
+                        <button type="button" className="meeting-task-file-delete" aria-label={`Удалить файл ${file.original_filename}`} title="Удалить файл" onClick={event => { event.stopPropagation(); handleDeleteTaskFile(task.id, file); }}><AttachmentDeleteIcon /></button>
+                      </div>;
+                    })}
+                  </div>}
                 </div>)}
                 {tasks.length === 0 && <div className="meeting-empty">Поручений пока нет.</div>}
               </div>
