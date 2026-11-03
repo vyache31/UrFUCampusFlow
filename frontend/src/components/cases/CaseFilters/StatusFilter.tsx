@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SelectorArrowIcon } from '../../common/Icons/Icons';
 import './caseFilters.css';
 
@@ -7,14 +7,16 @@ interface StatusFilterProps {
   onStatusChange: (status: string) => void;
 }
 
-const statuses = [
+const STATUSES = [
   { value: 'Все кейсы', label: 'Все кейсы' },
   { value: 'Черновик', label: 'Черновик' },
   { value: 'На оценке', label: 'На оценке' },
   { value: 'Активный', label: 'Активные кейсы' },
   { value: 'На доработке', label: 'На доработке' },
   { value: 'Архивирован', label: 'В архиве' },
-];
+] as const;
+
+const DEFAULT_STATUS = 'Все кейсы';
 
 const StatusFilter = ({ currentStatus, onStatusChange }: StatusFilterProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,34 +24,25 @@ const StatusFilter = ({ currentStatus, onStatusChange }: StatusFilterProps) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      if (!dropdownRef.current?.contains(event.target as Node)) setIsOpen(false);
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const getCurrentLabel = () => {
-    const found = statuses.find(s => s.value === currentStatus);
-    return found ? found.label : 'Все кейсы';
-  };
+  const currentLabel =
+    STATUSES.find(s => s.value === currentStatus)?.label ?? DEFAULT_STATUS;
 
   return (
-    <div 
-      className={`status-dropdown ${isOpen ? 'open' : ''}`} 
-      ref={dropdownRef}
-    >
-      <button 
-        className="status-selector" 
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {getCurrentLabel()}
+    <div className={`status-dropdown ${isOpen ? 'open' : ''}`} ref={dropdownRef}>
+      <button className="status-selector" onClick={() => setIsOpen(v => !v)}>
+        {currentLabel}
         <SelectorArrowIcon />
       </button>
+
       {isOpen && (
         <div className="status-menu">
-          {statuses.map((status) => (
+          {STATUSES.map(status => (
             <div
               key={status.value}
               className="status-item"

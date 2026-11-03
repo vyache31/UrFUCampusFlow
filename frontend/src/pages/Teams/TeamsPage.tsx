@@ -39,7 +39,6 @@ const TeamsPage = () => {
       await fetchTeams();
     };
     loadTeams();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredTeams = teams.filter(team => {

@@ -1,0 +1,143 @@
+.meetings-history-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+.meetings-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.meetings-history-header .team-status-selector {
+  max-width: 650px;
+  font-size: 40px;
+}
+
+.meetings-history-header .team-name-menu {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.meetings-history-header .schedule-btn {
+  flex-shrink: 0;
+}
+
+.meetings-history-content {
+  background: #F4F4F4;
+  border-radius: 40px 40px 0 0;
+  padding: 45px 50px 60px;
+  flex: 1;
+}
+
+.meetings-history-section {
+  margin-bottom: 45px;
+}
+
+.meetings-history-section:last-child {
+  margin-bottom: 0;
+}
+
+.meetings-history-title {
+  color: #202024;
+  font-size: 32px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 20px;
+}
+
+.meetings-history-card {
+  border-radius: 25px;
+  padding: 30px;
+}
+
+.meetings-month-group + .meetings-month-group {
+  margin-top: 35px;
+}
+
+.meetings-month-title {
+  color: #202024;
+  font-size: 22px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  margin: 0 0 20px;
+  text-transform: capitalize;
+}
+
+.meetings-history-row {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.meetings-history-row:hover {
+  background: #F4F4F4;
+}
+
+@media (max-width: 900px) {
+  .meetings-history-content {
+    padding: 30px 25px;
+  }
+
+  .meetings-history-header .team-status-selector {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 650px) {
+  .meetings-history-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .meetings-history-header .team-status-selector {
+    font-size: 25px;
+  }
+
+  .meetings-history-content {
+    padding: 25px 15px;
+    border-radius: 25px 25px 0 0;
+  }
+
+  .meetings-history-card {
+    padding: 18px;
+    overflow-x: auto;
+  }
+
+  .meetings-history-card .meetings-header,
+  .meetings-history-card .meeting-row {
+    min-width: 650px;
+  }
+}
+
+.meetings-history-header .schedule-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #4E85FC;
+}
+
+.meetings-history-header .schedule-btn span {
+  color: white;
+  font-size: 16px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.meetings-history-header .schedule-btn svg path {
+  fill: white;
+}
+
+.meetings-history-header .schedule-btn:hover {
+  background: #3563C6;
+}
