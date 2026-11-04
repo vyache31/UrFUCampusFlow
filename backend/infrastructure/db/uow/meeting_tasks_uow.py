@@ -8,12 +8,14 @@ from application.interfaces.repositories import (
     MeetingTaskRepositoryProtocol,
     MeetingsRepositoryProtocol,
     S3FilesRepositoryProtocol,
+    S3FilesCleanupRepositoryProtocol,
 )
 from infrastructure.db.repositories import (
     CuratorAssignmentsRepository,
     MeetingTaskRepository,
     MeetingsRepository,
     S3FilesRepository,
+    S3FilesCleanUpRepository,
 )
 
 
@@ -21,6 +23,7 @@ class SqlAlchemyMeetingTasksUoW:
     meeting_tasks_repository: MeetingTaskRepositoryProtocol
     meetings_repository: MeetingsRepositoryProtocol
     s3_files_repository: S3FilesRepositoryProtocol
+    s3_files_cleanup_repository: S3FilesCleanupRepositoryProtocol
     curator_assignments_repository: CuratorAssignmentsRepositoryProtocol
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
@@ -31,6 +34,7 @@ class SqlAlchemyMeetingTasksUoW:
         self.meeting_tasks_repository = MeetingTaskRepository(self.session)
         self.meetings_repository = MeetingsRepository(self.session)
         self.s3_files_repository = S3FilesRepository(self.session)
+        self.s3_files_cleanup_repository = S3FilesCleanUpRepository(self.session)
         self.curator_assignments_repository = CuratorAssignmentsRepository(self.session)
 
         return self

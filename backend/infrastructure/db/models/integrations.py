@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from datetime import timezone as TZ
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, CheckConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -144,6 +144,12 @@ class MeetingsSeries(Base):
 
 class S3FilesMetadata(Base):
     __tablename__ = 's3_files_metadata'
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('uploading', 'ready')",
+            name="ck_status"
+        ),
+    )
     id: Mapped[str] = mapped_column(String(36), nullable=False, primary_key=True)
     task_id: Mapped[str] = mapped_column(ForeignKey('meeting_tasks.id', ondelete='CASCADE'))
     object_key: Mapped[str] = mapped_column(nullable=False, unique=True)
@@ -152,5 +158,16 @@ class S3FilesMetadata(Base):
     content_type: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     uploaded_by: Mapped[str] = mapped_column(ForeignKey('users.id'), nullable=False)
+    status: Mapped[str]
 
     task = relationship("MeetingTask", back_populates='files')
+
+
+class S3FilesCleanUp(Base):
+    __tablename__ = 's3_files_cleanup'
+    id: Mapped[str] = mapped_column(String(36), nullable=False, primary_key=True)
+    object_key: Mapped[str] = mapped_column(nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    attempts: Mapped[int] = mapped_column(default=0)
+    last_error: Mapped[str | None] = mapped_column(nullable=True)

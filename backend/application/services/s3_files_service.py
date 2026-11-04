@@ -1,9 +1,12 @@
 from fastapi import UploadFile
 from uuid import uuid4
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
+from botocore.exceptions import ClientError, HTTPClientError
+from botocore.exceptions import ConnectionError as S3ConnectionError
 
 from infrastructure.db.models import MeetingTask, S3FilesMetadata, Users
 
+from infrastructure.db.models.integrations import S3FilesCleanUp
 from presentation.api.schemas.s3_files_schemas import S3FileMetadataResponse
 
 from application.exceptions.base import (
@@ -16,7 +19,6 @@ from application.exceptions.meeting import MeetingNotFoundError, MeetingTaskNotF
 from application.interfaces.uow.meeting_tasks_uow_protocol import MeetingTasksUoWProtocol
 
 from application.interfaces.integrations import S3ClientProtocol
-
 
 
 class S3FileMetadataService:
@@ -67,6 +69,27 @@ class S3FileMetadataService:
                 raise ForbiddenError("You are not a current curator of this team")
 
         return task
+
+    async def process_cleanup_batch(self) -> None:
+        async with self.uow as uow:
+            batch = await uow.s3_files_cleanup_repository.get_ready_batch(
+                now=datetime.now(UTC),
+                limit=10
+            )
+
+            for task in batch:
+                try:
+                    await self.client.delete(task.object_key)
+                except (ClientError, S3ConnectionError, HTTPClientError) as exc:
+                    task.next_attempt_at = datetime.now(UTC) + timedelta(seconds=15)
+                    task.attempts += 1
+                    task.last_error = str(exc)
+                    await uow.s3_files_cleanup_repository.update(task)
+                else:
+                    await uow.s3_files_cleanup_repository.delete(task)
+
+            await uow.commit()
+
 
     async def get_by_task_id(
         self,
@@ -130,7 +153,8 @@ class S3FileMetadataService:
                 size_bytes = file.size,
                 content_type = content_type,
                 created_at = datetime.now(UTC),
-                uploaded_by = user.id
+                uploaded_by = user.id,
+                status='ready'
             )
 
             await uow.s3_files_repository.create(metadata)
@@ -195,7 +219,16 @@ class S3FileMetadataService:
             if metadata is None or metadata.task_id != task_id:
                 raise NotFoundError('This file does not exist in the given task')
 
-            await self.client.delete(metadata.object_key)
+            task = S3FilesCleanUp(
+                id=str(uuid4()),
+                object_key=metadata.object_key,
+                created_at=datetime.now(UTC),
+                next_attempt_at=datetime.now(UTC),
+                attempts=0,
+                last_error=None
+            )
+
+            await uow.s3_files_cleanup_repository.create(task)
             await uow.s3_files_repository.delete(metadata)
             await uow.commit()
 
