@@ -8,17 +8,17 @@ interface BulkActionsBarProps {
 }
 
 const BulkActionsBar = ({ selectedCount, onDelete, onCreate }: BulkActionsBarProps) => {
+  const hasSelection = selectedCount > 0;
+
   return (
     <div className="action-cards-buttons">
-      {selectedCount > 0 && (
-        <>
-          <button className="card-action-btn delete" onClick={onDelete}>
-            <DeleteIcon />
-            Удалить выбранное
-          </button>
-        </>
+      {hasSelection && (
+        <button className="card-action-btn delete" onClick={onDelete}>
+          <DeleteIcon />
+          Удалить выбранное
+        </button>
       )}
-      
+
       <button className="card-action-btn create" onClick={onCreate}>
         <CreateIcon />
         Создать кейс

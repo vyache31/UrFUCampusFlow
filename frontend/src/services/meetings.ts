@@ -7,7 +7,55 @@ export interface MeetingTask {
   description: string;
   meeting_id: string;
   is_completed: boolean;
+  carried_from_task_id?: string | null;
 }
+
+
+export interface MeetingTaskFile {
+  id: string;
+  task_id: string;
+  original_filename: string;
+  size_bytes: number;
+  content_type: string;
+  created_at: string;
+  uploaded_by: string;
+}
+
+export const uploadMeetingTaskFile = async (
+  teamId: string, meetingId: string, taskId: string, file: File
+): Promise<MeetingTaskFile> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post(
+    `/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+  return response.data;
+};
+
+export const getMeetingTaskFiles = async (
+  teamId: string, meetingId: string, taskId: string
+): Promise<MeetingTaskFile[]> => {
+  const response = await api.get(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files`);
+  return response.data;
+};
+
+export const downloadMeetingTaskFile = async (
+  teamId: string, meetingId: string, taskId: string, fileId: string
+): Promise<Blob> => {
+  const response = await api.get(
+    `/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files/${fileId}/download`,
+    { responseType: 'blob' }
+  );
+  return response.data;
+};
+
+export const deleteMeetingTaskFile = async (
+  teamId: string, meetingId: string, taskId: string, fileId: string
+): Promise<void> => {
+  await api.delete(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}/files/${fileId}`);
+};
 
 export interface CreateTaskData {
   title: string;
@@ -40,6 +88,7 @@ export interface CreateMeetingData {
   event_link?: string | null;
   notes?: string | null;
   timezone?: number | null;
+  tasks?: CreateTaskData[];
 }
 
 // Получить встречи команды
@@ -57,19 +106,19 @@ export const getTeamMeetings = async (teamId: string): Promise<Meeting[]> => {
   }
 };
 
-export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
+export const getAllMeetings = async (): Promise<Meeting[]> => {
   try {
     const teamsResponse = await api.get('/teams/?limit=100');
     const teams = teamsResponse.data;
-    
+
     const allMeetings: Meeting[] = [];
-    
+
     for (const team of teams) {
       try {
         const historyResponse = await api.get(`/teams/${team.id}/history`);
         const history = historyResponse.data;
         const currentCase = history.find((h: TeamCaseHistory) => h.is_current === true);
-        
+
         let shortTitle = currentCase?.case_title || '';
         if (currentCase?.case_id) {
           try {
@@ -79,37 +128,36 @@ export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
             shortTitle = currentCase?.case_title || '';
           }
         }
-        
+
         const meetings = await getTeamMeetings(team.id);
-        
+
         meetings.forEach((meeting: Meeting) => {
           allMeetings.push({
             ...meeting,
             team_name: team.name,
             team_id: team.id,
             case_title: shortTitle,
-            case_short_title: shortTitle
+            case_short_title: shortTitle,
           });
         });
       } catch {
         // Игнор команд без истории
       }
     }
-    
-    allMeetings.sort((a: Meeting, b: Meeting) => 
+
+    return allMeetings.sort((a, b) =>
       new Date(a.start_at).getTime() - new Date(b.start_at).getTime()
     );
-    
-    const now = new Date();
-    const upcomingMeetings = allMeetings.filter((meeting: Meeting) => 
-      new Date(meeting.start_at) > now
-    );
-    
-    return upcomingMeetings;
   } catch (error) {
     console.error('Ошибка загрузки встреч:', error);
     return [];
   }
+};
+
+export const getAllUpcomingMeetings = async (): Promise<Meeting[]> => {
+  const allMeetings = await getAllMeetings();
+  const now = new Date();
+  return allMeetings.filter(meeting => new Date(meeting.start_at) > now);
 };
 
 // Создать встречу
@@ -146,10 +194,30 @@ export const createMeetingTask = async (teamId: string, meetingId: string, data:
 };
 
 // Обновить задачу
-export const updateMeetingTask = async (teamId: string, meetingId: string, taskId: string, isCompleted: boolean): Promise<MeetingTask> => {
-  const response = await api.patch(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`, {
-    is_completed: isCompleted
-  });
+export type UpdateMeetingTaskData = Partial<Pick<MeetingTask, 'title' | 'description' | 'is_completed'>>;
+
+export const updateMeetingTask = async (
+  teamId: string, meetingId: string, taskId: string, data: boolean | UpdateMeetingTaskData
+): Promise<MeetingTask> => {
+  const payload = typeof data === 'boolean' ? { is_completed: data } : data;
+  const response = await api.patch(`/teams/${teamId}/meetings/${meetingId}/tasks/${taskId}`, payload);
+  return response.data;
+};
+
+export const getNextTeamMeeting = async (teamId: string, meetingId: string): Promise<Meeting> => {
+  const response = await api.get(`/teams/${teamId}/meetings/${meetingId}/next`);
+  return response.data;
+};
+
+export const createTaskForNextMeeting = async (
+  teamId: string, meetingId: string, data: CreateTaskData
+): Promise<MeetingTask> => {
+  const response = await api.post(`/teams/${teamId}/meetings/${meetingId}/next-meeting/tasks`, data);
+  return response.data;
+};
+
+export const carryTasksToNextMeeting = async (teamId: string, meetingId: string): Promise<MeetingTask[]> => {
+  const response = await api.post(`/teams/${teamId}/meetings/${meetingId}/tasks/carry-to-next-meeting`);
   return response.data;
 };
 

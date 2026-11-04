@@ -360,3 +360,47 @@
     gap: 6px;
   }
 }
+.meetings-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.meetings-section-heading .section-title {
+  margin-bottom: 0;
+}
+
+.all-meetings-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  white-space: nowrap;
+}
+
+.all-meetings-link:hover {
+  color: #A5A5B0;
+}
+
+.all-meetings-link svg {
+  width: 18px;
+  height: 14px;
+}
+
+.all-meetings-link svg path {
+  fill: currentColor;
+}
+
+.dashboard-meetings-heading {
+  margin-bottom: 20px;
+}

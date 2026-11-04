@@ -42,9 +42,13 @@ const CasesPage = () => {
   };
 
   const loadCases = async () => {
-    const data = await getCases(100);
-    setCases(data);
-    await loadEvaluationFormIds(data);
+    const data = await getCases();
+    const sortedCases = [...data].sort((a, b) =>
+      new Date(b.created_at || 0).getTime() -
+      new Date(a.created_at || 0).getTime()
+    );
+    setCases(sortedCases);
+    await loadEvaluationFormIds(sortedCases);
   };
 
   useEffect(() => {
