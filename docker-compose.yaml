@@ -105,7 +105,25 @@ services:
     volumes:
       - seaweedfs_data:/data
 
-
+  s3_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alpha_s3_worker
+    env_file:
+      - ./backend/.env
+    command: 'python -m infrastructure.workers.s3_worker'
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-alpha_user}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-alpha_db}
+      S3_ENDPOINT_URL: http://seaweedfs:8333
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      seaweedfs:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   postgres_data:

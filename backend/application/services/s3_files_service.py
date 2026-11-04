@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import UploadFile
 from uuid import uuid4
 from datetime import datetime, UTC, timedelta
@@ -44,22 +46,22 @@ class S3FileMetadataService:
         uow: MeetingTasksUoWProtocol,
         meeting_id: str,
         team_id: str,
+        for_update: bool = False,
     ) -> MeetingTask:
         if user.role is None or user.role.code not in {"CURATOR", "ADMIN"}:
             raise ForbiddenError("Only administrators and curators can access task files")
 
-        task = await uow.meeting_tasks_repository.get_by_id(task_id)
-
-        if task is None or task.meeting_id != meeting_id:
-            raise MeetingTaskNotFoundError("This task does not exist in the given meeting")
-
-        meeting = await uow.meetings_repository.get_by_id(meeting_id)
+        meeting = await uow.meetings_repository.get_by_id(meeting_id, for_update=for_update)
         if (
             meeting is None
             or meeting.team_case_history is None
             or meeting.team_case_history.team_id != team_id
         ):
             raise MeetingNotFoundError("This meeting does not exist in the given team")
+
+        task = await uow.meeting_tasks_repository.get_by_id(task_id)
+        if task is None or task.meeting_id != meeting_id:
+            raise MeetingTaskNotFoundError("This task does not exist in the given meeting")
 
         if user.role.code == "CURATOR":
             assignment = await uow.curator_assignments_repository.get_current_by_user_and_team(
@@ -69,6 +71,27 @@ class S3FileMetadataService:
                 raise ForbiddenError("You are not a current curator of this team")
 
         return task
+
+    async def process_uncomleted_uploads(self) -> None:
+        older_than = datetime.now(UTC) - timedelta(hours=1)
+        async with self.uow as uow:
+            batch = await uow.s3_files_repository.get_uploading_files_meta(older_than=older_than)
+
+            for meta in batch:
+
+                task = S3FilesCleanUp(
+                    id=str(uuid4()),
+                    object_key=meta.object_key,
+                    created_at=datetime.now(UTC),
+                    next_attempt_at=datetime.now(UTC) + timedelta(minutes=5),
+                    attempts=0,
+                    last_error=None
+                )
+
+                await uow.s3_files_cleanup_repository.create(task)
+                await uow.s3_files_repository.delete(meta)
+
+            await uow.commit()
 
     async def process_cleanup_batch(self) -> None:
         async with self.uow as uow:
@@ -110,7 +133,7 @@ class S3FileMetadataService:
 
             metadata = await uow.s3_files_repository.get_by_task_id(task_id)
 
-            return [self._to_response(data) for data in metadata]
+            return [self._to_response(data) for data in metadata if data.status == 'ready']
 
     async def upload(
         self,
@@ -127,7 +150,8 @@ class S3FileMetadataService:
                 user=user,
                 meeting_id=meeting_id,
                 team_id=team_id,
-                uow=uow
+                uow=uow,
+                for_update=True,
             )
 
             if not file.filename:
@@ -154,16 +178,24 @@ class S3FileMetadataService:
                 content_type = content_type,
                 created_at = datetime.now(UTC),
                 uploaded_by = user.id,
-                status='ready'
+                status='uploading'
             )
 
             await uow.s3_files_repository.create(metadata)
+            await uow.commit()
+
+            current_meta = await uow.s3_files_repository.get_by_id_to_update(metadata.id)
+
+            if not current_meta:
+                raise NotFoundError(f'File with id {metadata.id} not found.')
 
             await self.client.upload(
                 content=await self._process_file(file),
                 content_type=content_type,
-                object_key=object_key
+                object_key=current_meta.object_key
             )
+
+            current_meta.status = 'ready'
 
             await uow.commit()
             return self._to_response(metadata)
@@ -189,7 +221,7 @@ class S3FileMetadataService:
 
             metadata = await uow.s3_files_repository.get_by_id(file_id)
 
-            if metadata is None or metadata.task_id != task_id:
+            if metadata is None or metadata.task_id != task_id or metadata.status != 'ready':
                 raise NotFoundError('This file does not exist in the given task')
 
             content = await self.client.download(
@@ -213,9 +245,10 @@ class S3FileMetadataService:
                 meeting_id=meeting_id,
                 team_id=team_id,
                 uow=uow,
+                for_update=True,
             )
 
-            metadata = await uow.s3_files_repository.get_by_id(file_id)
+            metadata = await uow.s3_files_repository.get_by_id_to_update(file_id)
             if metadata is None or metadata.task_id != task_id:
                 raise NotFoundError('This file does not exist in the given task')
 
@@ -223,7 +256,10 @@ class S3FileMetadataService:
                 id=str(uuid4()),
                 object_key=metadata.object_key,
                 created_at=datetime.now(UTC),
-                next_attempt_at=datetime.now(UTC),
+                next_attempt_at=(
+                    datetime.now(UTC) + timedelta(minutes=5)
+                    if metadata.status == 'uploading' else datetime.now(UTC)
+                ),
                 attempts=0,
                 last_error=None
             )

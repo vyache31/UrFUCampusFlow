@@ -50,8 +50,8 @@ def upgrade() -> None:
     op.execute("DROP TABLE IF EXISTS s3_object_cleanup")
 
     op.add_column('s3_files_metadata', sa.Column('status', sa.String(), nullable=True))
-    # Existing objects must be checked in S3 before they can be considered ready.
-    op.execute("UPDATE s3_files_metadata SET status = 'uploading' WHERE status IS NULL")
+    # Files created before statuses were introduced are completed uploads.
+    op.execute("UPDATE s3_files_metadata SET status = 'ready' WHERE status IS NULL")
     op.alter_column('s3_files_metadata', 'status', existing_type=sa.String(), nullable=False)
     op.create_check_constraint(
         'ck_status', 's3_files_metadata', "status IN ('uploading', 'ready')"

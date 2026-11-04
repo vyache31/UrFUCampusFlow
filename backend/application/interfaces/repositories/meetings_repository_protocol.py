@@ -14,7 +14,10 @@ class MeetingsRepositoryProtocol(Protocol):
     async def update(self, meeting: Meetings) -> Meetings:
         ...
 
-    async def get_by_id(self, meeting_id: str) -> Meetings | None:
+    async def get_by_id(self, meeting_id: str, *, for_update: bool = False) -> Meetings | None:
+        ...
+
+    async def get_by_series_id(self, series_id: str, *, for_update: bool = False) -> list[Meetings]:
         ...
 
     async def get_by_team_case_history_id(
