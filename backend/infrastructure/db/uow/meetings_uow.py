@@ -7,12 +7,16 @@ from application.interfaces.repositories import (
     CuratorAssignmentsRepositoryProtocol,
     CuratorMeetingsAttendanceRepositoryProtocol,
     MeetingsRepositoryProtocol,
+    S3FilesCleanupRepositoryProtocol,
+    S3FilesRepositoryProtocol,
     TeamCaseHistoryRepositoryProtocol,
 )
 from infrastructure.db.repositories import (
     CuratorAssignmentsRepository,
     CuratorMeetingsAttendanceRepository,
     MeetingsRepository,
+    S3FilesCleanUpRepository,
+    S3FilesRepository,
     TeamCaseHistoryRepository,
 )
 
@@ -22,6 +26,8 @@ class SqlAlchemyMeetingsUoW:
     team_case_history_repository: TeamCaseHistoryRepositoryProtocol
     curator_assignments_repository: CuratorAssignmentsRepositoryProtocol
     attendance_repository: CuratorMeetingsAttendanceRepositoryProtocol
+    s3_files_repository: S3FilesRepositoryProtocol
+    s3_files_cleanup_repository: S3FilesCleanupRepositoryProtocol
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
@@ -29,6 +35,8 @@ class SqlAlchemyMeetingsUoW:
     async def __aenter__(self) -> Self:
         self.session = self.session_factory()
         self.meetings_repository = MeetingsRepository(self.session)
+        self.s3_files_repository = S3FilesRepository(self.session)
+        self.s3_files_cleanup_repository = S3FilesCleanUpRepository(self.session)
         self.team_case_history_repository = TeamCaseHistoryRepository(self.session)
         self.curator_assignments_repository = CuratorAssignmentsRepository(
             self.session

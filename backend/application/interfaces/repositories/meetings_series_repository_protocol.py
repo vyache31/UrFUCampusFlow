@@ -7,7 +7,7 @@ class MeetingsSeriesRepositoryProtocol(Protocol):
     async def create(self, series: MeetingsSeries) -> MeetingsSeries:
         ...
 
-    async def get_by_id(self, series_id: str) -> MeetingsSeries | None:
+    async def get_by_id(self, series_id: str, *, for_update: bool = False) -> MeetingsSeries | None:
         ...
 
     async def get_by_team_case_history_id(

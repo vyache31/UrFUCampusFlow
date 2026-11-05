@@ -17,7 +17,8 @@ from .integrations import (
     MeetingsSeries,
     MeetingTask,
     MicrosoftOAuth,
-    S3FilesMetadata
+    S3FilesMetadata,
+    S3FilesCleanUp
 )
 from .teams import (
     CuratorAssignment,

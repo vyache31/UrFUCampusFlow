@@ -20,13 +20,16 @@ class MeetingsSeriesRepository:
         await self.db.flush()
         return series
 
-    async def get_by_id(self, series_id: str) -> MeetingsSeries | None:
+    async def get_by_id(self, series_id: str, *, for_update: bool = False) -> MeetingsSeries | None:
 
-        series = await self.db.execute(
+        stmt = (
             select(MeetingsSeries)
             .options(*SERIES_LOAD_OPTIONS)
             .where(MeetingsSeries.id == series_id)
         )
+        if for_update:
+            stmt = stmt.with_for_update().execution_options(populate_existing=True)
+        series = await self.db.execute(stmt)
 
         return series.scalar_one_or_none()
 

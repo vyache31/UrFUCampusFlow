@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
 
 from aiobotocore.session import get_session
+from aiobotocore.config import AioConfig
 
 from config import settings
 
@@ -30,7 +32,12 @@ class S3Client:
             endpoint_url=self.S3_ENDPOINT_URL,
             region_name=self.AWS_DEFAULT_REGION,
             aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
-            aws_access_key_id=self.AWS_ACCESS_KEY_ID
+            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
+            config=AioConfig(
+                connect_timeout=10,
+                read_timeout=30,
+                retries={"total_max_attempts": 2},
+            ),
         ) as client:
 
             yield client
@@ -41,7 +48,7 @@ class S3Client:
         object_key: str,
         content_type: str
     ) -> None:
-        async with self.get_client_session() as client:
+        async with asyncio.timeout(90), self.get_client_session() as client:
             await client.put_object(
                 Bucket=self.S3_BUCKET,
                 Key=object_key,

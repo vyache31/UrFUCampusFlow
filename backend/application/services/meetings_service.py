@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -15,7 +16,7 @@ from application.interfaces.integrations import (
 )
 from application.interfaces.repositories.meetings_repository_protocol import MeetingsRepositoryProtocol
 from application.interfaces.uow.meetings_uow_protocol import MeetingsUoWProtocol
-from infrastructure.db.models import Meetings, MeetingTask
+from infrastructure.db.models import Meetings, MeetingTask, S3FilesCleanUp
 from presentation.api.schemas.outlook_meetings import MeetingCreate, MeetingResponse, MeetingUpdate
 from application.services.curator_meetings_attendance_service import CuratorMeetingAttendanceService
 
@@ -224,7 +225,7 @@ class MeetingsService:
         self, user_id: str, current_team_case_history_id: str, meeting_id: str
     ) -> bool | None:
         async with self.uow as uow:
-            meeting = await uow.meetings_repository.get_by_id(meeting_id)
+            meeting = await uow.meetings_repository.get_by_id(meeting_id, for_update=True)
             if not meeting or meeting.team_case_history_id != current_team_case_history_id:
                 return None
 
@@ -242,6 +243,21 @@ class MeetingsService:
                         err.response.text,
                     )
                     raise
+
+            for task in meeting.tasks:
+                files_meta = await uow.s3_files_repository.get_by_task_id(task_id=task.id, for_update=True)
+                for meta in files_meta:
+                    now = datetime.now(UTC)
+                    cleanup = S3FilesCleanUp(
+                        id=str(uuid.uuid4()),
+                        object_key=meta.object_key,
+                        created_at=now,
+                        next_attempt_at=now + timedelta(minutes=5) if meta.status == 'uploading' else now,
+                        attempts=0,
+                        last_error=None,
+                    )
+                    await uow.s3_files_cleanup_repository.create(cleanup)
+                    await uow.s3_files_repository.delete(meta)
 
             await uow.meetings_repository.delete(meeting)
             await uow.commit()
