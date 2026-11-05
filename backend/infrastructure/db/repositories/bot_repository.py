@@ -20,7 +20,7 @@ class BotRepository:
 
 
     async def change_current_mode(self):
-        await self.db.commit()
+        await self.db.flush()
 
 
     async def get_all_bot_cases(self):
@@ -49,14 +49,14 @@ class BotRepository:
 
     async def add_bot_case(self, bot_case: BotCases):
         self.db.add(bot_case)
-        await self.db.commit()
+        await self.db.flush()
 
         return bot_case
 
 
     async def delete_bot_case(self, bot_case: BotCases):
         await self.db.delete(bot_case)
-        await self.db.commit()
+        await self.db.flush()
 
 
     async def get_all_recruitment_curators(self):
@@ -76,14 +76,14 @@ class BotRepository:
 
     async def add_recruitment_curator(self, curator: RecruitmentCurators):
         self.db.add(curator)
-        await self.db.commit()
+        await self.db.flush()
 
         return curator
 
 
     async def delete_recruitment_curator(self, curator: RecruitmentCurators):
         await self.db.delete(curator)
-        await self.db.commit()
+        await self.db.flush()
 
 
     async def get_all_interviews(self):
@@ -114,10 +114,10 @@ class BotRepository:
 
     async def add_interview(self, interview: Interviews):
         self.db.add(interview)
-        await self.db.commit()
+        await self.db.flush()
 
         return interview
 
     async def delete_interview(self, interview: Interviews):
         await self.db.delete(interview)
-        await self.db.commit()
+        await self.db.flush()

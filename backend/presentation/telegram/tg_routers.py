@@ -7,26 +7,18 @@ from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import CommandStart
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from fastapi import Depends
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import settings
-from infrastructure.db.database import get_db
 from infrastructure.integrations.backend_api import BackendAPI
-from presentation.api.dependencies.bot_depends import get_bot_service
-from infrastructure.db.repositories.bot_repository import BotRepository
-from application.services.bot_service import BotService
 
 api = BackendAPI(settings.BACKEND_URL)
 
 bot = Bot(token=settings.BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
-db = get_db()
-repo = BotRepository(db)
-service = BotService(repo)
 EKATERINBURG_TZ = ZoneInfo("Asia/Yekaterinburg")
 
 class InterviewState(StatesGroup):

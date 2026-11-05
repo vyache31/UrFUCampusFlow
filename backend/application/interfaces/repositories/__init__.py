@@ -1,3 +1,4 @@
+from .bot_repository_protocol import BotRepositoryProtocol
 from .case_repository_protocol import CaseRepositoryProtocol
 from .case_semesters_repository_protocol import CaseSemestersRepositoryProtocol
 from .case_status_repository_protocol import CaseStatusRepositoryProtocol
