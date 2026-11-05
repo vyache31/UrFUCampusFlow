@@ -5,12 +5,12 @@ from application.exceptions.meeting import (
     NextMeetingNotFoundError,
 )
 from application.interfaces.uow.meeting_tasks_uow_protocol import MeetingTasksUoWProtocol
-from infrastructure.db.models import MeetingTask, Meetings
+from infrastructure.db.models import MeetingTask, Meetings, S3FilesCleanUp
 from presentation.api.schemas.outlook_meetings import MeetingTaskCreate, MeetingTaskUpdate, MeetingTaskResponse
 from application.services.meetings_service import find_next_meeting
 import uuid
-
-
+from datetime import datetime, UTC, timedelta
+from uuid import uuid4
 
 
 class MeetingTasksService:
@@ -23,8 +23,9 @@ class MeetingTasksService:
         uow: MeetingTasksUoWProtocol,
         meeting_id: str,
         current_team_case_history_id: str,
+        for_update: bool = False,
     ) -> Meetings:
-        meeting = await uow.meetings_repository.get_by_id(meeting_id)
+        meeting = await uow.meetings_repository.get_by_id(meeting_id, for_update=for_update)
 
         if not meeting or meeting.team_case_history_id != current_team_case_history_id:
             raise MeetingNotFoundError('This meeting does not exist')
@@ -174,8 +175,30 @@ class MeetingTasksService:
             current_team_case_history_id: str
     ) -> bool:
         async with self.uow as uow:
-            await self._get_meeting_for_current_history(uow, meeting_id, current_team_case_history_id)
+            await self._get_meeting_for_current_history(
+                uow, meeting_id, current_team_case_history_id, for_update=True
+            )
             task = await self._get_task_for_meeting(uow, task_id, meeting_id)
+
+            files_meta = await uow.s3_files_repository.get_by_task_id(task_id=task.id, for_update=True)
+
+            for meta in files_meta:
+
+                сleanup = S3FilesCleanUp(
+                    id=str(uuid4()),
+                    object_key=meta.object_key,
+                    created_at=datetime.now(UTC),
+                    next_attempt_at=(
+                        datetime.now(UTC) + timedelta(minutes=5)
+                        if meta.status == 'uploading' else datetime.now(UTC)
+                    ),
+                    attempts=0,
+                    last_error=None
+                )
+
+                await uow.s3_files_cleanup_repository.create(сleanup)
+                await uow.s3_files_repository.delete(meta)
+
             await uow.meeting_tasks_repository.delete(task)
             await uow.commit()
             return True

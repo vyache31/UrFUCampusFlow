@@ -13,6 +13,7 @@ from .meetings_series_repository import MeetingsSeriesRepository
 from .microsoft_oauth_repository import MicrosoftOAuthRepository
 from .role_repository import RoleRepository
 from .s3_files_repository import S3FilesRepository
+from .s3_files_cleanup_repository import S3FilesCleanUpRepository
 from .semesters_repository import SemestersRepository
 from .student_repository import StudentRepository
 from .team_case_history_repository import TeamCaseHistoryRepository
@@ -37,6 +38,7 @@ __all__ = [
     "MicrosoftOAuthRepository",
     "RoleRepository",
     "S3FilesRepository",
+    "S3FilesCleanUpRepository",
     "SemestersRepository",
     "StudentRepository",
     "TeamCaseHistoryRepository",

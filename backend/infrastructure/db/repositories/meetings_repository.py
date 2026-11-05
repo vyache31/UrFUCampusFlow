@@ -31,13 +31,16 @@ class MeetingsRepository:
         await self.db.flush()
         return meeting
 
-    async def get_by_id(self, meeting_id: str) -> Meetings | None:
+    async def get_by_id(self, meeting_id: str, *, for_update: bool = False) -> Meetings | None:
 
-        meeting = await self.db.execute(
+        stmt = (
             select(Meetings)
             .options(*MEETING_LOAD_OPTIONS)
             .where(Meetings.id == meeting_id)
         )
+        if for_update:
+            stmt = stmt.with_for_update().execution_options(populate_existing=True)
+        meeting = await self.db.execute(stmt)
 
         return meeting.scalar_one_or_none()
 
@@ -62,12 +65,16 @@ class MeetingsRepository:
 
         return list(meetings.scalars().all())
 
-    async def get_by_series_id(self, series_id: str) -> list[Meetings]:
-        meetings = await self.db.execute(
+    async def get_by_series_id(self, series_id: str, *, for_update: bool = False) -> list[Meetings]:
+        stmt = (
             select(Meetings)
             .options(*MEETING_LOAD_OPTIONS)
             .where(Meetings.meetings_series_id == series_id)
+            .order_by(Meetings.id)
         )
+        if for_update:
+            stmt = stmt.with_for_update().execution_options(populate_existing=True)
+        meetings = await self.db.execute(stmt)
 
         return list(meetings.scalars().all())
 

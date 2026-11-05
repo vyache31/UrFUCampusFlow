@@ -1,5 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
+
+import httpx
+
+from application.services.meetings_service import MeetingsService
 
 from application.exceptions.base import InvalidPeriodError
 from application.exceptions.meeting import InvalidRecurrenceError
@@ -9,7 +13,7 @@ from application.interfaces.integrations import (
     MicrosoftGraphClientProtocol,
 )
 from application.interfaces.uow.meetings_series_uow_protocol import MeetingsSeriesUoWProtocol
-from infrastructure.db.models import MeetingsSeries
+from infrastructure.db.models import MeetingsSeries, S3FilesCleanUp
 from infrastructure.db.models.integrations import Meetings
 from presentation.api.schemas.meetings_series_schemas import (
     MeetingsSeriesCreate,
@@ -165,13 +169,34 @@ class MeetingsSeriesService:
         self, series_id: str, current_team_case_history_id: str, user_id: str
     ) -> bool | None:
         async with self.uow as uow:
-            series = await uow.meetings_series_repository.get_by_id(series_id)
+            series = await uow.meetings_series_repository.get_by_id(series_id, for_update=True)
             if not series or series.team_case_history_id != current_team_case_history_id:
                 return None
-            await self.graph_client.delete_series(
-                access_token=await self.oauth_service.get_actual_access_token(user_id),
-                series_id=series.outlook_series_master_id,
-            )
+            try:
+                await self.graph_client.delete_series(
+                    access_token=await self.oauth_service.get_actual_access_token(user_id),
+                    series_id=series.outlook_series_master_id,
+                )
+            except httpx.HTTPStatusError as err:
+                if not MeetingsService._is_missing_graph_event(err):
+                    raise
+            meetings = await uow.meetings_repository.get_by_series_id(series_id, for_update=True)
+            for meeting in meetings:
+                for task in meeting.tasks:
+                    files_meta = await uow.s3_files_repository.get_by_task_id(task_id=task.id, for_update=True)
+                    for meta in files_meta:
+                        now = datetime.now(UTC)
+                        cleanup = S3FilesCleanUp(
+                            id=str(uuid.uuid4()),
+                            object_key=meta.object_key,
+                            created_at=now,
+                            next_attempt_at=now + timedelta(minutes=5) if meta.status == 'uploading' else now,
+                            attempts=0,
+                            last_error=None,
+                        )
+                        await uow.s3_files_cleanup_repository.create(cleanup)
+                        await uow.s3_files_repository.delete(meta)
+
             await uow.meetings_series_repository.delete_by_id(series_id)
             await uow.commit()
             return True

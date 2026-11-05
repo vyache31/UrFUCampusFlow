@@ -27,7 +27,10 @@ from presentation.api.dependencies.meetings_depends import (
     get_meetings_service,
 )
 from presentation.api.dependencies.meetings_series_depends import get_meetings_series_service
-from presentation.api.dependencies.curator_assignment_depends import get_curator_assignment_service
+from presentation.api.dependencies.curator_assignment_depends import (
+    get_curator_assignment_service,
+    require_team_files_access,
+)
 from application.services.meeting_tasks_service import MeetingTasksService
 from presentation.api.dependencies.meeting_task_depends import get_meeting_tasks_service
 from presentation.api.schemas.team_case_history import TeamCaseHistoryCreate, TeamCaseHistoryResponse
@@ -318,7 +321,7 @@ async def update_team_meeting(
 async def delete_team_meeting(
         team_id: str,
         meeting_id: str,
-        user=Depends(get_current_auth_user),
+        user=Depends(require_team_files_access),
         current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: MeetingsService = Depends(get_meetings_service),
 ):
@@ -419,7 +422,7 @@ async def get_team_meetings_series(
 async def delete_team_meetings_series(
         team_id: str,
         series_id: str,
-        user=Depends(get_current_auth_user),
+        user=Depends(require_team_files_access),
         current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: MeetingsSeriesService = Depends(get_meetings_series_service),
 ):
@@ -531,7 +534,7 @@ async def delete_meeting_task(
         team_id: str,
         meeting_id: str,
         task_id: str,
-        user=Depends(get_current_auth_user),
+        user=Depends(require_team_files_access),
         current_team_case_history=Depends(get_current_team_case_history_by_team_id),
         service: MeetingTasksService = Depends(get_meeting_tasks_service),
 ):
