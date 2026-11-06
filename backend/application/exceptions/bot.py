@@ -11,3 +11,7 @@ class InterviewTimeConflictError(ConflictError):
 
 class RecruitmentCaseNotFoundError(NotFoundError):
     """The requested case is not available for recruitment."""
+
+
+class RecruitmentClosedError(ConflictError):
+    """Interviews cannot be booked while recruitment is closed."""

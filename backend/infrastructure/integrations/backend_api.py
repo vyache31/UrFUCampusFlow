@@ -1,9 +1,23 @@
 import httpx
+from json import JSONDecodeError
 from config import settings
+from infrastructure.integrations.exceptions import BackendResponseError
 
-headers = {
-    "Authorization": f"Bearer {settings.SERVICE_BOT_SECRET}"
-}
+
+def read_response(response: httpx.Response, expected_type: type, required_field: str | None = None):
+    try:
+        data = response.json()
+    except JSONDecodeError as exc:
+        raise BackendResponseError("Backend returned invalid JSON") from exc
+    if not isinstance(data, expected_type):
+        raise BackendResponseError("Backend returned an unexpected response type")
+    items = data if isinstance(data, list) else [data]
+    if required_field and any(
+        not isinstance(item, dict) or not isinstance(item.get(required_field), str)
+        for item in items
+    ):
+        raise BackendResponseError("Backend response is missing a required string field")
+    return data
 
 class BackendAPI:
 
@@ -23,7 +37,7 @@ class BackendAPI:
 
             response.raise_for_status()
 
-            self.token = response.json()["access_token"]
+            self.token = read_response(response, dict, "access_token")["access_token"]
 
     async def _get_headers(self):
         if self.token is None:
@@ -35,7 +49,6 @@ class BackendAPI:
 
     async def get_mode(self):
         async with httpx.AsyncClient() as client:
-            print("LOG HEADERS:", await self._get_headers())
             response = await client.get(
                 f"{self.base_url}/bot/mode",
                 headers= await self._get_headers()
@@ -43,7 +56,7 @@ class BackendAPI:
 
             response.raise_for_status()
 
-            return response.json()
+            return read_response(response, dict, "mode")
 
     async def get_cases(self):
         async with httpx.AsyncClient() as client:
@@ -54,7 +67,7 @@ class BackendAPI:
 
             response.raise_for_status()
 
-            return response.json()
+            return read_response(response, list, "case_id")
 
     async def get_case(self, case_id: str):
         async with httpx.AsyncClient() as client:
@@ -63,7 +76,7 @@ class BackendAPI:
                 headers= await self._get_headers()
             )
             response.raise_for_status()
-            return response.json()
+            return read_response(response, dict)
 
     async def get_bot_case_by_case_id(self, case_id: str):
         async with httpx.AsyncClient() as client:
@@ -72,7 +85,7 @@ class BackendAPI:
                 headers= await self._get_headers()
             )
             response.raise_for_status()
-            return response.json()
+            return read_response(response, dict, "id")
 
     async def create_interview(
         self,
@@ -95,7 +108,7 @@ class BackendAPI:
 
             response.raise_for_status()
 
-            return response.json()
+            return read_response(response, dict, "id")
 
     async def can_book_date_time_interview(
                 self,
@@ -110,4 +123,4 @@ class BackendAPI:
 
                 response.raise_for_status()
 
-                return response.json()
+                return read_response(response, type(None))

@@ -121,3 +121,13 @@ class BotRepository:
     async def delete_interview(self, interview: Interviews):
         await self.db.delete(interview)
         await self.db.flush()
+
+    async def get_recuitment_curator_by_user_id(
+        self, user_id: str
+    ) -> RecruitmentCurators | None:
+        curator = await self.db.execute(
+            select(RecruitmentCurators)
+            .where(RecruitmentCurators.user_id == user_id)
+        )
+
+        return curator.scalar_one_or_none()

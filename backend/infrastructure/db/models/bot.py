@@ -16,6 +16,9 @@ class Interviews(Base):
     team_name: Mapped[str]
     date_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    curator_user_id: Mapped[str | None] = mapped_column(ForeignKey('users.id'), nullable=True)
+    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    outlook_event_id: Mapped[str | None] = mapped_column(nullable=True)
 
     case = relationship("BotCases", back_populates="interviews")
 

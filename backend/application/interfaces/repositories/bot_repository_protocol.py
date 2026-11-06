@@ -57,3 +57,8 @@ class BotRepositoryProtocol(Protocol):
 
     async def delete_interview(self, interview: Interviews) -> None:
         ...
+
+    async def get_recuitment_curator_by_user_id(
+        self, user_id: str
+    ) -> RecruitmentCurators | None:
+        ...

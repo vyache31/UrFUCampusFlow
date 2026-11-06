@@ -43,6 +43,7 @@ class InterviewCreate(BaseModel):
     case_id: str
     team_name: str
     date_time: datetime
+    curator_user_id: str | None = None
 
 
 class InterviewResponse(BaseModel):
@@ -54,3 +55,12 @@ class InterviewResponse(BaseModel):
     team_name: str
     date_time: datetime | None
     created_at: datetime
+    curator_user_id: str | None
+    outlook_event_id: str | None
+    end_at: datetime | None
+
+
+class InterviewSlotResponse(BaseModel):
+    start_at: datetime
+    end_at: datetime
+    curator_user_id: str

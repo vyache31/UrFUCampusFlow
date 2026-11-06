@@ -1,10 +1,16 @@
 from datetime import datetime, UTC
+import logging
 import uuid
-from application.exceptions.base import ConflictError
+from application.exceptions.base import ConfigurationError, ConflictError
 from application.exceptions.bot import (
     InterviewTimeConflictError,
     InvalidBotModeError,
     RecruitmentCaseNotFoundError,
+    RecruitmentClosedError,
+)
+from application.interfaces.integrations import (
+    MicrosoftAccessTokenProviderProtocol,
+    MicrosoftGraphClientProtocol,
 )
 from application.interfaces.uow.bot_uow_protocol import BotUow
 from infrastructure.db.models.bot import (
@@ -21,14 +27,24 @@ from presentation.api.schemas.bot_schemas import (
     InterviewCreate,
     InterviewResponse,
 )
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from aiogram.exceptions import TelegramAPIError
+
+
+logger = logging.getLogger(__name__)
 
 
 
 class BotService:
 
-    def __init__(self, uow: BotUow):
+    def __init__(
+        self,
+        uow: BotUow,
+        oauth_service: MicrosoftAccessTokenProviderProtocol,
+        graph_client: MicrosoftGraphClientProtocol,
+    ):
         self.uow = uow
+        self.oauth_service = oauth_service
+        self.graph_client = graph_client
 
     async def get_current_mode(self) -> BotModeResponse | None:
         async with self.uow as uow:
@@ -168,6 +184,12 @@ class BotService:
 
     async def add_interview(self, schema: InterviewCreate) -> InterviewResponse:
         async with self.uow as uow:
+            mode = await uow.bot_repository.get_current_mode()
+            if mode is None:
+                raise ConfigurationError("Bot mode not configured")
+            if mode.mode != "recruitment":
+                raise RecruitmentClosedError("Набор остановлен. Запись на интервью недоступна.")
+
             case = await uow.bot_repository.get_bot_case_by_id(schema.case_id)
             if not case:
                 raise RecruitmentCaseNotFoundError("данного кейса нет в списке набора!")
@@ -181,6 +203,7 @@ class BotService:
                 case_id=schema.case_id,
                 team_name=schema.team_name,
                 date_time=schema.date_time,
+                curator_user_id=schema.curator_user_id,
                 created_at=datetime.now(UTC)
             )
             interview = await uow.bot_repository.add_interview(interview)
@@ -216,15 +239,8 @@ class BotService:
                 )
                 success += 1
 
-            except (
-                    TelegramBadRequest,
-                    TelegramForbiddenError,
-                    Exception
-            ) as e:
-                print(
-                    f"Failed to send message "
-                    f"to {user.tg_user_id}: {e}"
-                )
+            except TelegramAPIError:
+                logger.exception("Failed to send message to %s", user.tg_user_id)
                 failed += 1
 
         return {

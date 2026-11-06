@@ -1,11 +1,14 @@
 from datetime import datetime
+from json import JSONDecodeError
+import logging
 from zoneinfo import ZoneInfo
 
 import httpx
 
 from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ErrorEvent
 from aiogram.filters import CommandStart
+from aiogram.filters.exception import ExceptionTypeFilter
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -13,6 +16,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import settings
 from infrastructure.integrations.backend_api import BackendAPI
+from infrastructure.integrations.exceptions import BackendResponseError
 
 api = BackendAPI(settings.BACKEND_URL)
 
@@ -20,6 +24,31 @@ bot = Bot(token=settings.BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 EKATERINBURG_TZ = ZoneInfo("Asia/Yekaterinburg")
+logger = logging.getLogger(__name__)
+
+
+@router.error(ExceptionTypeFilter(httpx.HTTPError, BackendResponseError))
+async def handle_backend_error(event: ErrorEvent):
+    error = event.exception
+    text = "Не удалось получить ответ сервера. Попробуйте позже."
+    callback = event.update.callback_query
+    if callback and callback.data == "confirm_interview":
+        text = "Не удалось подтвердить результат записи. Уточните у куратора, создана ли запись, прежде чем повторять её."
+    if isinstance(error, httpx.HTTPStatusError) and 400 <= error.response.status_code < 500:
+        try:
+            body = error.response.json()
+        except JSONDecodeError:
+            body = None
+        detail = body.get("detail") if isinstance(body, dict) else None
+        if isinstance(detail, str):
+            text = detail
+    logger.warning("Bot backend request failed: %s", type(error).__name__)
+    if callback:
+        if callback.message:
+            await callback.message.answer(text)
+    elif event.update.message:
+        await event.update.message.answer(text)
+    return True
 
 class InterviewState(StatesGroup):
     waiting_for_team_name = State()
@@ -150,6 +179,10 @@ async def process_team_name(message: Message, state: FSMContext):
 @router.message(InterviewState.waiting_for_datetime)
 async def process_datetime(message: Message, state: FSMContext):
 
+    if message.text is None:
+        await message.answer("Отправьте дату и время текстом в формате ГГГГ-ММ-ДД ЧЧ:ММ")
+        return
+
     try:
         parsed_date = datetime.strptime(
             message.text,
@@ -159,20 +192,9 @@ async def process_datetime(message: Message, state: FSMContext):
         await message.answer("Неверный формат даты.")
         return
 
-    try:
-        await api.can_book_date_time_interview(
-            parsed_date.replace(
-            tzinfo=EKATERINBURG_TZ
-            ).isoformat()
-        )
-    except httpx.HTTPStatusError as err:
-        detail = err.response.json().get(
-            "detail",
-            "Ошибка"
-        )
-
-        await message.answer(str(detail))
-        return
+    await api.can_book_date_time_interview(
+        parsed_date.replace(tzinfo=EKATERINBURG_TZ).isoformat()
+    )
 
     await state.update_data(
         date_time=parsed_date.replace(
@@ -218,26 +240,13 @@ async def confirm_interview(
 ):
     data = await state.get_data()
 
-    try:
-        bot_case = await api.get_bot_case_by_case_id(
-            data["case_id"]
-        )
-
-        await api.create_interview(
-            tg_user_id=callback.from_user.id,
-            case_id=bot_case["id"],
-            team_name=data["team_name"],
-            date_time=data["date_time"]
-        )
-
-    except httpx.HTTPStatusError as err:
-        detail = err.response.json().get(
-            "detail",
-            "Ошибка"
-        )
-
-        await callback.message.answer(detail)
-        return
+    bot_case = await api.get_bot_case_by_case_id(data["case_id"])
+    await api.create_interview(
+        tg_user_id=callback.from_user.id,
+        case_id=bot_case["id"],
+        team_name=data["team_name"],
+        date_time=data["date_time"]
+    )
 
     await callback.message.edit_text(
         "✅ Вы успешно записались на интервью."

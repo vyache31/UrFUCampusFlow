@@ -182,10 +182,4 @@ async def send_message(
         user = Depends(get_current_subject),
         service = Depends(get_bot_service)
 ):
-    try:
-        return await service.broadcast_message(message)
-    except Exception as err:
-        raise HTTPException(
-            status_code=400,
-            detail=str(err)
-        )
+    return await service.broadcast_message(message)
