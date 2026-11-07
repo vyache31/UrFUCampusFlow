@@ -15,7 +15,10 @@ class BotRepositoryProtocol(Protocol):
     async def get_all_bot_cases(self) -> Sequence[BotCases]:
         ...
 
-    async def get_bot_case_by_id(self, case_id: str) -> BotCases | None:
+    async def get_bot_case_by_id(self, case_id: str, *, for_update: bool = False) -> BotCases | None:
+        ...
+
+    async def has_interviews_for_bot_case(self, bot_case_id: str) -> bool:
         ...
 
     async def get_bot_case_by_case_id(self, case_id: str) -> BotCases | None:
@@ -49,9 +52,6 @@ class BotRepositoryProtocol(Protocol):
     async def get_interview_by_id(self, interview_id: str) -> Interviews | None:
         ...
 
-    async def get_interview_by_datetime(self, date_time: datetime) -> Interviews | None:
-        ...
-
     async def add_interview(self, interview: Interviews) -> Interviews:
         ...
 
@@ -61,4 +61,15 @@ class BotRepositoryProtocol(Protocol):
     async def get_recuitment_curator_by_user_id(
         self, user_id: str
     ) -> RecruitmentCurators | None:
+        ...
+
+    async def get_overlapping_interviews(
+        self,
+        curator_user_id: str,
+        start_at: datetime,
+        end_at: datetime,
+    ) -> list[Interviews]:
+        ...
+
+    async def get_interview_by_id_to_update(self, interview_id: str) -> Interviews | None:
         ...

@@ -15,3 +15,6 @@ class RecruitmentCaseNotFoundError(NotFoundError):
 
 class RecruitmentClosedError(ConflictError):
     """Interviews cannot be booked while recruitment is closed."""
+
+class RecruitmentCuratorNotFound(NotFoundError):
+    """Requested curator not found in the list of recruitment curators."""

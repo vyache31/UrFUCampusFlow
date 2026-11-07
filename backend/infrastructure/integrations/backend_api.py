@@ -1,7 +1,10 @@
 import httpx
+from datetime import date
 from json import JSONDecodeError
+from pydantic import ValidationError
 from config import settings
 from infrastructure.integrations.exceptions import BackendResponseError
+from presentation.api.schemas.bot_schemas import InterviewSlotResponse
 
 
 def read_response(response: httpx.Response, expected_type: type, required_field: str | None = None):
@@ -87,12 +90,47 @@ class BackendAPI:
             response.raise_for_status()
             return read_response(response, dict, "id")
 
+    async def get_recruitment_curators(self):
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/bot/curators",
+                headers=await self._get_headers(),
+            )
+            response.raise_for_status()
+            return read_response(response, list, "user_id")
+
+    async def get_interview_slots(
+        self, curator_user_id: str, day: date
+    ) -> list[InterviewSlotResponse]:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/bot/curator-slots",
+                params={"curator_user_id": curator_user_id, "date": day.isoformat()},
+                headers=await self._get_headers(),
+            )
+            response.raise_for_status()
+            data = read_response(response, list)
+            try:
+                slots = [InterviewSlotResponse.model_validate(item) for item in data]
+            except ValidationError as err:
+                raise BackendResponseError("Backend returned invalid interview slots") from err
+            if any(
+                slot.start_at.utcoffset() is None
+                or slot.end_at.utcoffset() is None
+                or slot.start_at >= slot.end_at
+                or slot.curator_user_id != curator_user_id
+                for slot in slots
+            ):
+                raise BackendResponseError("Backend returned inconsistent interview slots")
+            return slots
+
     async def create_interview(
         self,
         tg_user_id: int,
         case_id: str,
         team_name: str,
-        date_time: str
+        date_time: str,
+        curator_user_id: str,
     ):
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -101,7 +139,8 @@ class BackendAPI:
                     "tg_user_id": tg_user_id,
                     "case_id": case_id,
                     "team_name": team_name,
-                    "date_time": date_time
+                    "date_time": date_time,
+                    "curator_user_id": curator_user_id,
                 },
                 headers= await self._get_headers()
             )
@@ -109,18 +148,3 @@ class BackendAPI:
             response.raise_for_status()
 
             return read_response(response, dict, "id")
-
-    async def can_book_date_time_interview(
-                self,
-                date_time: str
-        ):
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/bot/interviews",
-                    params={"date_time": date_time},
-                    headers= await self._get_headers()
-                )
-
-                response.raise_for_status()
-
-                return read_response(response, type(None))
