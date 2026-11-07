@@ -99,13 +99,11 @@ class BackendAPI:
             response.raise_for_status()
             return read_response(response, list, "user_id")
 
-    async def get_interview_slots(
-        self, curator_user_id: str, day: date
-    ) -> list[InterviewSlotResponse]:
+    async def get_interview_slots(self, day: date) -> list[InterviewSlotResponse]:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{self.base_url}/bot/curator-slots",
-                params={"curator_user_id": curator_user_id, "date": day.isoformat()},
+                f"{self.base_url}/bot/interviews/slots",
+                params={"date": day.isoformat()},
                 headers=await self._get_headers(),
             )
             response.raise_for_status()
@@ -118,7 +116,8 @@ class BackendAPI:
                 slot.start_at.utcoffset() is None
                 or slot.end_at.utcoffset() is None
                 or slot.start_at >= slot.end_at
-                or slot.curator_user_id != curator_user_id
+                or not slot.curator_user_ids
+                or len(slot.curator_user_ids) != len(set(slot.curator_user_ids))
                 for slot in slots
             ):
                 raise BackendResponseError("Backend returned inconsistent interview slots")
@@ -130,7 +129,6 @@ class BackendAPI:
         case_id: str,
         team_name: str,
         date_time: str,
-        curator_user_id: str,
     ):
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -140,7 +138,6 @@ class BackendAPI:
                     "case_id": case_id,
                     "team_name": team_name,
                     "date_time": date_time,
-                    "curator_user_id": curator_user_id,
                 },
                 headers= await self._get_headers()
             )

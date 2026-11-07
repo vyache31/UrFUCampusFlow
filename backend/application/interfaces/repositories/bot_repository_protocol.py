@@ -1,8 +1,9 @@
 from collections.abc import Sequence
-from datetime import datetime
 from typing import Protocol
 
-from infrastructure.db.models.bot import BotCases, BotMode, Interviews, RecruitmentCurators
+from infrastructure.db.models.bot import (
+    BotCases, BotMode, Interviews, InterviewStatuses, RecruitmentCurators,
+)
 
 
 class BotRepositoryProtocol(Protocol):
@@ -46,6 +47,9 @@ class BotRepositoryProtocol(Protocol):
     async def delete_recruitment_curator(self, curator: RecruitmentCurators) -> None:
         ...
 
+    async def get_interview_status_by_code(self, code: str) -> InterviewStatuses | None:
+        ...
+
     async def get_all_interviews(self) -> Sequence[Interviews]:
         ...
 
@@ -53,6 +57,9 @@ class BotRepositoryProtocol(Protocol):
         ...
 
     async def add_interview(self, interview: Interviews) -> Interviews:
+        ...
+
+    async def update_interview(self, interview: Interviews) -> Interviews:
         ...
 
     async def delete_interview(self, interview: Interviews) -> None:
@@ -63,12 +70,7 @@ class BotRepositoryProtocol(Protocol):
     ) -> RecruitmentCurators | None:
         ...
 
-    async def get_overlapping_interviews(
-        self,
-        curator_user_id: str,
-        start_at: datetime,
-        end_at: datetime,
-    ) -> list[Interviews]:
+    async def get_interviews_by_curator_user_id(self, user_id: str) -> list[Interviews]:
         ...
 
     async def get_interview_by_id_to_update(self, interview_id: str) -> Interviews | None:

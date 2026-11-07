@@ -9,6 +9,8 @@ from presentation.api.schemas.bot_schemas import (
     BotCaseCreate,
     RecruitmentCuratorCreate,
     InterviewCreate,
+    InterviewConfirm,
+    InterviewResponse,
     InterviewSlotResponse
 )
 from presentation.api.dependencies.bot_depends import get_bot_service
@@ -24,6 +26,14 @@ router = APIRouter(
     prefix='/bot',
     tags=['Bot']
 )
+
+
+def _outlook_error(err: httpx.HTTPError) -> HTTPException:
+    if isinstance(err, httpx.TimeoutException):
+        return HTTPException(status_code=504, detail="Microsoft Graph request timed out")
+    if isinstance(err, httpx.HTTPStatusError):
+        return HTTPException(status_code=502, detail=f"Microsoft Graph error: {err.response.status_code}")
+    return HTTPException(status_code=502, detail="Microsoft Graph is unavailable")
 
 
 @router.get('/mode')
@@ -173,6 +183,37 @@ async def delete_interview(
         'status': 'deleted'
     }
 
+
+@router.post('/interviews/{interview_id}/confirm', response_model=InterviewResponse)
+async def confirm_interview(
+    interview_id: str,
+    schema: InterviewConfirm,
+    user=Depends(get_current_auth_user),
+    service: BotService = Depends(get_bot_service),
+):
+    try:
+        interview = await service.confirm_interview(interview_id, schema)
+    except httpx.HTTPError as err:
+        raise _outlook_error(err) from err
+    if interview is None:
+        raise HTTPException(status_code=404, detail='Interview not found')
+    return interview
+
+
+@router.post('/interviews/{interview_id}/cancel', response_model=InterviewResponse)
+async def cancel_interview(
+    interview_id: str,
+    user=Depends(get_current_auth_user),
+    service: BotService = Depends(get_bot_service),
+):
+    try:
+        interview = await service.cancel_interview(interview_id)
+    except httpx.HTTPError as err:
+        raise _outlook_error(err) from err
+    if interview is None:
+        raise HTTPException(status_code=404, detail='Interview not found')
+    return interview
+
 @router.post('/message')
 async def send_message(
         message: str,
@@ -181,31 +222,16 @@ async def send_message(
 ):
     return await service.broadcast_message(message)
 
-@router.get('/curator-slots')
-async def get_interview_slots_for_curator(
+@router.get('/interviews/slots')
+async def get_interview_slots(
     date: date,
-    curator_user_id: str,
     user=Depends(get_current_subject),
     service: BotService =Depends(get_bot_service)
 ) -> list[InterviewSlotResponse]:
 
     try:
         return await service.get_available_interview_slots(
-            curator_user_id=curator_user_id,
             date=date
         )
-    except httpx.TimeoutException as err:
-        raise HTTPException(
-            status_code=504,
-            detail="Microsoft Graph request timed out",
-        ) from err
-    except httpx.HTTPStatusError as err:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Microsoft Graph error: {err.response.status_code}",
-        ) from err
-    except httpx.RequestError as err:
-        raise HTTPException(
-            status_code=502,
-            detail="Microsoft Graph is unavailable",
-        ) from err
+    except httpx.HTTPError as err:
+        raise _outlook_error(err) from err

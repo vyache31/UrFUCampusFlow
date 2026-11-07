@@ -16,11 +16,38 @@ class Interviews(Base):
     team_name: Mapped[str]
     date_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    curator_user_id: Mapped[str | None] = mapped_column(ForeignKey('users.id'), nullable=True)
     end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    outlook_event_id: Mapped[str | None] = mapped_column(nullable=True)
+    status_id: Mapped[int] = mapped_column(ForeignKey('interview_statuses.id'))
+    event_link: Mapped[str | None] = mapped_column(nullable=True)
 
     case = relationship("BotCases", back_populates="interviews")
+    status = relationship('InterviewStatuses', back_populates='interviews')
+    curators: Mapped[list["InterviewCurators"]] = relationship(
+        'InterviewCurators',
+        back_populates='interview',
+        cascade='all, delete-orphan',
+    )
+
+class InterviewStatuses(Base):
+    __tablename__ = 'interview_statuses'
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    code: Mapped[str] = mapped_column(unique=True)
+    status_name: Mapped[str]
+
+    interviews = relationship('Interviews', back_populates='status')
+
+class InterviewCurators(Base):
+    __tablename__ = 'interview_curators'
+
+    interview_id: Mapped[str] = mapped_column(
+        ForeignKey('interviews.id', ondelete='CASCADE'), primary_key=True
+    )
+    user_id: Mapped[str] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    outlook_event_id: Mapped[str | None] = mapped_column(nullable=True)
+
+    interview: Mapped["Interviews"] = relationship('Interviews', back_populates='curators')
+    user = relationship('Users')
 
 class BotMode(Base):
     __tablename__ = 'bot_mode'

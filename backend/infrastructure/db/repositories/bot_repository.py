@@ -1,8 +1,16 @@
-from datetime import datetime
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-from infrastructure.db.models.bot import BotMode, BotCases, RecruitmentCurators, Interviews
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
+from infrastructure.db.models.bot import (
+    BotMode, BotCases, RecruitmentCurators, Interviews, InterviewCurators, InterviewStatuses,
+)
+
+
+INTERVIEW_LOAD_OPTIONS = (
+    selectinload(Interviews.status),
+    selectinload(Interviews.curators),
+)
 
 
 class BotRepository:
@@ -95,28 +103,42 @@ class BotRepository:
         await self.db.flush()
 
 
-    async def get_all_interviews(self):
+    async def get_interview_status_by_code(self, code: str) -> InterviewStatuses | None:
+        result = await self.db.execute(
+            select(InterviewStatuses).where(InterviewStatuses.code == code)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_all_interviews(self) -> list[Interviews]:
         interviews = await self.db.execute(
             select(Interviews)
+            .options(*INTERVIEW_LOAD_OPTIONS)
         )
 
-        return interviews.scalars().all()
+        return list(interviews.scalars().all())
 
-    async def get_interview_by_id(self, interview_id: str):
+    async def get_interview_by_id(self, interview_id: str) -> Interviews | None:
         interview = await self.db.execute(
             select(Interviews)
+            .options(*INTERVIEW_LOAD_OPTIONS)
             .where(Interviews.id == interview_id)
         )
 
         return interview.scalar_one_or_none()
 
-    async def add_interview(self, interview: Interviews):
+    async def add_interview(self, interview: Interviews) -> Interviews:
         self.db.add(interview)
         await self.db.flush()
+        await self.db.refresh(interview, attribute_names=['status', 'curators'])
 
         return interview
 
-    async def delete_interview(self, interview: Interviews):
+    async def update_interview(self, interview: Interviews) -> Interviews:
+        await self.db.flush()
+        await self.db.refresh(interview, attribute_names=['status', 'curators'])
+        return interview
+
+    async def delete_interview(self, interview: Interviews) -> None:
         await self.db.delete(interview)
         await self.db.flush()
 
@@ -130,27 +152,22 @@ class BotRepository:
 
         return curator.scalar_one_or_none()
 
-    async def get_overlapping_interviews(
-        self,
-        curator_user_id: str,
-        start_at: datetime,
-        end_at: datetime,
-    ) -> list[Interviews]:
-
+    async def get_interviews_by_curator_user_id(self, user_id: str) -> list[Interviews]:
         result = await self.db.execute(
             select(Interviews)
-            .where(Interviews.curator_user_id == curator_user_id)
-            .where(Interviews.date_time < end_at)
-            .where(Interviews.end_at > start_at)
+            .join(InterviewCurators, InterviewCurators.interview_id == Interviews.id)
+            .options(*INTERVIEW_LOAD_OPTIONS)
+            .where(InterviewCurators.user_id == user_id)
         )
-
-        return [scalar for scalar in result.scalars().all()]
+        return list(result.scalars().all())
 
     async def get_interview_by_id_to_update(self, interview_id: str) -> Interviews | None:
         interview = await self.db.execute(
             select(Interviews)
+            .options(*INTERVIEW_LOAD_OPTIONS)
             .where(Interviews.id == interview_id)
             .with_for_update()
+            .execution_options(populate_existing=True)
         )
 
         return interview.scalar_one_or_none()

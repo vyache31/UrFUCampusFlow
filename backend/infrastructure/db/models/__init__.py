@@ -1,4 +1,11 @@
-from .bot import BotCases, BotMode, Interviews, RecruitmentCurators
+from .bot import (
+    BotCases,
+    BotMode,
+    InterviewCurators,
+    Interviews,
+    InterviewStatuses,
+    RecruitmentCurators,
+)
 
 from .auth import Roles, Users
 from .cases import (

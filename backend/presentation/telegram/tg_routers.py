@@ -54,7 +54,6 @@ async def handle_backend_error(event: ErrorEvent):
 
 class InterviewState(StatesGroup):
     waiting_for_team_name = State()
-    waiting_for_curator = State()
     waiting_for_day = State()
     waiting_for_slot = State()
     waiting_for_confirmation = State()
@@ -178,27 +177,8 @@ async def process_team_name(message: Message, state: FSMContext):
         await message.answer("Отправьте название команды текстом.")
         return
 
-    curators = await api.get_recruitment_curators()
-    if not curators:
-        await message.answer("Интервьюеры пока не назначены. Попробуйте позже.")
-        return
-
-    selection_id = token_hex(4)
-    kb = InlineKeyboardBuilder()
-    for index, curator in enumerate(curators):
-        kb.button(
-            text=f"Интервьюер {index + 1}",
-            callback_data=f"curator:{selection_id}:{index}",
-        )
-    kb.button(text="Отмена", callback_data=f"cancel_interview:{selection_id}")
-    kb.adjust(1)
-    await state.update_data(
-        team_name=message.text.strip(),
-        curators=curators,
-        selection_id=selection_id,
-    )
-    await state.set_state(InterviewState.waiting_for_curator)
-    await message.answer("Выберите интервьюера:", reply_markup=kb.as_markup())
+    await state.update_data(team_name=message.text.strip())
+    await show_interview_days(message, state)
 
 
 async def current_selection(callback: CallbackQuery, state: FSMContext):
@@ -230,26 +210,13 @@ async def show_interview_days(message: Message, state: FSMContext):
     )
 
 
-@router.callback_query(InterviewState.waiting_for_curator, F.data.startswith("curator:"))
-async def select_interview_curator(callback: CallbackQuery, state: FSMContext):
-    data = await current_selection(callback, state)
-    if data is None:
-        return
-    index = callback.data.split(":")[2]
-    if not index.isdecimal() or int(index) >= len(data["curators"]):
-        await callback.message.answer("Не удалось выбрать интервьюера. Используйте кнопки списка.")
-        return
-    await state.update_data(curator_user_id=data["curators"][int(index)]["user_id"])
-    await show_interview_days(callback.message, state)
-
-
 @router.callback_query(InterviewState.waiting_for_day, F.data.startswith("day:"))
 async def select_interview_day(callback: CallbackQuery, state: FSMContext):
     data = await current_selection(callback, state)
     if data is None:
         return
     day = date.fromisoformat(callback.data.split(":")[2])
-    slots = await api.get_interview_slots(data["curator_user_id"], day)
+    slots = await api.get_interview_slots(day)
     if not slots:
         await callback.message.answer("На этот день свободного времени нет. Выберите другой день.")
         return
@@ -298,7 +265,7 @@ async def select_interview_slot(callback: CallbackQuery, state: FSMContext):
     await state.update_data(
         date_time=slot["start_at"],
         end_at=slot["end_at"],
-        curator_user_id=slot["curator_user_id"],
+        curator_user_ids=slot["curator_user_ids"],
         selection_id=selection_id,
     )
 
@@ -352,11 +319,10 @@ async def confirm_interview(
         case_id=bot_case["id"],
         team_name=data["team_name"],
         date_time=data["date_time"],
-        curator_user_id=data["curator_user_id"],
     )
 
     await callback.message.edit_text(
-        "✅ Вы успешно записались на интервью."
+        "✅ Заявка на интервью отправлена. Ожидайте подтверждения куратора."
     )
 
     await state.clear()

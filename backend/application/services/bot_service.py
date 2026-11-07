@@ -1,5 +1,6 @@
 from datetime import date, datetime, UTC, time, timedelta
 from zoneinfo import ZoneInfo
+from html import escape
 import logging
 import uuid
 
@@ -10,7 +11,8 @@ from application.exceptions.bot import (
     InvalidBotModeError,
     RecruitmentCaseNotFoundError,
     RecruitmentClosedError,
-    RecruitmentCuratorNotFound
+    RecruitmentCuratorNotFound,
+    InvalidInterviewStatusTransitionError,
 )
 from application.interfaces.integrations import (
     MicrosoftAccessTokenProviderProtocol,
@@ -20,7 +22,8 @@ from application.interfaces.uow.bot_uow_protocol import BotUow
 from infrastructure.db.models.bot import (
     BotCases,
     RecruitmentCurators,
-    Interviews
+    Interviews,
+    InterviewCurators,
 )
 from presentation.api.schemas.bot_schemas import (
     BotCaseCreate,
@@ -30,11 +33,18 @@ from presentation.api.schemas.bot_schemas import (
     RecruitmentCuratorCreate,
     RecruitmentCuratorResponse,
     InterviewCreate,
+    InterviewConfirm,
     InterviewResponse,
 )
 from aiogram.exceptions import TelegramAPIError
 
 from application.services.const import interview_settings
+from application.services.const.interview_status_workflow import (
+    ALLOWED_INTERVIEW_STATUS_TRANSITIONS,
+    INTERVIEW_STATUS_CANCELLED,
+    INTERVIEW_STATUS_CONFIRMED,
+    INTERVIEW_STATUS_IN_REVIEW,
+)
 from presentation.api.schemas.outlook_meetings import MeetingCreate
 
 
@@ -53,6 +63,7 @@ class BotService:
         self.uow = uow
         self.oauth_service = oauth_service
         self.graph_client = graph_client
+        self.timezone = ZoneInfo(interview_settings.INTERVIEW_TIMEZONE)
 
     async def get_current_mode(self) -> BotModeResponse | None:
         async with self.uow as uow:
@@ -186,37 +197,114 @@ class BotService:
             interview = await uow.bot_repository.get_interview_by_id(interview_id)
             return InterviewResponse.model_validate(interview) if interview else None
 
-    async def add_interview(self, schema: InterviewCreate) -> InterviewResponse:
-        if schema.date_time.utcoffset() is None:
-            raise ApplicationValidationError("Interview date must include a timezone")
-        if not schema.curator_user_id:
-            raise ApplicationValidationError("Interview curator is required")
+    async def _get_required_curator_ids(self, uow: BotUow) -> list[str]:
+        curators = await uow.bot_repository.get_all_recruitment_curators()
+        if not curators:
+            raise RecruitmentCuratorNotFound("No recruitment curators configured")
+        return sorted({curator.user_id for curator in curators})
 
-        tz = ZoneInfo(interview_settings.INTERVIEW_TIMEZONE)
-        start_at = schema.date_time.astimezone(tz)
-        end_at = start_at + timedelta(minutes=interview_settings.INTERVIEW_DURATION_MINUTES)
+    def _get_day_bounds(self, day: date) -> tuple[datetime, datetime]:
         day_start = datetime.combine(
-            start_at.date(), time(hour=interview_settings.INTERVIEW_START_HOUR), tzinfo=tz
+            day, time(hour=interview_settings.INTERVIEW_START_HOUR), tzinfo=self.timezone
         )
         day_end = datetime.combine(
-            start_at.date(), time(hour=interview_settings.INTERVIEW_END_HOUR), tzinfo=tz
+            day, time(hour=interview_settings.INTERVIEW_END_HOUR), tzinfo=self.timezone
         )
-        if start_at <= datetime.now(tz):
+        return day_start, day_end
+
+    @staticmethod
+    def _check_future_start(start_at: datetime) -> None:
+        if start_at <= datetime.now(UTC):
             raise ApplicationValidationError("Interview must start in the future")
+
+    def _prepare_interview_interval(self, date_time: datetime) -> tuple[datetime, datetime]:
+        if date_time.utcoffset() is None:
+            raise ApplicationValidationError("Interview date must include a timezone")
+        start_at = date_time.astimezone(self.timezone)
+        end_at = start_at + timedelta(minutes=interview_settings.INTERVIEW_DURATION_MINUTES)
+        self._check_future_start(start_at)
+        day_start, day_end = self._get_day_bounds(start_at.date())
         if start_at < day_start or end_at > day_end:
             raise ApplicationValidationError("Interview must fit within recruitment hours")
-        if (start_at - day_start) % timedelta(minutes=interview_settings.INTERVIEW_SLOT_STEP_MINUTES):
+        step = timedelta(minutes=interview_settings.INTERVIEW_SLOT_STEP_MINUTES)
+        if (start_at - day_start) % step:
             raise ApplicationValidationError("Interview start must match the available slot grid")
+        return start_at, end_at
 
+    async def _lock_curators(self, uow: BotUow, curator_ids: list[str]) -> None:
+        # Every booking locks users in the same order to avoid deadlocks.
+        for user_id in sorted(curator_ids):
+            user = await uow.user_repository.get_by_id(user_id, for_update=True)
+            if user is None:
+                raise RecruitmentCuratorNotFound("Interview curator user not found")
+
+    @staticmethod
+    def _is_interval_free(
+        start_at: datetime,
+        end_at: datetime,
+        busy_intervals: list[tuple[datetime, datetime]],
+    ) -> bool:
+        for busy_start, busy_end in busy_intervals:
+            if busy_start < end_at and busy_end > start_at:
+                return False
+        return True
+
+    async def _check_curators_availability(
+        self,
+        uow: BotUow,
+        curator_ids: list[str],
+        start_at: datetime,
+        end_at: datetime,
+        *,
+        exclude_interview_id: str | None = None,
+    ) -> None:
+        for user_id in curator_ids:
+            intervals = await self._get_busy_intervals(
+                uow, user_id, start_at, end_at, exclude_interview_id=exclude_interview_id
+            )
+            if not self._is_interval_free(start_at, end_at, intervals):
+                raise InterviewTimeConflictError("время занято, попробуйте другое")
+
+    async def _get_busy_intervals(
+        self,
+        uow: BotUow,
+        curator_user_id: str,
+        start_at: datetime,
+        end_at: datetime,
+        *,
+        exclude_interview_id: str | None = None,
+    ) -> list[tuple[datetime, datetime]]:
+        interviews = await uow.bot_repository.get_interviews_by_curator_user_id(curator_user_id)
+        blocking_statuses = {INTERVIEW_STATUS_IN_REVIEW, INTERVIEW_STATUS_CONFIRMED}
+        intervals = []
+        for interview in interviews:
+            if interview.id == exclude_interview_id:
+                continue
+            if interview.status.code not in blocking_statuses:
+                continue
+            if interview.date_time is None or interview.end_at is None:
+                raise ConfigurationError("Active interview has no start or end time")
+            intervals.append((interview.date_time, interview.end_at))
+
+        access_token = await self.oauth_service.get_actual_access_token(curator_user_id)
+        calendar_view = await self.graph_client.list_calendar_view(
+            params={"startDateTime": start_at.isoformat(), "endDateTime": end_at.isoformat()},
+            access_token=access_token,
+        )
+        for event in calendar_view['value']:
+            if event.get('isCancelled') or event.get('showAs') == 'free':
+                continue
+            intervals.append((
+                self._parse_calendar_datetime(event['start']),
+                self._parse_calendar_datetime(event['end']),
+            ))
+        return intervals
+
+    async def add_interview(self, schema: InterviewCreate) -> InterviewResponse:
+        start_at, end_at = self._prepare_interview_interval(schema.date_time)
         async with self.uow as uow:
-            # Serialize bookings for this curator even when no interviews exist yet.
-            curator = await uow.user_repository.get_by_id(schema.curator_user_id, for_update=True)
-            if curator is None:
-                raise RecruitmentCuratorNotFound('This curator not found in recruitment list')
-            curators = await uow.bot_repository.get_all_recruitment_curators()
-
-            if schema.curator_user_id not in [curator.user_id for curator in curators]:
-                raise RecruitmentCuratorNotFound('This curator not found in recruitment list')
+            curator_ids = await self._get_required_curator_ids(uow)
+            await self._lock_curators(uow, curator_ids)
 
             mode = await uow.bot_repository.get_current_mode()
             if mode is None:
@@ -227,42 +315,13 @@ class BotService:
             case = await uow.bot_repository.get_bot_case_by_id(schema.case_id, for_update=True)
             if not case:
                 raise RecruitmentCaseNotFoundError("данного кейса нет в списке набора!")
-            interviews = await uow.bot_repository.get_overlapping_interviews(
-                curator_user_id=schema.curator_user_id,
-                start_at=start_at,
-                end_at=end_at,
+            status = await uow.bot_repository.get_interview_status_by_code(
+                INTERVIEW_STATUS_IN_REVIEW
             )
+            if status is None:
+                raise ConfigurationError("IN_REVIEW interview status is not configured")
 
-            if interviews:
-                raise InterviewTimeConflictError("время занято, попробуйте другое")
-
-            access_token = await self.oauth_service.get_actual_access_token(schema.curator_user_id)
-            calendar_view = await self.graph_client.list_calendar_view(
-                params={"startDateTime": start_at.isoformat(), "endDateTime": end_at.isoformat()},
-                access_token=access_token,
-            )
-            for event in calendar_view['value']:
-                if event.get('isCancelled') or event.get('showAs') == 'free':
-                    continue
-                event_start = self._parse_calendar_datetime(event['start'])
-                event_end = self._parse_calendar_datetime(event['end'])
-                if event_start < end_at and event_end > start_at:
-                    raise InterviewTimeConflictError("время занято, попробуйте другое")
-
-            if start_at <= datetime.now(tz):
-                raise ApplicationValidationError("Interview must start in the future")
-
-            meeting_data = MeetingCreate(
-                title='Interview',
-                start_at=start_at,
-                location='Контур Толк',
-                end_at=end_at,
-            )
-
-            outlook_event = await self.graph_client.create_meeting(
-                meeting_data=meeting_data,
-                access_token=access_token
-            )
+            await self._check_curators_availability(uow, curator_ids, start_at, end_at)
 
             interview = Interviews(
                 id=str(uuid.uuid4()),
@@ -271,8 +330,8 @@ class BotService:
                 team_name=schema.team_name,
                 date_time=start_at,
                 end_at=end_at,
-                outlook_event_id=outlook_event['id'],
-                curator_user_id=schema.curator_user_id,
+                status_id=status.id,
+                curators=[InterviewCurators(user_id=user_id) for user_id in curator_ids],
                 created_at=datetime.now(UTC)
             )
 
@@ -281,26 +340,102 @@ class BotService:
             await uow.commit()
             return response
 
+    async def _transit_interview_status(
+        self, uow: BotUow, interview_id: str, new_status_code: str
+    ) -> Interviews | None:
+        interview = await uow.bot_repository.get_interview_by_id_to_update(interview_id)
+        if interview is None:
+            return None
+
+        allowed = ALLOWED_INTERVIEW_STATUS_TRANSITIONS.get(interview.status.code)
+        if allowed is None:
+            raise ConfigurationError("Unknown interview status")
+        if new_status_code not in allowed:
+            raise InvalidInterviewStatusTransitionError(
+                f"Cannot change interview status from {interview.status.code} to {new_status_code}"
+            )
+        status = await uow.bot_repository.get_interview_status_by_code(new_status_code)
+        if status is None:
+            raise ConfigurationError(f"Interview status {new_status_code} is not configured")
+        interview.status = status
+        interview.status_id = status.id
+        return interview
+
+    async def confirm_interview(
+        self, interview_id: str, schema: InterviewConfirm
+    ) -> InterviewResponse | None:
+        async with self.uow as uow:
+            interview = await self._transit_interview_status(uow, interview_id, INTERVIEW_STATUS_CONFIRMED)
+            if interview is None:
+                return None
+            start_at = interview.date_time
+            end_at = interview.end_at
+            if start_at is None or end_at is None or start_at >= end_at:
+                raise ConfigurationError("Interview has an invalid time interval")
+            start_at = start_at.astimezone(self.timezone)
+            end_at = end_at.astimezone(self.timezone)
+            self._check_future_start(start_at)
+            if not interview.curators:
+                raise ConfigurationError("Interview has no assigned curators")
+
+            curator_ids = []
+            for participant in interview.curators:
+                curator_ids.append(participant.user_id)
+            await self._lock_curators(uow, curator_ids)
+            await self._check_curators_availability(
+                uow, curator_ids, start_at, end_at, exclude_interview_id=interview.id
+            )
+            event_link = str(schema.event_link)
+            meeting_data = MeetingCreate(
+                title=f"Интервью: {interview.team_name}",
+                start_at=start_at,
+                end_at=end_at,
+                location=event_link,
+                notes=f'<p>Ссылка на интервью: <a href="{escape(event_link, quote=True)}">{escape(event_link)}</a></p>',
+            )
+            for participant in interview.curators:
+                access_token = await self.oauth_service.get_actual_access_token(participant.user_id)
+                event = await self.graph_client.create_meeting(meeting_data, access_token)
+                participant.outlook_event_id = event['id']
+
+            interview.event_link = event_link
+            interview = await uow.bot_repository.update_interview(interview)
+            response = InterviewResponse.model_validate(interview)
+            await uow.commit()
+            return response
+
+    async def _delete_interview_events(self, interview: Interviews) -> None:
+        for participant in interview.curators:
+            if not participant.outlook_event_id:
+                continue
+            access_token = await self.oauth_service.get_actual_access_token(participant.user_id)
+            try:
+                await self.graph_client.delete_event(
+                    event_id=participant.outlook_event_id,
+                    access_token=access_token,
+                )
+            except httpx.HTTPStatusError as err:
+                if not self.graph_client._is_missing_graph_event(err):
+                    raise
+            participant.outlook_event_id = None
+
+    async def cancel_interview(self, interview_id: str) -> InterviewResponse | None:
+        async with self.uow as uow:
+            interview = await self._transit_interview_status(uow, interview_id, INTERVIEW_STATUS_CANCELLED)
+            if interview is None:
+                return None
+            await self._delete_interview_events(interview)
+            interview = await uow.bot_repository.update_interview(interview)
+            response = InterviewResponse.model_validate(interview)
+            await uow.commit()
+            return response
+
     async def delete_interview(self, interview_id: str):
         async with self.uow as uow:
             interview = await uow.bot_repository.get_interview_by_id_to_update(interview_id)
-
-            if not interview:
+            if interview is None:
                 return None
-
-            if interview.outlook_event_id:
-                if not interview.curator_user_id:
-                    raise ConfigurationError("Outlook interview has no calendar owner")
-                access_token = await self.oauth_service.get_actual_access_token(interview.curator_user_id)
-                try:
-                    await self.graph_client.delete_event(
-                        event_id=interview.outlook_event_id,
-                        access_token=access_token,
-                    )
-                except httpx.HTTPStatusError as err:
-                    if not self.graph_client._is_missing_graph_event(err):
-                        raise
-
+            await self._delete_interview_events(interview)
             await uow.bot_repository.delete_interview(interview)
             await uow.commit()
             return True
@@ -343,76 +478,48 @@ class BotService:
             parsed = parsed.replace(tzinfo=ZoneInfo(timezone_name))
         return parsed
 
-    async def get_available_interview_slots(self, curator_user_id: str, date: date) -> list[InterviewSlotResponse]:
+    async def get_available_interview_slots(self, date: date) -> list[InterviewSlotResponse]:
         async with self.uow as uow:
-            curators = await uow.bot_repository.get_all_recruitment_curators()
-
-            if curator_user_id not in [curator.user_id for curator in curators]:
-                raise RecruitmentCuratorNotFound('This curator not found in recruitment list')
-
-            tz = ZoneInfo(interview_settings.INTERVIEW_TIMEZONE)
-            now = datetime.now(tz)
+            curator_ids = await self._get_required_curator_ids(uow)
+            now = datetime.now(self.timezone)
             if date < now.date():
                 return []
 
-            access_token = await self.oauth_service.get_actual_access_token(curator_user_id)
-
-            day_start = datetime.combine(
-                 date = date,
-                 time = time(hour=interview_settings.INTERVIEW_START_HOUR),
-                 tzinfo=tz
-             )
-
-            day_end = datetime.combine(
-                 date=date,
-                 time = time(hour=interview_settings.INTERVIEW_END_HOUR),
-                 tzinfo=tz
-             )
-
-            calendar_view = await self.graph_client.list_calendar_view(
-                params={
-                    'startDateTime': str(day_start.isoformat()),
-                    'endDateTime': str(day_end.isoformat()),
-                },
-                access_token=access_token
-            )
-
-            events_from_response = calendar_view.get('value', [])
-            events = [event for event in events_from_response if event['isCancelled'] != True and event['showAs'] != 'free']
-            busy_intervals = [
-                (
-                    self._parse_calendar_datetime(event['start']).astimezone(tz),
-                    self._parse_calendar_datetime(event['end']).astimezone(tz),
-                )
-                for event in events
-            ]
-
-            interview_start = day_start
+            day_start, day_end = self._get_day_bounds(date)
 
             interview_duration = timedelta(minutes=interview_settings.INTERVIEW_DURATION_MINUTES)
-            slots = []
+            step = timedelta(minutes=interview_settings.INTERVIEW_SLOT_STEP_MINUTES)
+            slots_by_curator: dict[str, list[tuple[datetime, datetime]]] = {}
+            for user_id in curator_ids:
+                busy_intervals = await self._get_busy_intervals(uow, user_id, day_start, day_end)
+                slots = []
+                interview_start = day_start
+                while interview_start + interview_duration <= day_end:
+                    interview_end = interview_start + interview_duration
+                    is_free = self._is_interval_free(interview_start, interview_end, busy_intervals)
+                    if interview_start > now and is_free:
+                        slots.append((interview_start, interview_end))
+                    interview_start += step
+                slots_by_curator[user_id] = slots
 
-            while interview_start + interview_duration <= day_end:
-                for event_start, event_end in busy_intervals:
-                    if interview_start < event_end and interview_start + interview_duration > event_start:
+            common_slots = []
+            first_curator_id = curator_ids[0]
+            for slot in slots_by_curator[first_curator_id]:
+                is_common = True
+                for user_id in curator_ids:
+                    if slot not in slots_by_curator[user_id]:
+                        is_common = False
                         break
-                else:
-                    if interview_start > datetime.now(tz):
-                        slots.append((interview_start, interview_start + interview_duration))
-
-                interview_start = interview_start + timedelta(
-                    minutes=interview_settings.INTERVIEW_SLOT_STEP_MINUTES
-                )
+                if is_common:
+                    common_slots.append(slot)
 
             responses = []
-
-            for slot in slots:
+            for start, end in common_slots:
                 response = InterviewSlotResponse(
-                    start_at = slot[0],
-                    end_at = slot[1],
-                    curator_user_id=curator_user_id
+                    start_at=start,
+                    end_at=end,
+                    curator_user_ids=curator_ids,
                 )
-
                 responses.append(response)
 
             return responses

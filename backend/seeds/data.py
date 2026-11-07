@@ -22,6 +22,22 @@ CASE_STATUSES = [
 ]
 
 
+INTERVIEW_STATUSES = [
+    {
+        'code': 'CONFIRMED',
+        'status_name': 'Подтверждено'
+    },
+    {
+        'code': 'IN_REVIEW',
+        'status_name': 'На рассмотрении'
+    },
+    {
+        'code': 'CANCELLED',
+        'status_name': 'Отменено'
+    }
+]
+
+
 ITERATIONS = [
     {
         'code': "ANALYTICS",
