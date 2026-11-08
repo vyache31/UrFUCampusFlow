@@ -36,3 +36,8 @@ from .teams import (
     Teams,
     Universities,
 )
+
+from .ai import (
+    AIChats,
+    AIMessages
+)

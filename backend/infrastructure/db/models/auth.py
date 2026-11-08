@@ -24,6 +24,7 @@ class Users(Base):
     evaluation_form_reactions = relationship('EvaluationFormReactions', back_populates='creator')
     evaluation_form_comments = relationship('EvaluationFormComments', back_populates='creator')
     curator_assignments = relationship('CuratorAssignment', back_populates='user')
+    chats = relationship('AIChats', back_populates='user')
 
 
 class Roles(Base):
