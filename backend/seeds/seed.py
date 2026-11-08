@@ -4,12 +4,12 @@ import uuid
 import logging
 
 from infrastructure.db.models import Roles
-from infrastructure.db.models import CaseStatuses, DifficultyLevels
+from infrastructure.db.models import CaseStatuses, DifficultyLevels, InterviewStatuses
 from infrastructure.db.models import Iterations
 from infrastructure.db.database import SessionLocal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from seeds.data import CASE_DIFFICULTY_LEVELS, CASE_STATUSES, ROLES, ITERATIONS
+from seeds.data import CASE_DIFFICULTY_LEVELS, CASE_STATUSES, INTERVIEW_STATUSES, ROLES, ITERATIONS
 from datetime import datetime, timezone
 from infrastructure.security.utils_jwt import hash_password
 
@@ -44,6 +44,9 @@ async def seed_all_references() -> None:
 
             await seed_dictionary(session, CaseStatuses, CASE_STATUSES)
             print("statuses ok")
+
+            await seed_dictionary(session, InterviewStatuses, INTERVIEW_STATUSES)
+            print("interview statuses ok")
 
             await seed_dictionary(session, DifficultyLevels, CASE_DIFFICULTY_LEVELS)
             print("difficulty ok")

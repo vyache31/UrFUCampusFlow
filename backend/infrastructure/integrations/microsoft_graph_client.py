@@ -23,6 +23,22 @@ class GraphClient:
         payload.raise_for_status()
         raise RuntimeError(f"Unexpected Microsoft Graph status: {payload.status_code}")
 
+    @staticmethod
+    def _is_missing_graph_event(err: httpx.HTTPStatusError) -> bool:
+        if err.response.status_code in {404, 410}:
+            return True
+
+        try:
+            error_code = err.response.json().get("error", {}).get("code")
+        except ValueError:
+            return False
+
+        return error_code in {
+            "ErrorItemNotFound",
+            "Request_ResourceNotFound",
+            "ResourceNotFound",
+        }
+
     async def create_meeting(
         self, meeting_data: MeetingCreate, access_token: str
     ) -> dict:
@@ -100,16 +116,30 @@ class GraphClient:
         self._raise_unexpected_response(payload)
 
     async def list_calendar_view(self, params: dict, access_token: str) -> dict:
-        payload = await self.session.get(
-            settings.OAUTH_MICROSOFT_CALENDAR_VIEW_URL,
-            params=params,
-            headers=self._build_headers(access_token),
-        )
+        url = settings.OAUTH_MICROSOFT_CALENDAR_VIEW_URL
+        page_params: dict | None = params
+        calendar_view = None
 
-        if payload.status_code == 200:
-            return payload.json()
+        while True:
+            payload = await self.session.get(
+                url,
+                params=page_params,
+                headers=self._build_headers(access_token),
+            )
+            if payload.status_code != 200:
+                self._raise_unexpected_response(payload)
 
-        self._raise_unexpected_response(payload)
+            page = payload.json()
+            if calendar_view is None:
+                calendar_view = page
+            else:
+                calendar_view['value'].extend(page['value'])
+
+            url = page.get('@odata.nextLink')
+            if not url:
+                calendar_view.pop('@odata.nextLink', None)
+                return calendar_view
+            page_params = None
 
     async def get_series_instances(
         self, series_id: str, params: dict, access_token: str

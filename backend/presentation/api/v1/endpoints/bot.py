@@ -1,5 +1,6 @@
-from datetime import datetime
-from typing import Optional
+from datetime import date
+
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException
 from application.services.bot_service import BotService
@@ -7,7 +8,10 @@ from presentation.api.schemas.bot_schemas import (
     BotModeUpdate,
     BotCaseCreate,
     RecruitmentCuratorCreate,
-    InterviewCreate
+    InterviewCreate,
+    InterviewConfirm,
+    InterviewResponse,
+    InterviewSlotResponse
 )
 from presentation.api.dependencies.bot_depends import get_bot_service
 from presentation.api.dependencies.auth_depends import get_current_auth_user, get_current_subject
@@ -22,6 +26,14 @@ router = APIRouter(
     prefix='/bot',
     tags=['Bot']
 )
+
+
+def _outlook_error(err: httpx.HTTPError) -> HTTPException:
+    if isinstance(err, httpx.TimeoutException):
+        return HTTPException(status_code=504, detail="Microsoft Graph request timed out")
+    if isinstance(err, httpx.HTTPStatusError):
+        return HTTPException(status_code=502, detail=f"Microsoft Graph error: {err.response.status_code}")
+    return HTTPException(status_code=502, detail="Microsoft Graph is unavailable")
 
 
 @router.get('/mode')
@@ -139,14 +151,9 @@ async def delete_recruitment_curator(
 
 @router.get('/interviews')
 async def get_all_interviews(
-    date_time: Optional[datetime] = None,
     user=Depends(get_current_subject),
     service: BotService = Depends(get_bot_service)
 ):
-    if date_time:
-        return await service.get_interview_by_datetime(date_time)
-
-
     return await service.get_all_interviews()
 
 
@@ -176,16 +183,55 @@ async def delete_interview(
         'status': 'deleted'
     }
 
+
+@router.post('/interviews/{interview_id}/confirm', response_model=InterviewResponse)
+async def confirm_interview(
+    interview_id: str,
+    schema: InterviewConfirm,
+    user=Depends(get_current_auth_user),
+    service: BotService = Depends(get_bot_service),
+):
+    try:
+        interview = await service.confirm_interview(interview_id, schema)
+    except httpx.HTTPError as err:
+        raise _outlook_error(err) from err
+    if interview is None:
+        raise HTTPException(status_code=404, detail='Interview not found')
+    return interview
+
+
+@router.post('/interviews/{interview_id}/cancel', response_model=InterviewResponse)
+async def cancel_interview(
+    interview_id: str,
+    user=Depends(get_current_auth_user),
+    service: BotService = Depends(get_bot_service),
+):
+    try:
+        interview = await service.cancel_interview(interview_id)
+    except httpx.HTTPError as err:
+        raise _outlook_error(err) from err
+    if interview is None:
+        raise HTTPException(status_code=404, detail='Interview not found')
+    return interview
+
 @router.post('/message')
 async def send_message(
         message: str,
         user = Depends(get_current_subject),
         service = Depends(get_bot_service)
 ):
+    return await service.broadcast_message(message)
+
+@router.get('/interviews/slots')
+async def get_interview_slots(
+    date: date,
+    user=Depends(get_current_subject),
+    service: BotService =Depends(get_bot_service)
+) -> list[InterviewSlotResponse]:
+
     try:
-        return await service.broadcast_message(message)
-    except Exception as err:
-        raise HTTPException(
-            status_code=400,
-            detail=str(err)
+        return await service.get_available_interview_slots(
+            date=date
         )
+    except httpx.HTTPError as err:
+        raise _outlook_error(err) from err

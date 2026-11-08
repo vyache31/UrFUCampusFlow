@@ -72,22 +72,6 @@ class MeetingsService:
 
         return False
 
-    @staticmethod
-    def _is_missing_graph_event(err: httpx.HTTPStatusError) -> bool:
-        if err.response.status_code in {404, 410}:
-            return True
-
-        try:
-            error_code = err.response.json().get("error", {}).get("code")
-        except ValueError:
-            return False
-
-        return error_code in {
-            "ErrorItemNotFound",
-            "Request_ResourceNotFound",
-            "ResourceNotFound",
-        }
-
     async def create_meeting(
         self,
         user_id: str,
@@ -235,7 +219,7 @@ class MeetingsService:
                     event_id=meeting.outlook_event_id, access_token=access_token
                 )
             except httpx.HTTPStatusError as err:
-                if not self._is_missing_graph_event(err):
+                if not self.graph_client._is_missing_graph_event(err):
                     logger.error(
                         "Failed to delete Outlook event %s: %s %s",
                         meeting.outlook_event_id,

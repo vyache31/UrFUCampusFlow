@@ -1,5 +1,6 @@
 from typing import Protocol
 from datetime import datetime
+import httpx
 
 from presentation.api.schemas.meetings_series_schemas import MeetingsSeriesCreate
 from presentation.api.schemas.outlook_meetings import MeetingCreate
@@ -62,4 +63,8 @@ class MicrosoftGraphClientProtocol(Protocol):
         series_id: str,
         access_token: str,
     ) -> None:
+        ...
+
+    @staticmethod
+    def _is_missing_graph_event(err: httpx.HTTPStatusError) -> bool:
         ...

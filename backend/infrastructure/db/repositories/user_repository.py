@@ -9,14 +9,17 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, user_id: str):
-        user = await self.db.execute(
+    async def get_by_id(self, user_id: str, *, for_update: bool = False) -> Users | None:
+        stmt = (
             select(Users)
             .where(Users.id == user_id)
             .options(
                 selectinload(Users.role)
             )
         )
+        if for_update:
+            stmt = stmt.with_for_update()
+        user = await self.db.execute(stmt)
 
         return user.scalar_one_or_none()
 
