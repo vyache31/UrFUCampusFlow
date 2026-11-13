@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str
     S3_BUCKET: str
     AWS_DEFAULT_REGION: str
+    REASONING_EFFORT: str
+    MAX_COMPLETION_TOKENS: int
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 

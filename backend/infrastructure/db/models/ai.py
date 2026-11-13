@@ -12,6 +12,10 @@ class AIChats(Base):
     title: Mapped[str]
     summary: Mapped[str | None] = mapped_column(nullable=True)
     summarized_through_position: Mapped[int] = mapped_column(default=0)
+    generation_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    generation_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -24,6 +28,11 @@ class AIChats(Base):
     __table_args__ = (
         CheckConstraint(
             'summarized_through_position >= 0', name='cc_summarized_through_position'
+        ),
+        CheckConstraint(
+            '(generation_id IS NULL AND generation_expires_at IS NULL) OR '
+            '(generation_id IS NOT NULL AND generation_expires_at IS NOT NULL)',
+            name='cc_ai_chats_generation_state',
         ),
     )
 

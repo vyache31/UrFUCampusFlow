@@ -1,12 +1,16 @@
 from collections.abc import Sequence
-from typing import Literal, Protocol, TypedDict
+from typing import Protocol
 
-
-class AIMessage(TypedDict):
-    role: Literal["system", "user", "assistant"]
-    content: str
+from application.schemas.ai import AIAssistantMessage, AIMessage
 
 
 class AIClientProtocol(Protocol):
-    async def generate_reply(self, messages: Sequence[AIMessage]) -> str:
+    async def generate_reply(
+        self, messages: Sequence[AIMessage]
+    ) -> AIAssistantMessage:
+        ...
+
+    async def generate_summary(
+        self, messages: Sequence[AIMessage], summary: str | None = None
+    ) -> str:
         ...
