@@ -3,14 +3,18 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from application.services.ai_chat_service import AIChatService
 from presentation.api.dependencies.ai_chat_depends import get_ai_chat_service
 from presentation.api.dependencies.auth_depends import get_current_auth_user
-from presentation.api.schemas.ai_case_schemas import (
+from presentation.api.schemas.ai import (
     AIChatCreate,
     AIChatResponse,
+    AIMessageCreate,
     AIMessageResponse,
 )
 
 
-router = APIRouter(prefix='/ai/chats', tags=['AI chats'])
+router = APIRouter(
+    prefix='/ai/chats',
+    tags=['AI chats'],
+)
 
 
 @router.post('/', response_model=AIChatResponse, status_code=status.HTTP_201_CREATED)
@@ -50,8 +54,34 @@ async def get_messages(
     service: AIChatService = Depends(get_ai_chat_service),
 ):
     return await service.get_messages(
-        chat_id=chat_id, user_id=user.id, limit=limit, offset=offset
+        chat_id=chat_id,
+        user_id=user.id,
+        limit=limit,
+        offset=offset,
     )
+
+
+@router.post(
+    '/{chat_id}/messages',
+    response_model=AIMessageResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def send_message(
+    chat_id: str,
+    schema: AIMessageCreate,
+    user=Depends(get_current_auth_user),
+    service: AIChatService = Depends(get_ai_chat_service),
+):
+    return await service.send_message(chat_id=chat_id, user_id=user.id, schema=schema)
+
+
+@router.post('/{chat_id}/retry', response_model=AIMessageResponse)
+async def retry_reply(
+    chat_id: str,
+    user=Depends(get_current_auth_user),
+    service: AIChatService = Depends(get_ai_chat_service),
+):
+    return await service.retry_reply(chat_id=chat_id, user_id=user.id)
 
 
 @router.delete('/{chat_id}', status_code=status.HTTP_204_NO_CONTENT)

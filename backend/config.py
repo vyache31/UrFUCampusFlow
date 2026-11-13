@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     AWS_DEFAULT_REGION: str
     REASONING_EFFORT: str
     MAX_COMPLETION_TOKENS: int
+    AI_GENERATION_TTL_SECONDS: int = Field(default=120, gt=0)
+    AI_SUMMARY_TRIGGER_TOKENS: int = Field(default=3000, gt=0)
+    AI_SUMMARY_KEEP_PAIRS: int = Field(default=2, ge=0)
 
     model_config = SettingsConfigDict(env_file= BASE_DIR / '.env')
 

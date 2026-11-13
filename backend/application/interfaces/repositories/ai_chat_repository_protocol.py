@@ -1,17 +1,23 @@
 from typing import Protocol, Sequence
+
 from infrastructure.db.models import AIChats, AIMessages
 
 
 class AIChatRepositoryProtocol(Protocol):
-
     async def create_chat(self, chat: AIChats) -> AIChats:
         ...
 
     async def get_by_id_and_user_id(self, chat_id: str, user_id: str) -> AIChats | None:
         ...
 
+    async def get_for_update(self, chat_id: str, user_id: str) -> AIChats | None:
+        ...
+
     async def get_all_by_user_id(
-        self, user_id: str, limit: int = 20, offset: int = 0
+        self,
+        user_id: str,
+        limit: int = 20,
+        offset: int = 0,
     ) -> Sequence[AIChats]:
         ...
 
@@ -22,7 +28,17 @@ class AIChatRepositoryProtocol(Protocol):
         ...
 
     async def get_messages(
-        self, chat_id: str, limit: int = 50, offset: int = 0
+        self,
+        chat_id: str,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Sequence[AIMessages]:
+        ...
+
+    async def get_messages_after_position(
+        self,
+        chat_id: str,
+        position: int,
     ) -> Sequence[AIMessages]:
         ...
 

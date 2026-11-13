@@ -1,12 +1,13 @@
 from typing import Sequence
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import coalesce
+
 from infrastructure.db.models import AIChats, AIMessages
-from sqlalchemy import func, select
 
 
 class AIChatRepository:
-
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
@@ -27,8 +28,21 @@ class AIChatRepository:
 
         return chat.scalar_one_or_none()
 
+    async def get_for_update(self, chat_id: str, user_id: str) -> AIChats | None:
+        result = await self.db.execute(
+            select(AIChats)
+            .where(AIChats.id == chat_id, AIChats.user_id == user_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
+        return result.scalar_one_or_none()
+
     async def get_all_by_user_id(
-        self, user_id: str, limit: int = 20, offset: int = 0
+        self,
+        user_id: str,
+        limit: int = 20,
+        offset: int = 0,
     ) -> Sequence[AIChats]:
         chats = await self.db.execute(
             select(AIChats)
@@ -55,7 +69,10 @@ class AIChatRepository:
         return message
 
     async def get_messages(
-        self, chat_id: str, limit: int = 50, offset: int = 0
+        self,
+        chat_id: str,
+        limit: int = 50,
+        offset: int = 0,
     ) -> Sequence[AIMessages]:
         messages = await self.db.execute(
             select(AIMessages)
@@ -66,6 +83,19 @@ class AIChatRepository:
         )
 
         return messages.scalars().all()
+
+    async def get_messages_after_position(
+        self,
+        chat_id: str,
+        position: int,
+    ) -> Sequence[AIMessages]:
+        result = await self.db.execute(
+            select(AIMessages)
+            .where(AIMessages.chat_id == chat_id, AIMessages.position > position)
+            .order_by(AIMessages.position.asc())
+        )
+
+        return result.scalars().all()
 
     async def get_last_position(self, chat_id: str) -> int:
         result = await self.db.execute(

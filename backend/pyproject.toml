@@ -46,6 +46,7 @@ dependencies = [
     "requests==2.33.0",
     "sqlalchemy==2.0.48",
     "starlette==1.0.0",
+    "tiktoken>=0.14.0",
     "typing-extensions==4.15.0",
     "typing-inspection==0.4.2",
     "urllib3==2.6.3",

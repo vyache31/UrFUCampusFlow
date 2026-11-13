@@ -1,7 +1,7 @@
 from infrastructure.integrations.ai.case_ai_client import AIClient
 from infrastructure.integrations.ai.promts import CASE_GENERATION_PROMPT
 from config import settings
-from presentation.api.schemas.ai_case_schemas import AIGeneratedCaseResponse
+from presentation.api.schemas.ai import AIGeneratedCaseResponse
 
 
 class AIService:
