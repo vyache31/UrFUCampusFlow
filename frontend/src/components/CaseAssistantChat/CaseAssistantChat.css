@@ -7,7 +7,7 @@
 }
 
 .case-assistant button,
-.case-assistant input {
+.case-assistant textarea {
   font: inherit;
 }
 
@@ -48,8 +48,8 @@
   bottom: 78px;
   display: flex;
   flex-direction: column;
-  width: 370px;
-  height: min(540px, calc(100dvh - 130px));
+  width: 400px;
+  height: min(680px, calc(100dvh - 130px));
   min-height: 350px;
   overflow: hidden;
   border: 1px solid #E8EAF0;
@@ -159,6 +159,7 @@
 .case-assistant__messages {
   display: flex;
   flex: 1;
+  min-height: 0;
   flex-direction: column;
   gap: 12px;
   padding: 16px 13px;
@@ -243,7 +244,7 @@
   background: #fff;
 }
 
-.case-assistant__composer input {
+.case-assistant__composer textarea {
   flex: 1;
   min-width: 0;
   padding: 12px 14px;
@@ -253,14 +254,16 @@
   color: #202024;
   background: #F7F8FA;
   font-size: 12px;
+  line-height: 1.5;
+  resize: none;
 }
 
-.case-assistant__composer input:focus {
+.case-assistant__composer textarea:focus {
   border-color: #4E85FC;
   background: #fff;
 }
 
-.case-assistant__composer input::placeholder {
+.case-assistant__composer textarea::placeholder {
   color: #A5A5B0;
 }
 
@@ -287,6 +290,197 @@
 .case-assistant__composer > button svg {
   width: 20px;
   height: 20px;
+}
+
+.case-assistant__toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ECEEF3;
+}
+
+.case-assistant__toolbar > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #777C89;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-assistant__toolbar button,
+.case-assistant__text-button,
+.case-assistant__recovery button,
+.case-assistant__error button {
+  padding: 7px 10px;
+  color: #3563C6;
+  background: #EDF3FF;
+  border: 0;
+  border-radius: 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.case-assistant__toolbar button[aria-pressed="true"] {
+  color: #fff;
+  background: #4E85FC;
+}
+
+.case-assistant__chats {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 13px;
+  overflow-y: auto;
+  background: #FAFBFD;
+}
+
+.case-assistant__chats h3 {
+  margin: 0 0 14px;
+  color: #343640;
+  font-size: 13px;
+}
+
+.case-assistant__chat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+  border: 1px solid #ECEEF3;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.case-assistant__chat--selected {
+  border-color: #4E85FC;
+  background: #F1F5FF;
+}
+
+.case-assistant__chat-select {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  color: #343640;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.case-assistant__chat-select strong {
+  width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.case-assistant__chat-select span {
+  color: #777C89;
+  font-size: 10px;
+}
+
+.case-assistant__delete {
+  padding: 8px;
+  margin-right: 5px;
+  color: #B83D49;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.case-assistant__delete-confirm {
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #ECEEF3;
+  font-size: 10px;
+}
+
+.case-assistant__delete-confirm span {
+  flex: 1;
+}
+
+.case-assistant__delete-confirm button {
+  padding: 5px;
+  color: #B83D49;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.case-assistant__status {
+  margin: 0;
+  padding: 8px 0;
+  color: #777C89;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.case-assistant__error {
+  padding: 10px;
+  color: #94343E;
+  border: 1px solid #F0D7DA;
+  border-radius: 10px;
+  background: #FFF5F6;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.case-assistant__error p {
+  margin: 0 0 8px;
+}
+
+.case-assistant__recovery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.case-assistant__recovery p {
+  flex: 0 0 100%;
+  margin: 0;
+  color: #777C89;
+  font-size: 11px;
+}
+
+.case-assistant__input-hint {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px 10px;
+  color: #777C89;
+  font-size: 9px;
+}
+
+.case-assistant button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.case-assistant button:focus-visible {
+  outline: 2px solid #3563C6;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-assistant__panel {
+    animation: none;
+  }
+
+  .case-assistant__launcher {
+    transition: none;
+  }
 }
 
 @media (max-width: 480px) {

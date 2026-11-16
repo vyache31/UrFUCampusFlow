@@ -5,7 +5,7 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import EditableField from '../../components/common/EditableField/EditableField';
 import { SaveIcon } from '../../components/common/Icons/Icons';
 import { createCase } from '../../services/cases';
-import CaseAssistantChat, { type CaseDraft } from '../../components/CaseAssistantChat/CaseAssistantChat';
+import CaseAssistantChat from '../../components/CaseAssistantChat/CaseAssistantChat';
 import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
@@ -51,22 +51,27 @@ const INITIAL_FORM: FormState = {
 
 const CaseCreatePage = () => {
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showConfirm } = useToast();
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'submit', string>>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleTransferFromChat = (draft: CaseDraft) => {
-    setForm({
-      title: draft.title,
-      shortTitle: draft.shortTitle,
-      description: draft.description,
-      expectedResult: draft.expectedResult,
-      criteria: draft.criteria,
-    });
-    setErrors({});
-    showSuccess('Наработки перенесены в форму');
+  const handleTransferFromChat = (description: string) => {
+    const transfer = () => {
+      setForm(previous => ({ ...previous, description }));
+      setErrors(previous => ({ ...previous, description: undefined }));
+      showSuccess('Ответ ИИ перенесён в описание');
+    };
+    if (form.description.trim()) {
+      showConfirm({
+        message: 'Заменить описание кейса последним ответом ИИ?',
+        confirmText: 'Заменить',
+        onConfirm: transfer,
+      });
+    } else {
+      transfer();
+    }
   };
 
   const updateField = (field: keyof FormState) => (value: string) => {
@@ -155,7 +160,7 @@ const CaseCreatePage = () => {
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
 
-      <CaseAssistantChat onTransfer={handleTransferFromChat} />
+      <CaseAssistantChat onTransfer={handleTransferFromChat} descriptionLimit={FIELD_LIMITS.description} />
     </div>
   );
 };
