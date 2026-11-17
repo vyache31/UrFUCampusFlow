@@ -6,6 +6,7 @@ import EditableField from '../../components/common/EditableField/EditableField';
 import { SaveIcon } from '../../components/common/Icons/Icons';
 import { createCase } from '../../services/cases';
 import CaseAssistantChat from '../../components/CaseAssistantChat/CaseAssistantChat';
+import type { AICaseDraft } from '../../services/aiChats';
 import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
@@ -57,16 +58,36 @@ const CaseCreatePage = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'submit', string>>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleTransferFromChat = (description: string) => {
+  const handleTransferFromChat = (draft: AICaseDraft) => {
+    const fields: { key: keyof FormState; value: string | null }[] = [
+      { key: 'title', value: draft.title },
+      { key: 'shortTitle', value: draft.short_title },
+      { key: 'description', value: draft.project_goals },
+      { key: 'expectedResult', value: draft.required_result },
+      { key: 'criteria', value: draft.grade_criteria },
+    ];
+    const updates: Partial<FormState> = {};
+    for (const field of fields) {
+      if (field.value !== null) updates[field.key] = field.value;
+    }
     const transfer = () => {
-      setForm(previous => ({ ...previous, description }));
-      setErrors(previous => ({ ...previous, description: undefined }));
-      showSuccess('Ответ ИИ перенесён в описание');
+      setForm(previous => ({ ...previous, ...updates }));
+      setErrors(previous => {
+        const next = { ...previous };
+        for (const field of fields) {
+          if (field.value !== null) delete next[field.key];
+        }
+        return next;
+      });
+      showSuccess('Черновик ИИ перенесён в форму');
     };
-    if (form.description.trim()) {
+    const replacements = fields.filter(field =>
+      field.value !== null && form[field.key].trim() && form[field.key] !== field.value
+    );
+    if (replacements.length) {
       showConfirm({
-        message: 'Заменить описание кейса последним ответом ИИ?',
-        confirmText: 'Заменить',
+        message: `Заменить заполненные поля: ${replacements.map(field => FIELD_LABELS[field.key]).join(', ')}?`,
+        confirmText: 'Перенести',
         onConfirm: transfer,
       });
     } else {
@@ -160,7 +181,7 @@ const CaseCreatePage = () => {
         {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
       </div>
 
-      <CaseAssistantChat onTransfer={handleTransferFromChat} descriptionLimit={FIELD_LIMITS.description} />
+      <CaseAssistantChat onTransfer={handleTransferFromChat} />
     </div>
   );
 };

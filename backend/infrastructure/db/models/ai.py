@@ -1,4 +1,5 @@
 from sqlalchemy import CheckConstraint, Index, String, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from infrastructure.db.database import Base
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from datetime import datetime
@@ -16,6 +17,8 @@ class AIChats(Base):
     generation_expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    draft: Mapped[dict[str, str | None] | None] = mapped_column(JSONB(none_as_null=True), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

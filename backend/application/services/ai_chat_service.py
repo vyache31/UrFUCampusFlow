@@ -19,8 +19,10 @@ from application.interfaces.uow.ai_chat_uow_protocol import AIChatUoWProtocol
 from config import settings
 from infrastructure.db.models import AIChats, AIMessages
 from presentation.api.schemas.ai import (
+    AICaseDraft,
     AIChatCreate,
     AIChatResponse,
+    AIChatReplyResponse,
     AIMessage,
     AIMessageCreate,
     AIMessageResponse,
@@ -129,10 +131,10 @@ class AIChatService:
         chat_id: str,
         user_id: str,
         schema: AIMessageCreate,
-    ) -> AIMessageResponse:
+    ) -> AIChatReplyResponse:
         return await self._generate_reply(chat_id, user_id, schema)
 
-    async def retry_reply(self, chat_id: str, user_id: str) -> AIMessageResponse:
+    async def retry_reply(self, chat_id: str, user_id: str) -> AIChatReplyResponse:
         return await self._generate_reply(chat_id, user_id, None)
 
     async def _generate_reply(
@@ -140,7 +142,7 @@ class AIChatService:
         chat_id: str,
         user_id: str,
         schema: AIMessageCreate | None,
-    ) -> AIMessageResponse:
+    ) -> AIChatReplyResponse:
         if self.client is None:
             raise ConfigurationError('AI client is not configured.')
 
@@ -156,6 +158,8 @@ class AIChatService:
                 raise AIChatNotFoundError(
                     f'Chat with id {chat_id} for user with id {user_id} not found.'
                 )
+
+            draft = AICaseDraft.model_validate(chat.draft) if chat.draft is not None else None
 
             now = datetime.now(UTC)
             if (
@@ -210,8 +214,12 @@ class AIChatService:
                 history,
                 summary,
                 summary_position,
+                draft,
             )
-            reply = await self.client.generate_reply(context)
+            generation = await self.client.generate_reply(
+                messages=context,
+                current_draft=draft,
+            )
 
             async with self.uow as uow:
                 chat = await self._get_generation_chat(
@@ -222,17 +230,21 @@ class AIChatService:
                     id=str(uuid4()),
                     chat_id=chat_id,
                     position=position + 1,
-                    role=reply.role,
-                    content=reply.content,
+                    role='assistant',
+                    content=generation.reply,
                     created_at=datetime.now(UTC),
                 )
                 await uow.ai_chat_repository.add_message(message)
 
                 chat.updated_at = message.created_at
+                chat.draft = generation.draft.model_dump()
                 chat.generation_id = None
                 chat.generation_expires_at = None
 
-                result = AIMessageResponse.model_validate(message)
+                result = AIChatReplyResponse(
+                    message=AIMessageResponse.model_validate(message),
+                    draft=generation.draft,
+                )
 
                 await uow.commit()
 
@@ -280,13 +292,14 @@ class AIChatService:
         history: Sequence[AIMessageResponse],
         summary: str | None,
         summary_position: int,
+        current_draft: AICaseDraft | None,
     ) -> list[AIMessage]:
         if self.client is None:
             raise ConfigurationError('AI client is not configured.')
 
         context = self._build_messages(history, summary)
         threshold = settings.AI_SUMMARY_TRIGGER_TOKENS
-        if self.client.estimate_reply_input_tokens(context) <= threshold:
+        if self.client.estimate_reply_input_tokens(context, current_draft=current_draft) <= threshold:
             return context
 
         cutoff = max(0, len(history) - (2 * settings.AI_SUMMARY_KEEP_PAIRS + 1))
@@ -305,7 +318,7 @@ class AIChatService:
 
         context = self._build_messages(history[cutoff:], new_summary)
 
-        if self.client.estimate_reply_input_tokens(context) > threshold:
+        if self.client.estimate_reply_input_tokens(context, current_draft=current_draft) > threshold:
             raise ApplicationValidationError(
                 'The summarized context exceeds the input token budget.'
             )
@@ -364,4 +377,5 @@ class AIChatService:
             title=chat.title,
             created_at=chat.created_at,
             updated_at=chat.updated_at,
+            draft=AICaseDraft.model_validate(chat.draft) if chat.draft is not None else None,
         )

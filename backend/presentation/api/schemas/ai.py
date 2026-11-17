@@ -42,6 +42,16 @@ class AIGeneratedCaseResponse(BaseModel):
     difficulty: DifficultyLevelCode
 
 
+class AICaseDraft(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+
+    title: str | None = Field(min_length=1, max_length=100)
+    short_title: str | None = Field(min_length=1, max_length=50)
+    project_goals: str | None = Field(min_length=1, max_length=2000)
+    required_result: str | None = Field(min_length=1, max_length=1000)
+    grade_criteria: str | None = Field(min_length=1, max_length=2000)
+
+
 class AIChatCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -55,6 +65,7 @@ class AIChatResponse(BaseModel):
     title: str
     created_at: datetime
     updated_at: datetime | None
+    draft: AICaseDraft | None = None
 
 
 class AIMessageCreate(BaseModel):
@@ -72,3 +83,15 @@ class AIMessageResponse(BaseModel):
     role: Literal["user", "assistant"]
     content: str
     created_at: datetime
+
+
+class AIChatReplyResponse(BaseModel):
+    message: AIMessageResponse
+    draft: AICaseDraft
+
+
+class AIChatGenerationResult(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+
+    reply: str = Field(min_length=1)
+    draft: AICaseDraft

@@ -1,16 +1,24 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { GenerateIcon, SendIcon } from '../common/Icons/Icons';
 import { useAIChat } from '../../hooks/useAIChat';
+import type { AICaseDraft } from '../../services/aiChats';
 import './CaseAssistantChat.css';
 
 interface CaseAssistantChatProps {
-  onTransfer: (description: string) => void;
-  descriptionLimit: number;
+  onTransfer: (draft: AICaseDraft) => void;
 }
 
 const INITIAL_MESSAGE = 'Привет! Я помогу проработать идею кейса. Расскажи, какую задачу или проблему ты хочешь предложить студентам.';
 
-const CaseAssistantChat = ({ onTransfer, descriptionLimit }: CaseAssistantChatProps) => {
+const DRAFT_FIELDS: { key: keyof AICaseDraft; label: string }[] = [
+  { key: 'title', label: 'Название' },
+  { key: 'short_title', label: 'Короткое название' },
+  { key: 'project_goals', label: 'Описание' },
+  { key: 'required_result', label: 'Ожидаемый результат' },
+  { key: 'grade_criteria', label: 'Критерии оценки' },
+];
+
+const CaseAssistantChat = ({ onTransfer }: CaseAssistantChatProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showChats, setShowChats] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -20,7 +28,7 @@ const CaseAssistantChat = ({ onTransfer, descriptionLimit }: CaseAssistantChatPr
   const inputKey = chat.selectedId ?? 'new';
   const input = drafts[inputKey] ?? '';
   const selected = chat.chats.find(item => item.id === chat.selectedId);
-  const lastReply = chat.messages.findLast(item => item.role === 'assistant');
+  const filledFields = DRAFT_FIELDS.filter(field => chat.caseDraft?.[field.key]);
   const blocked = chat.busy || chat.historyLoading || !chat.historyLoaded || chat.listLoading;
 
   useEffect(() => {
@@ -113,13 +121,21 @@ const CaseAssistantChat = ({ onTransfer, descriptionLimit }: CaseAssistantChatPr
                 )}
                 <div ref={messagesEndRef} />
               </div>
-              {lastReply && !chat.busy && !chat.pendingReply && !chat.historyLoading && chat.historyLoaded && (
+              {chat.caseDraft && !chat.busy && !chat.pendingReply && !chat.historyLoading && chat.historyLoaded && (
                 <div className="case-assistant__draft">
-                  <div className="case-assistant__draft-copy">
-                    <strong>Использовать последний ответ</strong>
-                    <span>{lastReply.content.length > descriptionLimit ? `Для переноса попросите ИИ сократить ответ до ${descriptionLimit} символов.` : 'Перенести текст в описание кейса. Остальные поля сохранятся.'}</span>
-                  </div>
-                  <button type="button" disabled={lastReply.content.length > descriptionLimit} onClick={() => onTransfer(lastReply.content)}>Перенести в описание</button>
+                  <details className="case-assistant__draft-preview">
+                    <summary>Черновик кейса · {filledFields.length}/5 полей</summary>
+                    <dl>
+                      {DRAFT_FIELDS.map(field => (
+                        <div key={field.key}>
+                          <dt>{field.label}</dt>
+                          <dd>{chat.caseDraft?.[field.key] ?? 'Пока не заполнено'}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                  <div className="case-assistant__draft-copy"><span>Перенесём заполненные поля. Неизвестные значения не заменят ваши данные.</span></div>
+                  <button type="button" disabled={!filledFields.length} onClick={() => { if (chat.caseDraft) onTransfer(chat.caseDraft); }}>Перенести в форму</button>
                 </div>
               )}
               <form className="case-assistant__composer" onSubmit={event => void handleSend(event)}>

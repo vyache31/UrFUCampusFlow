@@ -207,6 +207,34 @@
   gap: 4px;
 }
 
+.case-assistant__draft-preview summary {
+  color: #202024;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.case-assistant__draft-preview dl {
+  max-height: 160px;
+  margin: 10px 0 0;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.case-assistant__draft-preview dt {
+  margin-top: 8px;
+  color: #343640;
+  font-weight: 600;
+}
+
+.case-assistant__draft-preview dd {
+  margin: 3px 0 0;
+  color: #777C89;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .case-assistant__draft-copy strong {
   color: #202024;
   font-size: 12px;

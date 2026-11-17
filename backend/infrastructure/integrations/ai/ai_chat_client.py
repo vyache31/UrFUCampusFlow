@@ -13,6 +13,8 @@ from presentation.api.schemas.ai import (
     AIAssistantMessage,
     AICompletionResponse,
     AIMessage,
+    AICaseDraft,
+    AIChatGenerationResult,
 )
 
 
@@ -20,17 +22,24 @@ class AIClient:
     def __init__(self, httpx_client: httpx.AsyncClient) -> None:
         self.httpx_client = httpx_client
 
-    def estimate_reply_input_tokens(self, messages: Sequence[AIMessage]) -> int:
+    def estimate_reply_input_tokens(
+        self,
+        messages: Sequence[AIMessage],
+        current_draft: AICaseDraft | None = None,
+    ) -> int:
         encoding = tiktoken.encoding_for_model(settings.AI_MODEL.removeprefix('openai/'))
         context: list[AIMessage] = [
             {"role": "system", "content": promts.SYSTEM_CHAT_BOT_PROMT},
-            *messages,
+            *self._build_reply_messages(messages, current_draft),
         ]
         text_tokens = sum(
             len(encoding.encode_ordinary(message['role']))
             + len(encoding.encode_ordinary(message['content']))
             for message in context
         )
+        text_tokens += len(encoding.encode_ordinary(
+            json.dumps(self._reply_response_format(), ensure_ascii=False)
+        ))
         # Approximate message framing and reply prefix, with a 10% safety margin.
         return ceil((text_tokens + 8 * len(context) + 3) * 1.1)
 
@@ -51,15 +60,50 @@ class AIClient:
 
         return completion.choices[0].message
 
-    async def generate_reply(self, messages: Sequence[AIMessage]) -> AIAssistantMessage:
+    async def generate_reply(
+        self,
+        messages: Sequence[AIMessage],
+        current_draft: AICaseDraft | None = None,
+    ) -> AIChatGenerationResult:
         content = self._build_payload(
             prompt=promts.SYSTEM_CHAT_BOT_PROMT,
-            messages=messages,
+            messages=self._build_reply_messages(messages, current_draft),
         )
+        content['response_format'] = self._reply_response_format()
 
         response = await self._get_response(content=content)
 
-        return response
+        try:
+            result = AIChatGenerationResult.model_validate_json(response.content)
+
+        except ValidationError as exc:
+            raise AIAssistantMessageValidationError(
+                'AI provider returned an invalid or incomplete response.'
+            ) from exc
+
+        return result
+
+    @staticmethod
+    def _reply_response_format() -> dict[str, object]:
+        return {
+            'type': 'json_schema',
+            'json_schema': {
+                'name': 'ai_chat_generation',
+                'strict': True,
+                'schema': AIChatGenerationResult.model_json_schema(),
+            },
+        }
+
+    @staticmethod
+    def _build_reply_messages(
+        messages: Sequence[AIMessage],
+        current_draft: AICaseDraft | None,
+    ) -> list[AIMessage]:
+        draft_json = current_draft.model_dump_json() if current_draft is not None else 'null'
+        return [
+            {'role': 'user', 'content': f'Current case draft: {draft_json}'},
+            *messages,
+        ]
 
     @staticmethod
     def _build_headers() -> dict[str, str]:
@@ -92,10 +136,12 @@ class AIClient:
             {"previous_summary": summary, "messages": list(messages)},
             ensure_ascii=False,
         )
+
         content = self._build_payload(
             prompt=promts.AI_SUMMARY_PROMPT,
             messages=[{"role": "user", "content": summary_input}],
         )
 
         response = await self._get_response(content)
+
         return response.content

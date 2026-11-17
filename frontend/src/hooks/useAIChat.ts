@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import {
-  CHAT_PAGE_SIZE, createAIChat, deleteAIChat, getAIChatMessages, getAIChats,
-  retryAIChatReply, sendAIChatMessage, type AIChat, type AIChatMessage,
+  CHAT_PAGE_SIZE, createAIChat, deleteAIChat, getAIChat, getAIChatMessages, getAIChats,
+  retryAIChatReply, sendAIChatMessage, type AICaseDraft, type AIChat, type AIChatMessage,
 } from '../services/aiChats';
 
 const errorMessage = (error: unknown, fallback: string): string => {
@@ -24,6 +24,7 @@ const mergeChats = (existing: AIChat[], incoming: AIChat[]): AIChat[] =>
 export const useAIChat = (isOpen: boolean) => {
   const [chats, setChats] = useState<AIChat[]>([]);
   const [messages, setMessages] = useState<AIChatMessage[]>([]);
+  const [caseDraft, setCaseDraft] = useState<AICaseDraft | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [listLoading, setListLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -58,8 +59,11 @@ export const useAIChat = (isOpen: boolean) => {
     setHistoryError('');
     try {
       const data = await getAIChatMessages(chatId, controller.signal);
+      const details = await getAIChat(chatId, controller.signal);
       if (!mounted.current || controller.signal.aborted || currentId.current !== chatId) return null;
       setMessages(data);
+      setCaseDraft(details.draft);
+      setChats(previous => previous.map(chat => chat.id === chatId ? details : chat));
       setHistoryLoaded(true);
       return data;
     } catch (error) {
@@ -77,6 +81,7 @@ export const useAIChat = (isOpen: boolean) => {
     currentId.current = id;
     setSelectedId(id);
     setMessages([]);
+    setCaseDraft(null);
     setError('');
     await loadHistory(id);
   }, [loadHistory]);
@@ -133,6 +138,7 @@ export const useAIChat = (isOpen: boolean) => {
     currentId.current = null;
     setSelectedId(null);
     setMessages([]);
+    setCaseDraft(null);
     setError('');
     setHistoryError('');
     setHistoryLoading(false);
@@ -159,8 +165,10 @@ export const useAIChat = (isOpen: boolean) => {
         setSelectedId(id);
         setChats(previous => [chat, ...previous]);
       }
-      if (text !== undefined) await sendAIChatMessage(id, text);
-      else await retryAIChatReply(id);
+      const result = text !== undefined
+        ? await sendAIChatMessage(id, text)
+        : await retryAIChatReply(id);
+      if (mounted.current && currentId.current === id) setCaseDraft(result.draft);
       saved = true;
     } catch (error) {
       requestError = errorMessage(error, 'Не удалось получить ответ. Обновите историю, чтобы проверить сохранённое сообщение.');
@@ -199,6 +207,7 @@ export const useAIChat = (isOpen: boolean) => {
         currentId.current = null;
         setSelectedId(null);
         setMessages([]);
+        setCaseDraft(null);
         setHistoryError('');
         setHistoryLoaded(true);
         setHistoryLoading(false);
@@ -223,8 +232,11 @@ export const useAIChat = (isOpen: boolean) => {
       fetching = true;
       try {
         const data = await getAIChatMessages(selectedId, controller.signal);
+        const details = await getAIChat(selectedId, controller.signal);
         if (!controller.signal.aborted && mounted.current && currentId.current === selectedId) {
           setMessages(previous => (data.at(-1)?.position ?? 0) >= (previous.at(-1)?.position ?? 0) ? data : previous);
+          setCaseDraft(details.draft);
+          setChats(previous => previous.map(chat => chat.id === selectedId ? details : chat));
           if (data.at(-1)?.role === 'assistant') setError('');
         }
       } catch (error) {
@@ -243,7 +255,7 @@ export const useAIChat = (isOpen: boolean) => {
   }, [isOpen, selectedId, pendingReply, busy, historyLoaded]);
 
   return {
-    chats, messages, selectedId, listLoading, hasMore, historyLoading, historyLoaded,
+    chats, messages, caseDraft, selectedId, listLoading, hasMore, historyLoading, historyLoaded,
     busy, sendingText, pendingReply, error, listError, historyError,
     selectChat, newChat, send, removeChat, loadChats,
     refreshHistory: () => currentId.current ? loadHistory(currentId.current) : Promise.resolve(null),

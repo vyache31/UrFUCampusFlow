@@ -6,6 +6,7 @@ from presentation.api.dependencies.auth_depends import get_current_auth_user
 from presentation.api.schemas.ai import (
     AIChatCreate,
     AIChatResponse,
+    AIChatReplyResponse,
     AIMessageCreate,
     AIMessageResponse,
 )
@@ -63,7 +64,7 @@ async def get_messages(
 
 @router.post(
     '/{chat_id}/messages',
-    response_model=AIMessageResponse,
+    response_model=AIChatReplyResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def send_message(
@@ -75,7 +76,7 @@ async def send_message(
     return await service.send_message(chat_id=chat_id, user_id=user.id, schema=schema)
 
 
-@router.post('/{chat_id}/retry', response_model=AIMessageResponse)
+@router.post('/{chat_id}/retry', response_model=AIChatReplyResponse)
 async def retry_reply(
     chat_id: str,
     user=Depends(get_current_auth_user),
