@@ -5,7 +5,7 @@ from application.services.case_service import CaseService
 from presentation.api.schemas.case import CaseResponse, CaseCreate, CaseUpdate
 from presentation.api.dependencies.case_depends import get_case_service
 from presentation.api.dependencies.auth_depends import get_current_auth_user, get_current_subject
-from presentation.api.schemas.ai_case_schemas import AIGenerateCaseRequest, AIGeneratedCaseResponse
+from presentation.api.schemas.ai import AIGenerateCaseRequest, AIGeneratedCaseResponse
 from application.services.ai_service import AIService
 from presentation.api.dependencies.ai_depends import get_ai_service
 

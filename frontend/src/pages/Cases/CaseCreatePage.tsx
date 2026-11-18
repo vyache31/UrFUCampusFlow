@@ -5,7 +5,8 @@ import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import EditableField from '../../components/common/EditableField/EditableField';
 import { SaveIcon } from '../../components/common/Icons/Icons';
 import { createCase } from '../../services/cases';
-import CaseAssistantChat, { type CaseDraft } from '../../components/CaseAssistantChat/CaseAssistantChat';
+import CaseAssistantChat from '../../components/CaseAssistantChat/CaseAssistantChat';
+import type { AICaseDraft } from '../../services/aiChats';
 import { useToast } from '../../context/ToastContext';
 import './caseCreatePage.css';
 
@@ -51,22 +52,47 @@ const INITIAL_FORM: FormState = {
 
 const CaseCreatePage = () => {
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showConfirm } = useToast();
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'submit', string>>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleTransferFromChat = (draft: CaseDraft) => {
-    setForm({
-      title: draft.title,
-      shortTitle: draft.shortTitle,
-      description: draft.description,
-      expectedResult: draft.expectedResult,
-      criteria: draft.criteria,
-    });
-    setErrors({});
-    showSuccess('Наработки перенесены в форму');
+  const handleTransferFromChat = (draft: AICaseDraft) => {
+    const fields: { key: keyof FormState; value: string | null }[] = [
+      { key: 'title', value: draft.title },
+      { key: 'shortTitle', value: draft.short_title },
+      { key: 'description', value: draft.project_goals },
+      { key: 'expectedResult', value: draft.required_result },
+      { key: 'criteria', value: draft.grade_criteria },
+    ];
+    const updates: Partial<FormState> = {};
+    for (const field of fields) {
+      if (field.value !== null) updates[field.key] = field.value;
+    }
+    const transfer = () => {
+      setForm(previous => ({ ...previous, ...updates }));
+      setErrors(previous => {
+        const next = { ...previous };
+        for (const field of fields) {
+          if (field.value !== null) delete next[field.key];
+        }
+        return next;
+      });
+      showSuccess('Черновик ИИ перенесён в форму');
+    };
+    const replacements = fields.filter(field =>
+      field.value !== null && form[field.key].trim() && form[field.key] !== field.value
+    );
+    if (replacements.length) {
+      showConfirm({
+        message: `Заменить заполненные поля: ${replacements.map(field => FIELD_LABELS[field.key]).join(', ')}?`,
+        confirmText: 'Перенести',
+        onConfirm: transfer,
+      });
+    } else {
+      transfer();
+    }
   };
 
   const updateField = (field: keyof FormState) => (value: string) => {

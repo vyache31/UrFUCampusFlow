@@ -3,6 +3,11 @@ import logging
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from application.exceptions.ai import (
+    AIAssistantMessageValidationError,
+    AIProviderError,
+    AIProviderTimeoutError,
+)
 from application.exceptions.base import (
     ApplicationValidationError,
     AuthenticationError,
@@ -20,6 +25,10 @@ async def application_exception_handler(request: Request, exc: Exception) -> JSO
         status_code = 404
     elif isinstance(exc, ConflictError):
         status_code = 409
+    elif isinstance(exc, AIProviderTimeoutError):
+        status_code = 504
+    elif isinstance(exc, (AIAssistantMessageValidationError, AIProviderError)):
+        status_code = 502
     elif isinstance(exc, ApplicationValidationError):
         status_code = 422
     elif isinstance(exc, ForbiddenError):

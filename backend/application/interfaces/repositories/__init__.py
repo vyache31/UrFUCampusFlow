@@ -25,3 +25,4 @@ from .team_repository_protocol import TeamRepositoryProtocol
 from .team_case_history_repository_protocol import TeamCaseHistoryRepositoryProtocol
 from .university_info_repository_protocol import UniversityInfoRepositoryProtocol
 from .user_repository_protocol import UserRepositoryProtocol
+from .ai_chat_repository_protocol import AIChatRepositoryProtocol
