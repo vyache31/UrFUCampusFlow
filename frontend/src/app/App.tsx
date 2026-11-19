@@ -19,6 +19,7 @@ import SSOPage from '../pages/Login/SSOPage';
 import TeamCaseHistoryPage from '../pages/Teams/TeamCaseHistoryPage';
 import MeetingViewPage from '../pages/Teams/MeetingViewPage';
 import MeetingsHistoryPage from '../pages/Teams/MeetingsHistoryPage';
+import CaseTeamsHistoryPage from '../pages/Cases/CaseTeamsHistoryPage';
 
 interface AppRoute {
   path: string;
@@ -45,6 +46,7 @@ const ROUTES: AppRoute[] = [
   { path: '/bot-management', element: <BotManagementPage /> },
   { path: '/outlook/callback', element: <OutlookCallbackPage /> },
   { path: '/sso', element: <SSOPage /> },
+  { path: '/cases/:id/history', element: <CaseTeamsHistoryPage /> },
 ];
 
 const App = () => (

@@ -1,0 +1,302 @@
+.case-teams-history-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 60px;
+}
+
+.case-teams-history-header {
+  margin-bottom: 30px;
+}
+
+.case-teams-history-content {
+  max-width: 886px;
+  width: 100%;
+  margin-left: 227px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+.case-history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.case-history-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.case-history-section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.case-history-section-title {
+  margin: 0;
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 30px;
+}
+
+.case-history-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 15px;
+  background: #edf3ff;
+  color: #3563c6;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.case-history-count.archived {
+  background: #F4F4F4;
+  color: #777782;
+}
+
+.case-history-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.case-history-action-btn.primary {
+  background: #4E85FC;
+  border: 1px solid #4E85FC;
+  color: #fff;
+}
+
+.case-history-action-btn.primary:hover:not(:disabled) {
+  background: #3563C6;
+  border-color: #3563C6;
+}
+
+.case-history-action-btn.secondary {
+  background: #fff;
+  border: 1px solid #4E85FC;
+  color: #4E85FC;
+}
+
+.case-history-action-btn.secondary:hover:not(:disabled) {
+  background: #edf3ff;
+}
+
+.case-history-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.case-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.case-history-team-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px;
+  border: 1px solid #e8eaf0;
+  border-radius: 18px;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.case-history-team-card:hover {
+  border-color: #c9d8ff;
+  box-shadow: 0 4px 16px rgba(32, 32, 36, 0.05);
+}
+
+.case-history-team-card.selected {
+  border-color: #4E85FC;
+  background: #f8faff;
+}
+
+.case-history-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  padding: 0;
+  border: 2px solid #c5c8d4;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.case-history-checkbox:hover:not(:disabled) {
+  border-color: #4E85FC;
+}
+
+.case-history-checkbox.checked {
+  border-color: #4E85FC;
+  background: #edf3ff;
+}
+
+.case-history-checkbox svg {
+  width: 16px;
+  height: 16px;
+}
+
+.case-history-checkbox svg path {
+  fill: #4E85FC;
+}
+
+.case-history-team-icon {
+  display: flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  margin-top: 2px;
+  color: #202024;
+}
+
+.case-history-team-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.case-history-team-name {
+  color: #202024;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 23px;
+  overflow-wrap: anywhere;
+}
+
+.case-history-team-description {
+  margin-top: 5px;
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.case-history-team-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+
+.case-history-team-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 17px;
+}
+
+.case-history-team-status.active {
+  background: #eaf7ef;
+  color: #247747;
+}
+
+.case-history-team-status.archived {
+  background: #F4F4F4;
+  color: #777782;
+}
+
+.case-history-team-semester,
+.case-history-team-dates {
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.case-history-team-chevron {
+  align-self: center;
+  color: #777782;
+  font-size: 26px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.case-history-team-card:hover .case-history-team-chevron {
+  transform: translateX(3px);
+}
+
+.case-history-empty {
+  padding: 22px;
+  border: 1px solid #e8eaf0;
+  border-radius: 18px;
+  background: #fff;
+  color: #777782;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  line-height: 21px;
+}
+
+.case-history-count.available {
+  background: #fef6d8;
+  color: #8a6d00;
+}
+
+.case-history-team-status.available {
+  background: #fef6d8;
+  color: #8a6d00;
+}
+
+@media (max-width: 1200px) {
+  .case-teams-history-content {
+    margin-left: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .case-history-team-card {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 15px;
+  }
+
+  .case-history-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

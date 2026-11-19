@@ -4,8 +4,9 @@ import Header from '../../components/common/Header/Header';
 import Breadcrumb from '../../components/common/Breadcrumb/Breadcrumb';
 import { getCaseById, type Case } from '../../services/cases';
 import { getTeams, getTeamHistory, type Team, type TeamHistoryItem } from '../../services/teams';
-import { EditIcon } from '../../components/common/Icons/Icons';
+import { EditIcon, HistoryIcon } from '../../components/common/Icons/Icons';
 import './caseViewPage.css';
+
 
 type TeamOnCase = {
   team: Team;
@@ -232,11 +233,22 @@ const CaseViewPage = () => {
               </p>
             </div>
 
-            {!teamsLoading && !teamsError && (
-              <span className="case-teams-count">
-                {teamsOnCase.length}
-              </span>
-            )}
+            <div className="case-teams-heading-actions">
+              {!teamsLoading && !teamsError && (
+                <span className="case-teams-count">
+                  {teamsOnCase.length}
+                </span>
+              )}
+
+              <button
+                type="button"
+                className="case-teams-history-btn"
+                onClick={() => navigate(`/cases/${id}/history`)}
+              >
+                <HistoryIcon />
+                <span>История команд</span>
+              </button>
+            </div>
           </div>
 
           {teamsLoading ? (

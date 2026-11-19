@@ -519,7 +519,7 @@ const MeetingViewPage = () => {
                 <textarea className="meeting-task-create-input meeting-task-create-description" value={newTaskDescription} onChange={e => setNewTaskDescription(e.target.value)} placeholder="Описание (необязательно)" disabled={addingTask} rows={3} />
                 <div className="meeting-task-create-actions"><button type="button" className="meeting-task-cancel-button" onClick={() => setTaskFormOpen(false)} disabled={addingTask}>Отмена</button><button type="submit" className="meeting-task-save-button" disabled={addingTask || !newTaskTitle.trim()}>{addingTask ? 'Добавление…' : 'Добавить'}</button></div>
               </form>}
-              <p className="meeting-task-files-hint">Форматы: PDF, TXT, MD, DOC, DOCX. Максимальный суммарный размер файлов одного поручения — 10 МБ.</p>
+              <p className="meeting-task-files-hint">Форматы: PDF, TXT, MD, DOC, DOCX. Максимальный суммарный размер файлов одного поручения — 20 МБ.</p>
               <input
                 ref={fileInputRef}
                 className="meeting-task-file-input"

@@ -1,7 +1,9 @@
 .case-assistant {
-  position: fixed;
-  right: 28px;
+  position: sticky;
   bottom: 28px;
+  align-self: flex-end;
+  width: fit-content;
+  margin-top: auto;
   z-index: 1200;
   font-family: 'Montserrat', sans-serif;
 }
@@ -513,7 +515,6 @@
 
 @media (max-width: 480px) {
   .case-assistant {
-    right: 14px;
     bottom: 14px;
   }
 
